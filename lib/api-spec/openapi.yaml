@@ -1,22 +1,27 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Forehead Guess Game API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: categories
+    description: Category management
+  - name: rooms
+    description: Room management
+  - name: admin
+    description: Admin operations
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +29,291 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all active categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /admin/categories:
+    get:
+      operationId: adminListCategories
+      tags: [admin]
+      summary: List all categories (admin)
+      parameters:
+        - name: x-admin-password
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of all categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: adminCreateCategory
+      tags: [admin]
+      summary: Create a category
+      parameters:
+        - name: x-admin-password
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryBody"
+      responses:
+        "201":
+          description: Created category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "401":
+          description: Unauthorized
+
+  /admin/categories/{id}:
+    put:
+      operationId: adminUpdateCategory
+      tags: [admin]
+      summary: Update a category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: x-admin-password
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryBody"
+      responses:
+        "200":
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+    delete:
+      operationId: adminDeleteCategory
+      tags: [admin]
+      summary: Delete a category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: x-admin-password
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+
+  /admin/categories/{id}/items:
+    get:
+      operationId: adminListItems
+      tags: [admin]
+      summary: List items in a category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: x-admin-password
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryItem"
+        "401":
+          description: Unauthorized
+
+  /admin/categories/{id}/upload:
+    post:
+      operationId: adminUploadItems
+      tags: [admin]
+      summary: Upload items via CSV/XLSX
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: x-admin-password
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        "200":
+          description: Upload result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResult"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+
+  /admin/verify:
+    post:
+      operationId: adminVerify
+      tags: [admin]
+      summary: Verify admin password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminVerifyBody"
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminVerifyResult"
+
+  /rooms:
+    post:
+      operationId: createRoom
+      tags: [rooms]
+      summary: Create a new room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoomBody"
+      responses:
+        "201":
+          description: Created room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomWithPlayers"
+
+  /rooms/{code}:
+    get:
+      operationId: getRoom
+      tags: [rooms]
+      summary: Get room by code
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Room info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomWithPlayers"
+        "404":
+          description: Not found
+
+  /rooms/{code}/join:
+    post:
+      operationId: joinRoom
+      tags: [rooms]
+      summary: Join a room
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinRoomBody"
+      responses:
+        "200":
+          description: Joined room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JoinRoomResult"
+        "400":
+          description: Bad request (duplicate name, room full, etc.)
+        "404":
+          description: Room not found
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +324,209 @@ components:
       required:
         - status
 
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum: [text, image]
+        enabled:
+          type: boolean
+        itemCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - type
+        - enabled
+        - itemCount
+        - createdAt
+
+    CreateCategoryBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum: [text, image]
+        enabled:
+          type: boolean
+      required:
+        - name
+        - type
+
+    UpdateCategoryBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum: [text, image]
+        enabled:
+          type: boolean
+
+    CategoryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        categoryId:
+          type: integer
+        itemText:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - categoryId
+        - itemText
+        - createdAt
+
+    UploadResult:
+      type: object
+      properties:
+        imported:
+          type: integer
+        skipped:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+        replaced:
+          type: boolean
+      required:
+        - imported
+        - skipped
+        - errors
+        - replaced
+
+    AdminVerifyBody:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+        - password
+
+    AdminVerifyResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+      required:
+        - valid
+
+    CreateRoomBody:
+      type: object
+      properties:
+        hostName:
+          type: string
+        categoryId:
+          type: integer
+          nullable: true
+        turnDuration:
+          type: integer
+          nullable: true
+        roundCount:
+          type: integer
+          nullable: true
+      required:
+        - hostName
+
+    JoinRoomBody:
+      type: object
+      properties:
+        playerName:
+          type: string
+      required:
+        - playerName
+
+    Player:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        isHost:
+          type: boolean
+        score:
+          type: integer
+        connected:
+          type: boolean
+      required:
+        - id
+        - name
+        - isHost
+        - score
+        - connected
+
+    RoomWithPlayers:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        status:
+          type: string
+          enum: [waiting, playing, finished]
+        categoryId:
+          type: integer
+          nullable: true
+        categoryName:
+          type: string
+          nullable: true
+        turnDuration:
+          type: integer
+        roundCount:
+          type: integer
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/Player"
+        createdAt:
+          type: string
+      required:
+        - id
+        - code
+        - status
+        - turnDuration
+        - roundCount
+        - players
+        - createdAt
+
+    JoinRoomResult:
+      type: object
+      properties:
+        room:
+          $ref: "#/components/schemas/RoomWithPlayers"
+        playerId:
+          type: integer
+        playerName:
+          type: string
+      required:
+        - room
+        - playerId
+        - playerName

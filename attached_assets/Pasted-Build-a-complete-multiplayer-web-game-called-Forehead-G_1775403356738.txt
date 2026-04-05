@@ -1,0 +1,72 @@
+Build a complete multiplayer web game called “Forehead Guess” as a full-stack Replit app. I want one deployable project, not snippets. The app should be website-based and mobile-friendly, mainly designed for landscape play. The concept is the classic phone-on-forehead guessing game: each player gets a hidden word or image category item and must guess what they are while the item faces away from them.
+
+Core flow:
+1) Landing page shows this minigame with two buttons: Create Room and Join Room.
+2) If a user clicks Create Room, instantly create a room and make that person the admin/host.
+3) If a user clicks Join Room, require them to enter a 5-digit numeric room code and a display name.
+4) Room codes must always be random 5-digit numbers.
+5) A room should be playable with 2 or more players. As soon as 2 players are in, the host can press Start Game.
+6) Inside the room, above the Start Game button, show a category selector. The host can choose one category before starting.
+7) Categories are managed by me from an admin/backend panel and are backed by uploaded spreadsheet data. Each category can contain either text answers/words or image-based answers.
+8) I need support for many categories (30–50+), and I need to be able to upload/update them easily from the backend without editing code.
+
+Game requirements:
+- Each player joins the room and waits in the lobby.
+- Lobby shows room code, player list, host/admin badge, selected category, and Start Game button for host only.
+- When the game starts, each player is assigned one hidden item from the selected category.
+- The assigned item should be shown in a way suitable for the forehead guessing game: the player should not easily see their own answer, but other players can.
+- Include a clean “pass / next” and “correct” flow if possible, or at minimum a round timer and reveal screen.
+- Include a turn system so each player gets a turn.
+- Include a countdown timer per turn.
+- After each turn, move to the next player automatically.
+- At the end, show a simple results screen with turns completed and correct guesses if scoring is enabled.
+- Include a button to play again in the same room.
+
+Backend / content management:
+- Create an admin page/dashboard protected by a simple password from an environment variable.
+- Admin can create, edit, delete, enable, and disable categories.
+- Admin can upload category data via Excel (.xlsx) or CSV.
+- For text categories, spreadsheet columns should support: category_name, item_text.
+- For image categories, spreadsheet columns should support: category_name, item_text, image_url (or uploaded image file support if easier).
+- If using uploaded files is easier than Excel parsing, still support CSV/XLSX import plus image URLs.
+- Validate spreadsheet uploads and show errors clearly.
+- Store data in a real database suitable for Replit, preferably SQLite or PostgreSQL, with a clean schema for rooms, players, categories, items, turns, and game state.
+
+Realtime requirements:
+- Multiplayer room updates must happen live without page refresh using WebSockets or equivalent realtime solution.
+- Player joins/leaves, lobby updates, category changes, game start, timer changes, turn changes, and results should all update live.
+
+UI / UX:
+- Clean modern UI, simple and bright, optimized for mobile browsers.
+- Main game view should work best in landscape orientation.
+- Keep buttons large and obvious.
+- Make room code very prominent.
+- Add a “copy room code” button.
+- Show a message if there are not enough players to start.
+- Show reconnect handling if a player refreshes or disconnects.
+- Prevent duplicate names in the same room.
+- If host leaves, either transfer host to another player or end the room gracefully.
+
+Technical requirements:
+- Build the full app in one Replit project.
+- Use a clear folder structure.
+- Include all frontend, backend, database models, upload parsing, and realtime logic.
+- Include seed/demo data with a few sample categories so I can test immediately.
+- Include a README with setup instructions.
+- Include comments where useful, but do not over-explain.
+- Make the app easy for me to customize later.
+
+Important:
+- Do not give me partial snippets or placeholder pseudocode.
+- Generate the full working project files.
+- If any package choices are needed, choose the simplest reliable stack for Replit.
+- Prioritize a working MVP first, but make the code organized enough for future expansion.
+
+Nice-to-have:
+- QR code for room join link
+- Full-screen mode button
+- Sound effects toggle
+- Option to choose number of rounds or turn duration
+- Support both text-only mode and image mode per category
+
+At the end, show me exactly what files were created and how to run the app in Replit.

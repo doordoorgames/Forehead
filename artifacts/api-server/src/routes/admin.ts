@@ -249,4 +249,121 @@ router.post("/admin/categories/:id/upload", upload.single("file"), async (req, r
   res.json({ imported, skipped: errors.length, errors, replaced: true });
 });
 
+// POST /api/admin/upload-master
+// Accepts one CSV/XLSX where each COLUMN is a category.
+// Row 1 (header) = category name. Rows 2+ = items for that category.
+router.post("/admin/upload-master", upload.single("file"), async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const file = req.file;
+  if (!file) {
+    res.status(400).json({ error: "No file uploaded" });
+    return;
+  }
+
+  // columns[i] = { name: string, items: string[] }
+  const columns: Array<{ name: string; items: string[] }> = [];
+
+  try {
+    const ext = file.originalname.toLowerCase().split(".").pop();
+    if (ext === "csv") {
+      const text = file.buffer.toString("utf-8");
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (lines.length < 1) {
+        res.status(400).json({ error: "File is empty" });
+        return;
+      }
+      // Simple CSV splitter that handles quoted fields
+      const splitCsvLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = "";
+        let inQuotes = false;
+        for (const ch of line) {
+          if (ch === '"') { inQuotes = !inQuotes; continue; }
+          if (ch === "," && !inQuotes) { result.push(current.trim()); current = ""; continue; }
+          current += ch;
+        }
+        result.push(current.trim());
+        return result;
+      };
+      const headers = splitCsvLine(lines[0]).map((h) => h.replace(/^"(.*)"$/, "$1").trim());
+      headers.forEach((name, colIdx) => {
+        if (!name) return;
+        const items: string[] = [];
+        for (let row = 1; row < lines.length; row++) {
+          const cells = splitCsvLine(lines[row]);
+          const val = (cells[colIdx] || "").trim();
+          if (val) items.push(val);
+        }
+        columns.push({ name, items });
+      });
+    } else if (ext === "xlsx" || ext === "xls") {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.read(file.buffer, { type: "buffer" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      // Use sheet_to_json with header:1 to get rows as arrays
+      const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: "" }) as string[][];
+      if (rows.length < 1) {
+        res.status(400).json({ error: "File is empty" });
+        return;
+      }
+      const headerRow = rows[0];
+      headerRow.forEach((name, colIdx) => {
+        const trimmedName = String(name).trim();
+        if (!trimmedName) return;
+        const items: string[] = [];
+        for (let row = 1; row < rows.length; row++) {
+          const val = String(rows[row][colIdx] || "").trim();
+          if (val) items.push(val);
+        }
+        columns.push({ name: trimmedName, items });
+      });
+    } else {
+      res.status(400).json({ error: "Only CSV and XLSX files are supported" });
+      return;
+    }
+  } catch (err) {
+    req.log.error({ err }, "Error parsing master upload");
+    res.status(400).json({ error: "Failed to parse file" });
+    return;
+  }
+
+  if (columns.length === 0) {
+    res.status(400).json({ error: "No columns found in file" });
+    return;
+  }
+
+  // Upsert each column as a category and replace its items
+  const results: Array<{ name: string; itemCount: number; created: boolean }> = [];
+  for (const col of columns) {
+    // Find existing category by name (case-insensitive)
+    const allCats = await db.select().from(categoriesTable);
+    let cat = allCats.find((c) => c.name.toLowerCase() === col.name.toLowerCase()) ?? null;
+
+    if (!cat) {
+      const [newCat] = await db.insert(categoriesTable).values({
+        name: col.name,
+        type: "text",
+        enabled: true,
+      }).returning();
+      cat = newCat;
+      results.push({ name: col.name, itemCount: col.items.length, created: true });
+    } else {
+      results.push({ name: col.name, itemCount: col.items.length, created: false });
+    }
+
+    // Replace all items
+    await db.delete(categoryItemsTable).where(eq(categoryItemsTable.categoryId, cat.id));
+    for (const item of col.items) {
+      await db.insert(categoryItemsTable).values({ categoryId: cat.id, itemText: item, imageUrl: null });
+    }
+  }
+
+  res.json({ categories: results, totalCategories: results.length, errors: [] });
+});
+
 export default router;

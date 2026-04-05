@@ -61,7 +61,7 @@ export default function Home() {
 
   const onJoinSubmit = (values: z.infer<typeof joinRoomSchema>) => {
     joinRoomMutation.mutate(
-      { data: { playerName: values.playerName, roomCode: values.roomCode } },
+      { code: values.roomCode, data: { playerName: values.playerName } },
       {
         onSuccess: (data) => {
           // data is JoinRoomResult

@@ -39,7 +39,7 @@ export default function Room() {
 
   if (isRoomLoading && !socket.roomState) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-background">
+      <div className="min-h-[100dvh] flex items-center justify-center">
         <Loader2 className="w-16 h-16 animate-spin text-primary" />
       </div>
     );
@@ -64,7 +64,7 @@ export default function Room() {
         <p className="text-lg text-white/70 mt-2">This game is played in landscape mode</p>
       </div>
 
-      <div className="game-container min-h-[100dvh] bg-background text-foreground flex flex-col relative overflow-hidden">
+      <div className="game-container min-h-[100dvh] text-foreground flex flex-col relative overflow-hidden">
         {/* Error toast */}
         {socket.error && (
           <div className="fixed top-0 left-0 right-0 z-50 bg-destructive text-destructive-foreground p-3 text-center font-bold text-lg">
@@ -228,8 +228,8 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
 
 function CountdownView({ seconds }: { seconds: number }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-background landscape-safe">
-      <p className="text-2xl md:text-3xl font-bold text-muted-foreground mb-4 tracking-wide text-center px-8">
+    <div className="flex-1 flex flex-col items-center justify-center landscape-safe">
+      <p className="text-2xl md:text-3xl font-bold text-white/60 mb-4 tracking-wide text-center px-8">
         Get ready — place phone on forehead
       </p>
       <div
@@ -255,7 +255,7 @@ function WordDisplayView({ playerId, roomState, roundInfo, onEndRound }: {
   const word = roundInfo?.myWord ?? '...';
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-background relative landscape-safe select-none">
+    <div className="flex-1 flex flex-col items-center justify-center relative landscape-safe select-none">
       {/* Category label */}
       {roundInfo?.categoryName && (
         <p className="absolute top-4 left-0 right-0 text-center text-base font-bold uppercase tracking-widest text-muted-foreground">
@@ -313,7 +313,7 @@ function RevealView({ playerId, roomState, revealInfo, readyPlayerIds, onPlayerR
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-background p-6 gap-6 landscape-safe">
+    <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6 landscape-safe">
       {/* Role badge */}
       <div className={`px-6 py-2 rounded-full text-lg font-black uppercase tracking-widest border-2 ${
         revealInfo.isImposter
@@ -332,23 +332,6 @@ function RevealView({ playerId, roomState, revealInfo, readyPlayerIds, onPlayerR
         >
           {revealInfo.myWord}
         </div>
-      </div>
-
-      {/* Imposter reveal */}
-      <div className="bg-card border-2 border-border rounded-2xl px-6 py-4 text-center w-full max-w-md space-y-2">
-        <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Round Info</p>
-        <p className="text-lg">
-          <span className="font-bold text-foreground">Imposter: </span>
-          <span className="text-destructive font-black">{revealInfo.imposterName}</span>
-        </p>
-        <p className="text-lg">
-          <span className="font-bold text-foreground">Normal word: </span>
-          <span className="font-bold">{revealInfo.normalWord}</span>
-        </p>
-        <p className="text-lg">
-          <span className="font-bold text-foreground">Imposter word: </span>
-          <span className="text-destructive font-bold">{revealInfo.imposterWord}</span>
-        </p>
       </div>
 
       {/* Ready counter */}
@@ -403,7 +386,7 @@ function FinishedView({ onGoHome }: { onGoHome: () => void }) {
   }, [onGoHome]);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-background gap-6 p-8 text-center">
+    <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center">
       <div style={{ fontSize: 'clamp(48px, 10vw, 96px)' }} className="font-black">
         Game Over!
       </div>

@@ -1,0 +1,566 @@
+Build me a clean animated cyberpunk background for my browser game. I do NOT want a busy city. I want a premium, minimal, moody background that works behind my game UI and also looks good when a phone is held on the forehead facing outward. Please fully implement this for me and publish it. Do not ask me to manually edit code. Replace the existing page with this exact design and behavior.
+
+GOAL:
+Create a full-screen animated background with:
+- dark gray sky, not black
+- top 70–80% mostly empty muted gray sky
+- bottom 20–30% only low-rise futuristic buildings
+- very sparse neon accents from windows and street lamps only
+- subtle dystopian anime / retro 90s cyberpunk mood
+- background should feel alive but NOT distracting
+- no flashing, no strobing, no aggressive pulsing
+- animation should be slow horizontal panorama drift
+- layered parallax so it feels deep and premium
+
+VISUAL RULES:
+- Background base color should be dark gray like #1c1c1f or similar, not pure black
+- Top area must remain mostly empty because browser bars / overlays sit there
+- Buildings should occupy only the lower portion of the screen
+- Neon accents should be sparse and tasteful: pink, orange, red, cyan
+- Most windows should be dim or off
+- Some windows should glow softly
+- A few subtle street lamps near the bottom
+- No giant signs, no cluttered Tokyo overload, no huge dense skyline
+- This is a background system, not the main attraction
+
+ANIMATION RULES:
+- Use 3 parallax layers
+- Each layer drifts horizontally infinitely
+- Movement must be very slow and smooth
+- No flashing in and out
+- No sudden brightness changes
+- Optional tiny window twinkle on a few windows only, very subtle and rare
+- Respect prefers-reduced-motion
+
+IMPLEMENTATION:
+Please create or replace the app with a single self-contained HTML file if easier, or normal HTML/CSS/JS files if the project structure already exists. Use pure HTML, CSS, and JS only. No heavy libraries.
+
+Build the page exactly like this:
+
+1) Full viewport wrapper
+2) Gray sky gradient background
+3) Three city layers at the bottom
+4) Each layer contains repeated skyline shapes made with CSS or inline SVG
+5) Very sparse lit windows and a few glowing lamp dots
+6) A demo content area in the center that says:
+   "YOUR GAME UI HERE"
+   so I can visualize how the background sits behind my app
+7) Make sure content remains readable above the background
+
+Use this exact code logic and styling if needed:
+
+HTML:
+- a main .scene wrapper
+- a .sky
+- a .city container anchored bottom
+- three moving layers: .layer-back, .layer-mid, .layer-front
+- optional .ui-preview centered on screen
+
+CSS REQUIREMENTS:
+- body margin 0
+- overflow hidden
+- background dark gray
+- font family should be a clean modern sans-serif
+- use absolute positioning for layers
+- skyline layers should be low on screen, not tall towers
+- add subtle fog/gradient between sky and buildings
+- use opacity and blur very lightly on far layer
+- use animation durations around:
+  back layer: 180s
+  mid layer: 120s
+  front layer: 90s
+- duplicate/repeat skyline so animation loops cleanly
+- no visible gaps while scrolling
+
+JAVASCRIPT REQUIREMENTS:
+- generate windows procedurally inside buildings for variety
+- only a small percentage of windows lit
+- colors chosen from a restrained palette
+- optional subtle twinkle on random lit windows every few seconds
+- no harsh transitions
+- if prefers-reduced-motion is enabled, stop drift and twinkle
+
+Please use this exact visual palette as the guide:
+- sky top: #232326
+- sky lower: #1b1b1f
+- building darks: #111215, #17181c, #1d1f24
+- neon accents only in small amounts:
+  pink #ff4fa3
+  orange #ff7a2f
+  red #ff4d4d
+  cyan #39d5ff
+
+Please implement the final page with code like this or better:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minimal Cyberpunk Panorama</title>
+  <style>
+    :root{
+      --sky-top:#232326;
+      --sky-mid:#202126;
+      --sky-bottom:#1b1b1f;
+      --b1:#111215;
+      --b2:#17181c;
+      --b3:#1d1f24;
+      --pink:#ff4fa3;
+      --orange:#ff7a2f;
+      --red:#ff4d4d;
+      --cyan:#39d5ff;
+      --ui-glass:rgba(255,255,255,0.05);
+      --ui-border:rgba(255,255,255,0.08);
+      --text:rgba(255,255,255,0.92);
+      --muted:rgba(255,255,255,0.55);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--sky-bottom);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      color: var(--text);
+    }
+
+    .scene {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background:
+        linear-gradient(to bottom,
+          var(--sky-top) 0%,
+          var(--sky-mid) 48%,
+          var(--sky-bottom) 100%);
+    }
+
+    .sky-fog {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 18vh;
+      height: 18vh;
+      background: linear-gradient(to top, rgba(255,120,80,0.05), rgba(255,255,255,0));
+      pointer-events: none;
+      filter: blur(8px);
+    }
+
+    .city {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 32vh;
+      min-height: 180px;
+      pointer-events: none;
+    }
+
+    .layer {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 200%;
+      height: 100%;
+      will-change: transform;
+    }
+
+    .track {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 200%;
+      height: 100%;
+      display: flex;
+    }
+
+    .segment {
+      position: relative;
+      width: 50%;
+      height: 100%;
+    }
+
+    .layer-back {
+      opacity: 0.24;
+      filter: blur(0.8px);
+      animation: driftBack 180s linear infinite;
+    }
+
+    .layer-mid {
+      opacity: 0.5;
+      animation: driftMid 120s linear infinite;
+    }
+
+    .layer-front {
+      opacity: 0.92;
+      animation: driftFront 90s linear infinite;
+    }
+
+    @keyframes driftBack {
+      from { transform: translateX(0); }
+      to { transform: translateX(-25%); }
+    }
+
+    @keyframes driftMid {
+      from { transform: translateX(0); }
+      to { transform: translateX(-25%); }
+    }
+
+    @keyframes driftFront {
+      from { transform: translateX(0); }
+      to { transform: translateX(-25%); }
+    }
+
+    .building {
+      position: absolute;
+      bottom: 0;
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    .building::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.03), rgba(0,0,0,0.08));
+      pointer-events: none;
+    }
+
+    .roof-detail {
+      position: absolute;
+      background: rgba(255,255,255,0.08);
+      opacity: 0.4;
+    }
+
+    .window {
+      position: absolute;
+      border-radius: 1px;
+      opacity: 0.9;
+      transition: opacity 2.8s ease, filter 2.8s ease, background-color 2.8s ease;
+    }
+
+    .window.off {
+      background: rgba(255,255,255,0.035) !important;
+      opacity: 0.22 !important;
+      filter: none !important;
+      box-shadow: none !important;
+    }
+
+    .lamp {
+      position: absolute;
+      bottom: 10px;
+      width: 4px;
+      background: rgba(255,255,255,0.08);
+      transform-origin: bottom center;
+    }
+
+    .lamp-head {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      bottom: 100%;
+      opacity: 0.9;
+      filter: blur(0.2px);
+    }
+
+    .ground-glow {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 8vh;
+      background: linear-gradient(to top, rgba(255,90,90,0.04), rgba(255,255,255,0));
+      pointer-events: none;
+    }
+
+    .ui-preview {
+      position: absolute;
+      left: 50%;
+      top: 54%;
+      transform: translate(-50%, -50%);
+      width: min(900px, 78vw);
+      padding: 28px 32px;
+      border: 1px solid var(--ui-border);
+      background: var(--ui-glass);
+      backdrop-filter: blur(8px);
+      border-radius: 18px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.24);
+      text-align: center;
+      z-index: 5;
+    }
+
+    .ui-preview h1 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 4vw, 56px);
+      letter-spacing: 0.04em;
+      font-weight: 800;
+    }
+
+    .ui-preview p {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(14px, 1.5vw, 18px);
+    }
+
+    @media (max-width: 900px) {
+      .ui-preview {
+        width: min(92vw, 720px);
+        top: 50%;
+        padding: 22px 20px;
+      }
+      .city {
+        height: 28vh;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .layer-back,
+      .layer-mid,
+      .layer-front {
+        animation: none !important;
+      }
+      .window {
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <div class="sky-fog"></div>
+
+    <div class="ui-preview">
+      <h1>YOUR GAME UI HERE</h1>
+      <p>Muted gray sky above, minimal animated skyline below, subtle neon from lamps and windows only.</p>
+    </div>
+
+    <div class="city">
+      <div class="layer layer-back"><div class="track" id="backTrack"></div></div>
+      <div class="layer layer-mid"><div class="track" id="midTrack"></div></div>
+      <div class="layer layer-front"><div class="track" id="frontTrack"></div></div>
+      <div class="ground-glow"></div>
+    </div>
+  </div>
+
+  <script>
+    const PALETTE = {
+      building: ["#111215", "#17181c", "#1d1f24"],
+      neon: ["#ff4fa3", "#ff7a2f", "#ff4d4d", "#39d5ff"]
+    };
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function rand(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function randInt(min, max) {
+      return Math.floor(rand(min, max + 1));
+    }
+
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function createSegment(config) {
+      const segment = document.createElement("div");
+      segment.className = "segment";
+
+      const width = window.innerWidth || 1400;
+      let x = -40;
+
+      while (x < width + 120) {
+        const b = document.createElement("div");
+        b.className = "building";
+
+        const w = randInt(config.widthMin, config.widthMax);
+        const h = randInt(config.heightMin, config.heightMax);
+
+        b.style.left = `${x}px`;
+        b.style.width = `${w}px`;
+        b.style.height = `${h}px`;
+        b.style.background = pick(PALETTE.building);
+
+        if (Math.random() < config.roofChance) {
+          const roof = document.createElement("div");
+          roof.className = "roof-detail";
+          roof.style.width = `${randInt(2, 4)}px`;
+          roof.style.height = `${randInt(10, 24)}px`;
+          roof.style.left = `${randInt(6, Math.max(6, w - 10))}px`;
+          roof.style.bottom = `${h - 2}px`;
+          segment.appendChild(roof);
+        }
+
+        const cols = Math.max(2, Math.floor(w / randInt(14, 18)));
+        const rows = Math.max(2, Math.floor(h / randInt(18, 24)));
+        const padX = randInt(6, 10);
+        const padY = randInt(8, 12);
+        const gapX = randInt(6, 10);
+        const gapY = randInt(7, 11);
+        const ww = Math.max(3, Math.floor((w - padX * 2 - gapX * (cols - 1)) / cols));
+        const wh = randInt(4, 8);
+
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            const win = document.createElement("div");
+            win.className = "window";
+
+            const lit = Math.random() < config.lightChance;
+            const color = lit ? pick(PALETTE.neon) : "rgba(255,255,255,0.04)";
+
+            win.style.width = `${ww}px`;
+            win.style.height = `${wh}px`;
+            win.style.left = `${padX + col * (ww + gapX)}px`;
+            win.style.top = `${padY + row * (wh + gapY)}px`;
+            win.style.background = color;
+
+            if (lit) {
+              const blur = color === "#39d5ff" ? 7 : 6;
+              win.style.boxShadow = `0 0 ${blur}px ${color}`;
+              win.dataset.lit = "1";
+              win.dataset.base = color;
+            } else {
+              win.classList.add("off");
+              win.dataset.lit = "0";
+            }
+
+            b.appendChild(win);
+          }
+        }
+
+        segment.appendChild(b);
+        x += w + randInt(config.gapMin, config.gapMax);
+      }
+
+      if (config.lampCount > 0) {
+        for (let i = 0; i < config.lampCount; i++) {
+          const lamp = document.createElement("div");
+          lamp.className = "lamp";
+          lamp.style.left = `${randInt(0, width)}px`;
+          lamp.style.height = `${randInt(16, 34)}px`;
+          lamp.style.transform = `rotate(${rand(-8, 8)}deg)`;
+
+          const head = document.createElement("div");
+          head.className = "lamp-head";
+          const glow = pick(["#ff4fa3", "#ff7a2f", "#ff4d4d"]);
+          head.style.background = glow;
+          head.style.boxShadow = `0 0 10px ${glow}, 0 0 18px ${glow}`;
+          lamp.appendChild(head);
+
+          segment.appendChild(lamp);
+        }
+      }
+
+      return segment;
+    }
+
+    function fillTrack(trackId, config) {
+      const track = document.getElementById(trackId);
+      track.innerHTML = "";
+      track.appendChild(createSegment(config));
+      track.appendChild(createSegment(config));
+    }
+
+    function buildScene() {
+      fillTrack("backTrack", {
+        widthMin: 70,
+        widthMax: 150,
+        heightMin: 60,
+        heightMax: 130,
+        gapMin: 8,
+        gapMax: 22,
+        lightChance: 0.04,
+        roofChance: 0.12,
+        lampCount: 0
+      });
+
+      fillTrack("midTrack", {
+        widthMin: 80,
+        widthMax: 180,
+        heightMin: 80,
+        heightMax: 170,
+        gapMin: 10,
+        gapMax: 24,
+        lightChance: 0.08,
+        roofChance: 0.16,
+        lampCount: 2
+      });
+
+      fillTrack("frontTrack", {
+        widthMin: 90,
+        widthMax: 210,
+        heightMin: 90,
+        heightMax: 190,
+        gapMin: 12,
+        gapMax: 26,
+        lightChance: 0.11,
+        roofChance: 0.2,
+        lampCount: 5
+      });
+    }
+
+    function twinkleWindows() {
+      if (reduceMotion) return;
+
+      const litWindows = [...document.querySelectorAll('.window[data-lit="1"]')];
+      if (!litWindows.length) return;
+
+      setInterval(() => {
+        const batch = litWindows.sort(() => 0.5 - Math.random()).slice(0, Math.max(4, Math.floor(litWindows.length * 0.015)));
+
+        batch.forEach((win, i) => {
+          const base = win.dataset.base || "#ff7a2f";
+          const shouldDim = Math.random() < 0.65;
+
+          setTimeout(() => {
+            if (shouldDim) {
+              win.style.opacity = "0.35";
+              win.style.filter = "blur(0.3px)";
+              win.style.boxShadow = "none";
+            } else {
+              win.style.opacity = "1";
+              win.style.filter = "none";
+              win.style.boxShadow = `0 0 8px ${base}`;
+            }
+
+            setTimeout(() => {
+              win.style.opacity = "0.9";
+              win.style.filter = "none";
+              win.style.boxShadow = `0 0 6px ${base}`;
+            }, 1800);
+          }, i * 120);
+        });
+      }, 5000);
+    }
+
+    buildScene();
+    twinkleWindows();
+
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        buildScene();
+      }, 180);
+    });
+  </script>
+</body>
+</html>
+
+AFTER YOU BUILD IT:
+1. Make sure the skyline is only on the bottom part of the screen
+2. Make sure the top stays mostly empty gray
+3. Make sure the city is much quieter and less busy than a typical cyberpunk wallpaper
+4. Publish it and give me the live URL
+5. If needed, fine-tune the building density downward even more so it feels elegant and minimal

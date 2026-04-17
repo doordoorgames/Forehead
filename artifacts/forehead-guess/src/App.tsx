@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Admin from "@/pages/admin";
 import Room from "@/pages/room";
+import CyberpunkBackground from "@/components/CyberpunkBackground";
 
 const queryClient = new QueryClient();
 
@@ -24,9 +25,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
+        <CyberpunkBackground />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+        </div>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

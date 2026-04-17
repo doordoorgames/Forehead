@@ -131,7 +131,8 @@
     @apply border-border;
   }
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased text-foreground;
+    background: transparent;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-black tracking-tight;
@@ -153,4 +154,27 @@
 .landscape-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ── Cyberpunk parallax keyframes ── */
+@keyframes cbDriftBack {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-25%); }
+}
+@keyframes cbDriftMid {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-25%); }
+}
+@keyframes cbDriftFront {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-25%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="cbDrift"] {
+    animation: none !important;
+  }
+  .cb-win {
+    transition: none !important;
+  }
 }

@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'wouter';
 import { useGetRoom, useListCategories } from '@workspace/api-client-react';
-import { useGameSocket, RoomState, TurnState, GameResults } from '@/hooks/useGameSocket';
+import { useGameSocket, RoomState, RoundInfo, RevealInfo } from '@/hooks/useGameSocket';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Copy, Check, Users } from 'lucide-react';
@@ -21,13 +20,11 @@ export default function Room() {
     if (!code) return;
     const storedId = sessionStorage.getItem(`fg_playerId_${code}`);
     const storedName = sessionStorage.getItem(`fg_playerName_${code}`);
-    
     if (!storedId || !storedName) {
       toast({ title: 'Not in room', description: 'Please join the room first.' });
       setLocation('/');
       return;
     }
-    
     setPlayerId(Number(storedId));
     setPlayerName(storedName);
   }, [code, setLocation, toast]);
@@ -38,71 +35,101 @@ export default function Room() {
 
   const socket = useGameSocket(code || '', playerId, playerName);
 
-  if (!code || !playerId || !playerName) {
-    return null; // Redirecting
-  }
+  if (!code || !playerId || !playerName) return null;
 
   if (isRoomLoading && !socket.roomState) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-background">
-        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+        <Loader2 className="w-16 h-16 animate-spin text-primary" />
       </div>
     );
   }
 
-  const roomStatus = socket.roomState?.status || initialRoom?.status || 'waiting';
+  const roomState = socket.roomState || (initialRoom ? {
+    code: initialRoom.code,
+    status: initialRoom.status as RoomState['status'],
+    categoryId: initialRoom.categoryId ?? null,
+    categoryName: null,
+    players: initialRoom.players,
+  } : null);
+
+  const status = roomState?.status || 'waiting';
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground flex flex-col relative">
-      {socket.error && (
-        <div className="bg-destructive text-destructive-foreground p-2 text-center font-bold">
-          Connection Error: {socket.error}
-        </div>
-      )}
-      
-      {roomStatus === 'waiting' && (
-        <LobbyView 
-          roomCode={code} 
-          playerId={playerId}
-          roomState={socket.roomState} 
-          initialRoom={initialRoom}
-          setCategory={socket.setCategory}
-          startGame={socket.startGame}
-        />
-      )}
-      
-      {roomStatus === 'playing' && (
-        <GameView 
-          playerId={playerId}
-          roomState={socket.roomState}
-          turnState={socket.turnState}
-          onCorrect={socket.correct}
-          onPass={socket.pass}
-        />
-      )}
-      
-      {roomStatus === 'finished' && (
-        <ResultsView 
-          playerId={playerId}
-          roomState={socket.roomState}
-          results={socket.gameResults}
-          playAgain={socket.playAgain}
-        />
-      )}
-    </div>
+    <>
+      {/* Force landscape hint overlay */}
+      <div className="portrait-warning fixed inset-0 z-[9999] bg-black flex-col items-center justify-center text-white text-center p-8 hidden">
+        <div className="text-6xl mb-6">↻</div>
+        <p className="text-2xl font-bold">Rotate your phone</p>
+        <p className="text-lg text-white/70 mt-2">This game is played in landscape mode</p>
+      </div>
+
+      <div className="game-container min-h-[100dvh] bg-background text-foreground flex flex-col relative overflow-hidden">
+        {/* Error toast */}
+        {socket.error && (
+          <div className="fixed top-0 left-0 right-0 z-50 bg-destructive text-destructive-foreground p-3 text-center font-bold text-lg">
+            {socket.error}
+          </div>
+        )}
+
+        {status === 'waiting' && roomState && (
+          <LobbyView
+            roomCode={code}
+            playerId={playerId}
+            roomState={roomState}
+            setCategory={socket.setCategory}
+            startGame={socket.startGame}
+          />
+        )}
+
+        {status === 'countdown' && (
+          <CountdownView seconds={socket.countdownSeconds} />
+        )}
+
+        {status === 'word_display' && roomState && (
+          <WordDisplayView
+            playerId={playerId}
+            roomState={roomState}
+            roundInfo={socket.roundInfo}
+            onEndRound={socket.endRound}
+          />
+        )}
+
+        {status === 'reveal' && roomState && (
+          <RevealView
+            playerId={playerId}
+            roomState={roomState}
+            revealInfo={socket.revealInfo}
+            readyPlayerIds={socket.readyPlayerIds}
+            onPlayerReady={socket.playerReady}
+            onNextRound={socket.nextRound}
+            onEndGame={socket.endGame}
+          />
+        )}
+
+        {status === 'finished' && (
+          <FinishedView onGoHome={() => setLocation('/')} />
+        )}
+      </div>
+    </>
   );
 }
 
-function LobbyView({ roomCode, playerId, roomState, initialRoom, setCategory, startGame }: any) {
+// ─── LOBBY ────────────────────────────────────────────────────────────────────
+
+function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
+  roomCode: string;
+  playerId: number;
+  roomState: RoomState;
+  setCategory: (id: number) => void;
+  startGame: () => void;
+}) {
   const [copied, setCopied] = useState(false);
   const { data: categories } = useListCategories();
-  
-  const players = roomState?.players || initialRoom?.players || [];
-  const isHost = players.find((p: any) => p.id === playerId)?.isHost;
-  const currentCategoryId = roomState?.categoryId || initialRoom?.categoryId;
-  
-  const joinUrl = `${window.location.origin}/`; // We just send them to home to type the code
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(joinUrl)}&bgcolor=ffffff`;
+  const players = roomState.players;
+  const isHost = players.find(p => p.id === playerId)?.isHost ?? false;
+  const currentCategoryId = roomState.categoryId;
+  const canStart = players.filter(p => p.connected).length >= 2 && !!currentCategoryId;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(roomCode);
@@ -111,261 +138,279 @@ function LobbyView({ roomCode, playerId, roomState, initialRoom, setCategory, st
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-8">
-      <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="flex flex-col gap-6">
-          <Card className="border-4 border-foreground shadow-[8px_8px_0_0_hsl(var(--foreground))] rounded-3xl overflow-hidden text-center p-8 bg-card">
-            <h2 className="text-2xl font-bold mb-2">Room Code</h2>
-            <div className="text-6xl md:text-8xl font-black tracking-widest text-primary mb-6">
-              {roomCode}
-            </div>
-            
-            <div className="flex justify-center mb-6">
-              <div className="p-4 bg-white rounded-xl shadow-inner border-2 border-muted">
-                <img src={qrUrl} alt="QR Code to join" className="w-32 h-32 md:w-48 md:h-48 rounded" />
-              </div>
-            </div>
-
-            <Button size="lg" variant="outline" className="w-full text-lg h-14 rounded-2xl border-2" onClick={handleCopy}>
-              {copied ? <Check className="mr-2" /> : <Copy className="mr-2" />}
-              {copied ? 'Copied!' : 'Copy Code'}
-            </Button>
-          </Card>
-          
-          {isHost && (
-            <Card className="border-4 border-foreground shadow-[6px_6px_0_0_hsl(var(--foreground))] rounded-3xl bg-secondary/10">
-              <CardHeader>
-                <CardTitle>Game Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="font-bold text-lg block mb-2">Category</label>
-                  <Select 
-                    value={currentCategoryId ? String(currentCategoryId) : undefined} 
-                    onValueChange={(val) => setCategory(Number(val))}
-                  >
-                    <SelectTrigger className="h-14 text-lg rounded-xl border-2 border-foreground bg-background">
-                      <SelectValue placeholder="Select a category..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories?.map((c: any) => (
-                        <SelectItem key={c.id} value={String(c.id)} className="text-lg">
-                          {c.name} ({c.itemCount} items)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <Button 
-                  size="lg" 
-                  className="w-full h-16 text-xl rounded-2xl shadow-[0_6px_0_0_hsl(var(--primary-border))]"
-                  disabled={players.length < 2 || !currentCategoryId}
-                  onClick={startGame}
-                >
-                  Start Game
-                </Button>
-                {players.length < 2 && (
-                  <p className="text-center text-muted-foreground font-medium mt-2">Waiting for more players...</p>
-                )}
-                {!currentCategoryId && players.length >= 2 && (
-                  <p className="text-center text-destructive font-medium mt-2">Select a category to start</p>
-                )}
-              </CardContent>
-            </Card>
-          )}
-          
-          {!isHost && (
-            <Card className="border-4 border-foreground shadow-[6px_6px_0_0_hsl(var(--foreground))] rounded-3xl bg-secondary/10 flex items-center justify-center p-8">
-              <div className="text-center">
-                <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary mb-4" />
-                <h3 className="text-2xl font-bold">Waiting for host...</h3>
-                <p className="text-muted-foreground">The game will start soon</p>
-              </div>
-            </Card>
-          )}
+    <div className="flex-1 flex flex-col p-6 gap-6 max-w-2xl mx-auto w-full">
+      {/* Room code */}
+      <div className="text-center">
+        <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-1">Room Code</p>
+        <div className="flex items-center justify-center gap-3">
+          <span className="text-6xl font-black tracking-widest text-primary">{roomCode}</span>
+          <button onClick={handleCopy} className="p-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors">
+            {copied ? <Check className="w-6 h-6 text-green-500" /> : <Copy className="w-6 h-6" />}
+          </button>
         </div>
+      </div>
 
-        <div className="flex flex-col gap-6">
-          <Card className="border-4 border-foreground shadow-[8px_8px_0_0_hsl(var(--foreground))] rounded-3xl flex-1">
-            <CardHeader className="bg-muted border-b-4 border-foreground rounded-t-[1.3rem] flex flex-row items-center justify-between py-4">
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <Users className="w-6 h-6 text-primary" /> 
-                Players
-              </CardTitle>
-              <div className="bg-background px-4 py-1 rounded-full border-2 border-foreground font-bold">
-                {players.length}
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ul className="divide-y-4 divide-foreground/10">
-                {players.map((p: any) => (
-                  <li key={p.id} className="p-4 md:p-6 flex items-center justify-between text-xl font-bold">
-                    <div className="flex items-center gap-3">
-                      <span className={p.id === playerId ? 'text-primary' : ''}>
-                        {p.name} {p.id === playerId && '(You)'}
-                      </span>
-                    </div>
-                    {p.isHost && (
-                      <span className="bg-secondary text-secondary-foreground text-sm py-1 px-3 rounded-full border-2 border-foreground">
-                        Host
-                      </span>
-                    )}
-                  </li>
+      {/* Players */}
+      <div className="bg-card border-2 border-border rounded-2xl overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-border bg-muted/50">
+          <Users className="w-5 h-5 text-primary" />
+          <span className="font-bold text-lg">Players ({players.filter(p => p.connected).length})</span>
+        </div>
+        <ul className="divide-y divide-border">
+          {players.map(p => (
+            <li key={p.id} className="flex items-center justify-between px-4 py-3">
+              <span className={`text-xl font-bold ${p.id === playerId ? 'text-primary' : ''}`}>
+                {p.name} {p.id === playerId && <span className="text-base font-normal text-muted-foreground">(you)</span>}
+              </span>
+              {p.isHost && (
+                <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded-full border border-primary/30">
+                  HOST
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Host controls or waiting */}
+      {isHost ? (
+        <div className="space-y-4">
+          <div>
+            <p className="font-bold text-lg mb-2">Select Category</p>
+            <Select
+              value={currentCategoryId ? String(currentCategoryId) : undefined}
+              onValueChange={(val) => setCategory(Number(val))}
+            >
+              <SelectTrigger className="h-14 text-lg rounded-xl border-2">
+                <SelectValue placeholder="Choose a category..." />
+              </SelectTrigger>
+              <SelectContent>
+                {categories?.map((c: any) => (
+                  <SelectItem key={c.id} value={String(c.id)} className="text-lg">
+                    {c.name} · {c.itemCount} words
+                  </SelectItem>
                 ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
+              </SelectContent>
+            </Select>
+          </div>
 
-function GameView({ playerId, roomState, turnState, onCorrect, onPass }: any) {
-  if (!turnState) {
-    return <div className="flex-1 flex items-center justify-center font-bold text-2xl">Loading round...</div>;
-  }
+          <Button
+            size="lg"
+            className="w-full h-16 text-2xl font-black rounded-2xl"
+            disabled={!canStart}
+            onClick={startGame}
+          >
+            Start Game
+          </Button>
 
-  const isMyTurn = turnState.currentPlayerId === playerId;
-  const word = turnState.assignment?.itemText || '???';
-  const secondsLeft = turnState.secondsLeft || 0;
-
-  return (
-    <div className="flex-1 flex flex-col bg-background relative overflow-hidden">
-      {/* Timer Bar */}
-      <div className="h-4 w-full bg-muted absolute top-0 left-0 z-10">
-        <div 
-          className="h-full bg-primary transition-all duration-1000 ease-linear" 
-          style={{ width: `${(secondsLeft / (roomState?.turnDuration || 60)) * 100}%` }}
-        />
-      </div>
-
-      {isMyTurn ? (
-        <div className="flex-1 flex flex-col p-6 items-center justify-center relative">
-          <div className="absolute top-10 text-center animate-pulse">
-            <p className="text-lg md:text-xl font-bold text-muted-foreground uppercase tracking-widest bg-muted/50 px-6 py-2 rounded-full">
-              Hold phone to forehead
+          {!canStart && (
+            <p className="text-center text-muted-foreground font-medium">
+              {players.filter(p => p.connected).length < 2
+                ? 'Need at least 2 players'
+                : 'Select a category to start'}
             </p>
-          </div>
-          
-          <div className="text-[120px] md:text-[200px] font-black text-primary leading-none tabular-nums drop-shadow-lg">
-            {secondsLeft}
-          </div>
-          
-          <div className="absolute bottom-6 left-6 right-6 flex gap-4">
-            <Button 
-              size="lg" 
-              variant="destructive" 
-              className="flex-1 h-32 text-3xl md:text-4xl font-black rounded-[2rem] border-4 border-foreground shadow-[8px_8px_0_0_hsl(var(--foreground))]"
-              onClick={onPass}
-            >
-              PASS
-            </Button>
-            <Button 
-              size="lg" 
-              className="flex-1 h-32 text-3xl md:text-4xl font-black bg-[#4ade80] hover:bg-[#22c55e] text-black rounded-[2rem] border-4 border-foreground shadow-[8px_8px_0_0_hsl(var(--foreground))]"
-              onClick={onCorrect}
-            >
-              CORRECT!
-            </Button>
-          </div>
+          )}
         </div>
       ) : (
-        <div className="flex-1 flex flex-col p-6 items-center justify-center bg-secondary/20">
-          <div className="text-center mb-8">
-            <p className="text-2xl font-bold text-muted-foreground">
-              <span className="text-foreground underline decoration-wavy decoration-primary decoration-4">
-                {turnState.currentPlayerName}'s
-              </span> turn
-            </p>
-          </div>
-          
-          <div className="bg-card border-8 border-foreground p-8 md:p-16 rounded-[3rem] shadow-[12px_12px_0_0_hsl(var(--foreground))] w-full max-w-4xl text-center transform -rotate-2">
-            {turnState.assignment?.imageUrl && (
-              <img src={turnState.assignment.imageUrl} alt="assignment" className="max-h-64 mx-auto mb-8 rounded-xl border-4 border-foreground" />
-            )}
-            <h1 className="text-6xl md:text-8xl lg:text-[120px] font-black leading-tight tracking-tight uppercase break-words">
-              {word}
-            </h1>
-          </div>
-          
-          <div className="absolute bottom-10 right-10">
-            <div className="w-24 h-24 rounded-full border-4 border-foreground bg-primary flex items-center justify-center text-4xl font-black text-white shadow-[6px_6px_0_0_hsl(var(--foreground))]">
-              {secondsLeft}
-            </div>
-          </div>
+        <div className="flex flex-col items-center justify-center gap-3 p-8">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          <p className="text-xl font-bold">Waiting for host to start...</p>
+          {roomState.categoryName && (
+            <p className="text-muted-foreground">Category: <span className="font-bold text-foreground">{roomState.categoryName}</span></p>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function ResultsView({ playerId, roomState, results, playAgain }: any) {
-  if (!results) return null;
-  
-  const isHost = roomState?.players?.find((p: any) => p.id === playerId)?.isHost;
-  const sortedPlayers = [...results.players].sort((a, b) => b.score - a.score);
+// ─── COUNTDOWN ────────────────────────────────────────────────────────────────
+
+function CountdownView({ seconds }: { seconds: number }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center bg-background landscape-safe">
+      <p className="text-2xl md:text-3xl font-bold text-muted-foreground mb-4 tracking-wide text-center px-8">
+        Get ready — place phone on forehead
+      </p>
+      <div
+        className="text-[20vw] md:text-[15vw] font-black leading-none text-primary tabular-nums drop-shadow-xl"
+        style={{ fontSize: 'clamp(80px, 20vw, 220px)' }}
+      >
+        {seconds > 0 ? seconds : '!'}
+      </div>
+      <p className="text-xl text-muted-foreground mt-4 font-medium">Hold on tight!</p>
+    </div>
+  );
+}
+
+// ─── WORD DISPLAY ─────────────────────────────────────────────────────────────
+
+function WordDisplayView({ playerId, roomState, roundInfo, onEndRound }: {
+  playerId: number;
+  roomState: RoomState;
+  roundInfo: RoundInfo | null;
+  onEndRound: () => void;
+}) {
+  const isHost = roomState.players.find(p => p.id === playerId)?.isHost ?? false;
+  const word = roundInfo?.myWord ?? '...';
 
   return (
-    <div className="flex-1 p-6 flex flex-col items-center justify-center bg-background relative">
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-        {/* Confetti-like background dots */}
-        {[...Array(20)].map((_, i) => (
-          <div key={i} className="absolute rounded-full" style={{
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
-            width: `${Math.random() * 20 + 10}px`,
-            height: `${Math.random() * 20 + 10}px`,
-            backgroundColor: ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))'][Math.floor(Math.random() * 3)],
-            opacity: 0.3
-          }} />
-        ))}
+    <div className="flex-1 flex flex-col items-center justify-center bg-background relative landscape-safe select-none">
+      {/* Category label */}
+      {roundInfo?.categoryName && (
+        <p className="absolute top-4 left-0 right-0 text-center text-base font-bold uppercase tracking-widest text-muted-foreground">
+          {roundInfo.categoryName}
+        </p>
+      )}
+
+      {/* THE WORD — huge, designed for forehead mode */}
+      <div
+        className="font-black text-center text-foreground leading-none px-6 break-words"
+        style={{ fontSize: 'clamp(56px, 12vw, 160px)', maxWidth: '90vw' }}
+      >
+        {word}
       </div>
 
-      <div className="z-10 w-full max-w-3xl">
-        <h1 className="text-5xl md:text-7xl font-black text-center mb-10 transform -rotate-2">
-          Game <span className="text-primary">Over!</span>
-        </h1>
-        
-        <Card className="border-4 border-foreground shadow-[12px_12px_0_0_hsl(var(--foreground))] rounded-[2rem] overflow-hidden mb-8">
-          <div className="bg-foreground text-background py-4 px-6">
-            <h2 className="text-2xl font-bold">Final Scores</h2>
-          </div>
-          <CardContent className="p-0">
-            <ul className="divide-y-4 divide-foreground/10">
-              {sortedPlayers.map((p: any, idx: number) => (
-                <li key={p.id} className={`p-6 flex items-center justify-between ${idx === 0 ? 'bg-secondary/20' : ''}`}>
-                  <div className="flex items-center gap-4">
-                    <span className="text-3xl font-black text-muted-foreground w-8">{idx + 1}</span>
-                    <span className={`text-2xl font-bold ${p.id === playerId ? 'text-primary' : ''}`}>
-                      {p.name} {p.id === playerId && '(You)'}
-                    </span>
-                    {idx === 0 && <span className="text-2xl">👑</span>}
-                  </div>
-                  <div className="text-4xl font-black">
-                    {p.score} <span className="text-xl text-muted-foreground ml-1">pts</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-        
-        {isHost ? (
-          <Button 
-            size="lg" 
-            className="w-full h-20 text-3xl font-black rounded-2xl shadow-[0_8px_0_0_hsl(var(--primary-border))]"
-            onClick={playAgain}
+      {/* Admin-only End Round button, kept subtle at top-right */}
+      {isHost && (
+        <div className="absolute bottom-8 right-8">
+          <Button
+            size="lg"
+            variant="outline"
+            className="text-lg font-bold h-14 px-8 rounded-2xl border-2"
+            onClick={onEndRound}
           >
-            Play Again
+            Show Reveal →
           </Button>
-        ) : (
-          <div className="text-center p-6 bg-muted rounded-2xl border-4 border-foreground font-bold text-xl">
-            Waiting for host to start a new game...
-          </div>
-        )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── REVEAL ───────────────────────────────────────────────────────────────────
+
+function RevealView({ playerId, roomState, revealInfo, readyPlayerIds, onPlayerReady, onNextRound, onEndGame }: {
+  playerId: number;
+  roomState: RoomState;
+  revealInfo: RevealInfo | null;
+  readyPlayerIds: number[];
+  onPlayerReady: () => void;
+  onNextRound: () => void;
+  onEndGame: () => void;
+}) {
+  const isHost = roomState.players.find(p => p.id === playerId)?.isHost ?? false;
+  const connectedPlayers = roomState.players.filter(p => p.connected);
+  const allReady = connectedPlayers.every(p => readyPlayerIds.includes(p.id));
+  const iAmReady = readyPlayerIds.includes(playerId);
+
+  if (!revealInfo) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center bg-background p-6 gap-6 landscape-safe">
+      {/* Role badge */}
+      <div className={`px-6 py-2 rounded-full text-lg font-black uppercase tracking-widest border-2 ${
+        revealInfo.isImposter
+          ? 'bg-destructive/10 text-destructive border-destructive/40'
+          : 'bg-green-500/10 text-green-600 border-green-500/40'
+      }`}>
+        {revealInfo.isImposter ? '🕵️ IMPOSTER' : '✅ NORMAL PLAYER'}
+      </div>
+
+      {/* Word reveal */}
+      <div className="text-center">
+        <p className="text-base font-bold uppercase tracking-widest text-muted-foreground mb-1">Your word was</p>
+        <div
+          className="font-black text-foreground leading-none"
+          style={{ fontSize: 'clamp(40px, 8vw, 100px)' }}
+        >
+          {revealInfo.myWord}
+        </div>
+      </div>
+
+      {/* Imposter reveal */}
+      <div className="bg-card border-2 border-border rounded-2xl px-6 py-4 text-center w-full max-w-md space-y-2">
+        <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Round Info</p>
+        <p className="text-lg">
+          <span className="font-bold text-foreground">Imposter: </span>
+          <span className="text-destructive font-black">{revealInfo.imposterName}</span>
+        </p>
+        <p className="text-lg">
+          <span className="font-bold text-foreground">Normal word: </span>
+          <span className="font-bold">{revealInfo.normalWord}</span>
+        </p>
+        <p className="text-lg">
+          <span className="font-bold text-foreground">Imposter word: </span>
+          <span className="text-destructive font-bold">{revealInfo.imposterWord}</span>
+        </p>
+      </div>
+
+      {/* Ready counter */}
+      <p className="text-base text-muted-foreground font-medium">
+        {readyPlayerIds.length} / {connectedPlayers.length} players ready
+      </p>
+
+      {/* Player action */}
+      {!isHost && (
+        <Button
+          size="lg"
+          className="w-full max-w-sm h-14 text-xl font-black rounded-2xl"
+          disabled={iAmReady}
+          onClick={onPlayerReady}
+        >
+          {iAmReady ? '✓ Ready!' : 'Ready for next round'}
+        </Button>
+      )}
+
+      {/* Host actions */}
+      {isHost && (
+        <div className="flex gap-4 w-full max-w-sm">
+          <Button
+            size="lg"
+            variant="outline"
+            className="flex-1 h-14 text-lg font-bold rounded-2xl border-2"
+            onClick={onEndGame}
+          >
+            End Game
+          </Button>
+          <Button
+            size="lg"
+            className="flex-1 h-14 text-lg font-black rounded-2xl"
+            disabled={!allReady}
+            onClick={onNextRound}
+            title={!allReady ? 'Waiting for all players to be ready' : ''}
+          >
+            {allReady ? 'Next Round →' : `Waiting (${readyPlayerIds.length}/${connectedPlayers.length})`}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── FINISHED ─────────────────────────────────────────────────────────────────
+
+function FinishedView({ onGoHome }: { onGoHome: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onGoHome, 4000);
+    return () => clearTimeout(t);
+  }, [onGoHome]);
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center bg-background gap-6 p-8 text-center">
+      <div style={{ fontSize: 'clamp(48px, 10vw, 96px)' }} className="font-black">
+        Game Over!
+      </div>
+      <p className="text-xl text-muted-foreground">Returning to home...</p>
+      <Button size="lg" className="h-14 px-10 text-xl font-bold rounded-2xl" onClick={onGoHome}>
+        Go Home
+      </Button>
     </div>
   );
 }

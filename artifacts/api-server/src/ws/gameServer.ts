@@ -5,10 +5,9 @@ import {
   roomsTable,
   playersTable,
   categoryItemsTable,
-  turnsTable,
   categoriesTable,
 } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 interface WsClient {
@@ -18,23 +17,19 @@ interface WsClient {
   playerName: string | null;
 }
 
-interface GameTimer {
-  interval: NodeJS.Timeout;
-  secondsLeft: number;
+interface RoundState {
+  roundNumber: number;
+  imposterId: number;
+  imposterName: string;
+  normalWord: string;
+  imposterWord: string;
+  categoryName: string;
+  readyPlayerIds: number[];
 }
 
 const clients = new Map<WebSocket, WsClient>();
-const roomTimers = new Map<string, GameTimer>();
-const roomTurnState = new Map<string, {
-  currentPlayerId: number;
-  currentPlayerName: string;
-  turnNumber: number;
-  totalTurns: number;
-  itemText: string;
-  imageUrl: string | null;
-  turnId: number;
-  usedItemIds: number[];
-}>();
+const roomTimers = new Map<string, ReturnType<typeof setInterval>>();
+const roomRoundState = new Map<string, RoundState>();
 
 function broadcast(roomCode: string, message: object, excludeWs?: WebSocket) {
   const payload = JSON.stringify(message);
@@ -48,6 +43,14 @@ function broadcast(roomCode: string, message: object, excludeWs?: WebSocket) {
 function sendTo(ws: WebSocket, message: object) {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(message));
+  }
+}
+
+function clearRoomTimer(code: string) {
+  const t = roomTimers.get(code);
+  if (t) {
+    clearInterval(t);
+    roomTimers.delete(code);
   }
 }
 
@@ -65,8 +68,6 @@ async function getRoomState(code: string) {
     status: room.status,
     categoryId: room.categoryId ?? null,
     categoryName,
-    turnDuration: room.turnDuration,
-    roundCount: room.roundCount,
     players: players.map((p) => ({
       id: p.id,
       name: p.name,
@@ -77,175 +78,83 @@ async function getRoomState(code: string) {
   };
 }
 
-async function broadcastRoomUpdate(code: string) {
-  const state = await getRoomState(code);
-  if (!state) return;
-  broadcast(code, { type: "roomUpdate", payload: state });
-}
+async function startCountdown(roomCode: string) {
+  await db.update(roomsTable).set({ status: "countdown" }).where(eq(roomsTable.code, roomCode));
+  broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
 
-function clearRoomTimer(code: string) {
-  const t = roomTimers.get(code);
-  if (t) {
-    clearInterval(t.interval);
-    roomTimers.delete(code);
-  }
-}
+  let secondsLeft = 7;
+  broadcast(roomCode, { type: "countdownTick", payload: { secondsLeft } });
 
-async function endTurn(code: string, result: "correct" | "pass" | "timeout") {
-  clearRoomTimer(code);
-  const turnState = roomTurnState.get(code);
-  if (!turnState) return;
-
-  // Record turn result
-  await db.update(turnsTable)
-    .set({ result, endedAt: new Date() })
-    .where(eq(turnsTable.id, turnState.turnId));
-
-  if (result === "correct") {
-    await db.update(playersTable)
-      .set({ score: sql`${playersTable.score} + 1` })
-      .where(eq(playersTable.id, turnState.currentPlayerId));
-  }
-
-  const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, code) });
-  if (!room) return;
-  const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
-  const connectedPlayers = players.filter((p) => p.connected);
-
-  // Check if all turns done
-  const newTurnNumber = turnState.turnNumber + 1;
-  const totalTurns = connectedPlayers.length * room.roundCount;
-
-  if (newTurnNumber >= totalTurns) {
-    // Game over
-    await db.update(roomsTable).set({ status: "finished" }).where(eq(roomsTable.code, code));
-    roomTurnState.delete(code);
-
-    const updatedPlayers = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
-    const sorted = [...updatedPlayers].sort((a, b) => b.score - a.score);
-    broadcast(code, {
-      type: "gameEnd",
-      payload: {
-        players: sorted.map((p) => ({
-          id: p.id,
-          name: p.name,
-          score: p.score,
-          correctGuesses: p.score,
-          turnsPlayed: room.roundCount,
-        })),
-        totalTurns: newTurnNumber,
-        winnerId: sorted[0]?.id ?? null,
-      },
-    });
-    return;
-  }
-
-  // Next player
-  const currentIdx = connectedPlayers.findIndex((p) => p.id === turnState.currentPlayerId);
-  const nextIdx = (currentIdx + 1) % connectedPlayers.length;
-  const nextPlayer = connectedPlayers[nextIdx];
-
-  broadcast(code, {
-    type: "turnEnd",
-    payload: { result, nextPlayerId: nextPlayer.id },
-  });
-
-  // Start next turn after a short delay
-  setTimeout(() => startTurn(code, nextPlayer.id, nextPlayer.name, newTurnNumber, turnState.usedItemIds), 2000);
-}
-
-async function startTurn(
-  code: string,
-  playerId: number,
-  playerName: string,
-  turnNumber: number,
-  usedItemIds: number[]
-) {
-  const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, code) });
-  if (!room || room.status !== "playing") return;
-
-  const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
-  const connectedPlayers = players.filter((p) => p.connected);
-  const totalTurns = connectedPlayers.length * room.roundCount;
-
-  // Pick an item not yet used
-  let items = await db.select().from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, room.categoryId!));
-  const unusedItems = items.filter((i) => !usedItemIds.includes(i.id));
-  // If all items used, allow repeats but avoid the last used
-  const pool = unusedItems.length > 0 ? unusedItems : items;
-  const item = pool[Math.floor(Math.random() * pool.length)];
-  if (!item) {
-    logger.warn({ code }, "No items in category");
-    return;
-  }
-
-  const newUsedItemIds = [...usedItemIds, item.id];
-
-  // Create turn record
-  const [turn] = await db.insert(turnsTable).values({
-    roomId: room.id,
-    playerId,
-    itemId: item.id,
-    itemText: item.itemText,
-    imageUrl: item.imageUrl ?? null,
-    turnNumber,
-  }).returning();
-
-  roomTurnState.set(code, {
-    currentPlayerId: playerId,
-    currentPlayerName: playerName,
-    turnNumber,
-    totalTurns,
-    itemText: item.itemText,
-    imageUrl: item.imageUrl ?? null,
-    turnId: turn.id,
-    usedItemIds: newUsedItemIds,
-  });
-
-  // Send gameStarted/turnUpdate with assignment only to the current player
-  const turnPayload = {
-    currentPlayerId: playerId,
-    currentPlayerName: playerName,
-    turnNumber,
-    totalTurns,
-    assignment: null as { itemText: string; imageUrl: string | null } | null,
-    secondsLeft: room.turnDuration,
-  };
-
-  // Broadcast to everyone except the current player (without assignment)
-  for (const [ws, client] of clients.entries()) {
-    if (client.roomCode === code && ws.readyState === WebSocket.OPEN) {
-      if (client.playerId === playerId) {
-        // The guesser: DON'T show them the assignment
-        sendTo(ws, { type: "turnUpdate", payload: { ...turnPayload, assignment: null } });
-      } else {
-        // Others: show the assignment
-        sendTo(ws, {
-          type: "turnUpdate",
-          payload: {
-            ...turnPayload,
-            assignment: { itemText: item.itemText, imageUrl: item.imageUrl ?? null },
-          },
-        });
-      }
-    }
-  }
-
-  // Start countdown timer
-  let secondsLeft = room.turnDuration;
+  clearRoomTimer(roomCode);
   const interval = setInterval(async () => {
     secondsLeft--;
-    const timer = roomTimers.get(code);
-    if (timer) timer.secondsLeft = secondsLeft;
-
-    broadcast(code, { type: "timerTick", payload: { secondsLeft } });
+    broadcast(roomCode, { type: "countdownTick", payload: { secondsLeft } });
 
     if (secondsLeft <= 0) {
-      await endTurn(code, "timeout");
+      clearRoomTimer(roomCode);
+      await beginWordDisplay(roomCode);
     }
   }, 1000);
+  roomTimers.set(roomCode, interval);
+}
 
-  roomTimers.set(code, { interval, secondsLeft });
+async function beginWordDisplay(roomCode: string) {
+  const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+  if (!room || !room.categoryId) return;
+
+  const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
+  const connected = players.filter((p) => p.connected);
+  if (connected.length < 2) return;
+
+  const items = await db.select().from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, room.categoryId));
+  if (items.length < 2) {
+    broadcast(roomCode, { type: "error", payload: { message: "Need at least 2 items in category" } });
+    return;
+  }
+
+  const cat = await db.query.categoriesTable.findFirst({ where: eq(categoriesTable.id, room.categoryId) });
+
+  // Pick two distinct items for normal word and imposter word
+  const shuffled = [...items].sort(() => Math.random() - 0.5);
+  const normalItem = shuffled[0];
+  const imposterItem = shuffled[1];
+
+  // Pick random imposter player
+  const imposterPlayer = connected[Math.floor(Math.random() * connected.length)];
+
+  const existingRound = roomRoundState.get(roomCode);
+  const roundNumber = (existingRound?.roundNumber ?? 0) + 1;
+
+  const roundState: RoundState = {
+    roundNumber,
+    imposterId: imposterPlayer.id,
+    imposterName: imposterPlayer.name,
+    normalWord: normalItem.itemText,
+    imposterWord: imposterItem.itemText,
+    categoryName: cat?.name ?? "Unknown",
+    readyPlayerIds: [],
+  };
+  roomRoundState.set(roomCode, roundState);
+
+  await db.update(roomsTable).set({ status: "word_display" }).where(eq(roomsTable.code, roomCode));
+
+  // Send personalized roundStart to each player
+  for (const [ws, client] of clients.entries()) {
+    if (client.roomCode === roomCode && ws.readyState === WebSocket.OPEN && client.playerId) {
+      const isImposter = client.playerId === imposterPlayer.id;
+      sendTo(ws, {
+        type: "roundStart",
+        payload: {
+          roundNumber,
+          myWord: isImposter ? imposterItem.itemText : normalItem.itemText,
+          isImposter,
+          categoryName: cat?.name ?? "Unknown",
+        },
+      });
+    }
+  }
+
+  broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
 }
 
 async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
@@ -258,81 +167,72 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
 
   const { type, payload } = msg;
 
+  // ── JOIN ──
   if (type === "join") {
     const { roomCode, playerId, playerName } = payload as { roomCode: string; playerId: number; playerName: string };
     client.roomCode = roomCode;
     client.playerId = Number(playerId);
     client.playerName = playerName;
 
-    // Mark player as connected
     await db.update(playersTable).set({ connected: true }).where(eq(playersTable.id, Number(playerId)));
 
-    // Send current state
     const state = await getRoomState(roomCode);
-    if (state) {
-      sendTo(ws, { type: "roomUpdate", payload: state });
+    if (state) sendTo(ws, { type: "roomUpdate", payload: state });
+
+    // If in word_display, resend their word
+    const rs = roomRoundState.get(roomCode);
+    if (rs && state?.status === "word_display") {
+      const isImposter = client.playerId === rs.imposterId;
+      sendTo(ws, {
+        type: "roundStart",
+        payload: {
+          roundNumber: rs.roundNumber,
+          myWord: isImposter ? rs.imposterWord : rs.normalWord,
+          isImposter,
+          categoryName: rs.categoryName,
+        },
+      });
     }
 
-    // If game is playing, send current turn state
-    const ts = roomTurnState.get(roomCode);
-    if (ts && state?.status === "playing") {
-      const timer = roomTimers.get(roomCode);
-      const secondsLeft = timer?.secondsLeft ?? 0;
-      if (client.playerId === ts.currentPlayerId) {
-        sendTo(ws, { type: "turnUpdate", payload: { ...ts, assignment: null, secondsLeft } });
-      } else {
-        sendTo(ws, {
-          type: "turnUpdate",
-          payload: {
-            ...ts,
-            assignment: { itemText: ts.itemText, imageUrl: ts.imageUrl },
-            secondsLeft,
-          },
-        });
-      }
+    // If in reveal, resend reveal info
+    if (rs && state?.status === "reveal") {
+      const isImposter = client.playerId === rs.imposterId;
+      sendTo(ws, {
+        type: "revealInfo",
+        payload: {
+          myWord: isImposter ? rs.imposterWord : rs.normalWord,
+          isImposter,
+          imposterName: rs.imposterName,
+          normalWord: rs.normalWord,
+          imposterWord: rs.imposterWord,
+          categoryName: rs.categoryName,
+          roundNumber: rs.roundNumber,
+          readyPlayerIds: rs.readyPlayerIds,
+        },
+      });
     }
 
-    // Broadcast join
-    broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
+    broadcast(roomCode, { type: "roomUpdate", payload: state });
     return;
   }
 
   if (!client.roomCode) return;
 
+  // ── SET CATEGORY ──
   if (type === "setCategory") {
     const { roomCode, categoryId } = payload as { roomCode: string; categoryId: number };
     const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
     if (!room) return;
-    // Only host can change category
     const host = await db.query.playersTable.findFirst({
       where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)),
     });
     if (host?.id !== client.playerId) return;
-
     await db.update(roomsTable).set({ categoryId: Number(categoryId) }).where(eq(roomsTable.code, roomCode));
     broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
     return;
   }
 
-  if (type === "setOptions") {
-    const { roomCode, turnDuration, roundCount } = payload as { roomCode: string; turnDuration?: number; roundCount?: number };
-    const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
-    if (!room) return;
-    const host = await db.query.playersTable.findFirst({
-      where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)),
-    });
-    if (host?.id !== client.playerId) return;
-
-    const updates: Record<string, unknown> = {};
-    if (turnDuration) updates.turnDuration = Number(turnDuration);
-    if (roundCount) updates.roundCount = Number(roundCount);
-    if (Object.keys(updates).length > 0) {
-      await db.update(roomsTable).set(updates).where(eq(roomsTable.code, roomCode));
-      broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
-    }
-    return;
-  }
-
+  // ── START GAME ──
   if (type === "startGame") {
     const { roomCode } = payload as { roomCode: string };
     const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
@@ -341,49 +241,122 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
       where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)),
     });
     if (host?.id !== client.playerId) return;
-
     if (!room.categoryId) {
       sendTo(ws, { type: "error", payload: { message: "Please select a category first" } });
       return;
     }
-
     const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
     const connected = players.filter((p) => p.connected);
     if (connected.length < 2) {
-      sendTo(ws, { type: "error", payload: { message: "Need at least 2 players" } });
+      sendTo(ws, { type: "error", payload: { message: "Need at least 2 players to start" } });
+      return;
+    }
+    roomRoundState.delete(roomCode);
+    await startCountdown(roomCode);
+    return;
+  }
+
+  // ── END ROUND (admin triggers reveal) ──
+  if (type === "endRound") {
+    const { roomCode } = payload as { roomCode: string };
+    const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+    if (!room || room.status !== "word_display") return;
+    const host = await db.query.playersTable.findFirst({
+      where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)),
+    });
+    if (host?.id !== client.playerId) return;
+
+    await db.update(roomsTable).set({ status: "reveal" }).where(eq(roomsTable.code, roomCode));
+
+    const rs = roomRoundState.get(roomCode);
+    if (!rs) return;
+
+    // Send personalized reveal to each player
+    for (const [ws2, c] of clients.entries()) {
+      if (c.roomCode === roomCode && ws2.readyState === WebSocket.OPEN && c.playerId) {
+        const isImposter = c.playerId === rs.imposterId;
+        sendTo(ws2, {
+          type: "revealInfo",
+          payload: {
+            myWord: isImposter ? rs.imposterWord : rs.normalWord,
+            isImposter,
+            imposterName: rs.imposterName,
+            normalWord: rs.normalWord,
+            imposterWord: rs.imposterWord,
+            categoryName: rs.categoryName,
+            roundNumber: rs.roundNumber,
+            readyPlayerIds: rs.readyPlayerIds,
+          },
+        });
+      }
+    }
+
+    broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
+    return;
+  }
+
+  // ── PLAYER READY ──
+  if (type === "playerReady") {
+    const { roomCode } = payload as { roomCode: string };
+    const rs = roomRoundState.get(roomCode);
+    if (!rs || !client.playerId) return;
+
+    if (!rs.readyPlayerIds.includes(client.playerId)) {
+      rs.readyPlayerIds.push(client.playerId);
+    }
+
+    broadcast(roomCode, {
+      type: "readyUpdate",
+      payload: { readyPlayerIds: rs.readyPlayerIds },
+    });
+    return;
+  }
+
+  // ── NEXT ROUND (admin) ──
+  if (type === "nextRound") {
+    const { roomCode } = payload as { roomCode: string };
+    const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+    if (!room || room.status !== "reveal") return;
+    const host = await db.query.playersTable.findFirst({
+      where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)),
+    });
+    if (host?.id !== client.playerId) return;
+
+    // Require all connected players to be ready
+    const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
+    const connected = players.filter((p) => p.connected);
+    const rs = roomRoundState.get(roomCode);
+    const readyIds = rs?.readyPlayerIds ?? [];
+    const allReady = connected.every((p) => readyIds.includes(p.id));
+
+    if (!allReady) {
+      sendTo(ws, { type: "error", payload: { message: "Not all players are ready yet" } });
       return;
     }
 
-    // Reset scores
-    for (const p of players) {
-      await db.update(playersTable).set({ score: 0 }).where(eq(playersTable.id, p.id));
-    }
+    await startCountdown(roomCode);
+    return;
+  }
 
-    await db.update(roomsTable).set({ status: "playing" }).where(eq(roomsTable.code, roomCode));
+  // ── END GAME (admin) ──
+  if (type === "endGame") {
+    const { roomCode } = payload as { roomCode: string };
+    const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+    if (!room) return;
+    const host = await db.query.playersTable.findFirst({
+      where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)),
+    });
+    if (host?.id !== client.playerId) return;
+
+    clearRoomTimer(roomCode);
+    roomRoundState.delete(roomCode);
+    await db.update(roomsTable).set({ status: "finished" }).where(eq(roomsTable.code, roomCode));
+    broadcast(roomCode, { type: "gameEnd", payload: {} });
     broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
-
-    // Start first turn
-    const firstPlayer = connected[0];
-    await startTurn(roomCode, firstPlayer.id, firstPlayer.name, 0, []);
     return;
   }
 
-  if (type === "correct") {
-    const { roomCode } = payload as { roomCode: string };
-    const ts = roomTurnState.get(roomCode);
-    if (!ts || client.playerId !== ts.currentPlayerId) return;
-    await endTurn(roomCode, "correct");
-    return;
-  }
-
-  if (type === "pass") {
-    const { roomCode } = payload as { roomCode: string };
-    const ts = roomTurnState.get(roomCode);
-    if (!ts || client.playerId !== ts.currentPlayerId) return;
-    await endTurn(roomCode, "pass");
-    return;
-  }
-
+  // ── PLAY AGAIN (reset to lobby) ──
   if (type === "playAgain") {
     const { roomCode } = payload as { roomCode: string };
     const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
@@ -394,12 +367,8 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     if (host?.id !== client.playerId) return;
 
     clearRoomTimer(roomCode);
-    roomTurnState.delete(roomCode);
-
-    // Reset room to waiting
+    roomRoundState.delete(roomCode);
     await db.update(roomsTable).set({ status: "waiting" }).where(eq(roomsTable.code, roomCode));
-    await db.update(playersTable).set({ score: 0 }).where(eq(playersTable.roomId, room.id));
-
     broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
     return;
   }
@@ -409,12 +378,7 @@ export function setupWebSocketServer(server: import("http").Server) {
   const wss = new WebSocketServer({ server, path: "/ws" });
 
   wss.on("connection", (ws: WebSocket, _req: IncomingMessage) => {
-    const client: WsClient = {
-      ws,
-      roomCode: null,
-      playerId: null,
-      playerName: null,
-    };
+    const client: WsClient = { ws, roomCode: null, playerId: null, playerName: null };
     clients.set(ws, client);
 
     ws.on("message", (data) => {
@@ -427,10 +391,8 @@ export function setupWebSocketServer(server: import("http").Server) {
       if (client.playerId && client.roomCode) {
         try {
           await db.update(playersTable).set({ connected: false }).where(eq(playersTable.id, client.playerId));
-          // Check if host left
           const player = await db.query.playersTable.findFirst({ where: eq(playersTable.id, client.playerId) });
           if (player?.isHost) {
-            // Transfer host to first other connected player
             const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, client.roomCode) });
             if (room) {
               const others = await db.select().from(playersTable).where(
@@ -443,9 +405,7 @@ export function setupWebSocketServer(server: import("http").Server) {
             }
           }
           const state = await getRoomState(client.roomCode);
-          if (state) {
-            broadcast(client.roomCode, { type: "roomUpdate", payload: state });
-          }
+          if (state) broadcast(client.roomCode, { type: "roomUpdate", payload: state });
         } catch (err) {
           logger.error({ err }, "Error handling WS close");
         }

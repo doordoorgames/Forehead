@@ -1,0 +1,113 @@
+Build a real-time browser-based multiplayer party game with the following EXACT logic. Do NOT simplify anything. Replace existing logic fully if needed.
+
+GAME OVERVIEW:
+- Players join via a 5-digit room code
+- One player is ADMIN (creator)
+- Others are PLAYERS
+- Game is played on phones in LANDSCAPE mode
+
+-------------------------------------
+
+LOBBY:
+- Show room code at top
+- Show list of connected players (auto update)
+- Admin sees "Start Game" button
+- Players see "Waiting for admin..."
+
+-------------------------------------
+
+ROUND FLOW (SYNCED FOR ALL PLAYERS):
+
+1) COUNTDOWN PHASE:
+- When admin clicks "Start Game", ALL players enter countdown screen
+- Show message: "Get ready - place phone on forehead"
+- Show countdown timer: 7 → 0 seconds
+- MUST be synchronized across all devices (same time)
+
+2) WORD ASSIGNMENT (IMPORTANT):
+- Admin selects a CATEGORY before starting (e.g. Household Items)
+- System randomly selects:
+  - ONE IMPOSTER player
+  - ONE IMPOSTER WORD
+  - ONE NORMAL WORD
+- All normal players get SAME word
+- Imposter gets DIFFERENT word (same category)
+
+3) WORD DISPLAY PHASE:
+- After countdown ends, show the word FULL SCREEN
+- BIG bold text centered
+- Designed to be readable when phone is facing OUTWARD (forehead mode)
+- No buttons visible
+- No controls during this phase
+
+-------------------------------------
+
+PLAY PHASE:
+- No UI interaction
+- Players speak and guess in real life
+- This phase has NO buttons, NO skip, NO correct
+
+-------------------------------------
+
+REVEAL PHASE:
+- When players finish, they flip phone toward themselves
+- Show:
+  "Your word: ______"
+  "Role: Imposter / Normal"
+
+-------------------------------------
+
+READY SYSTEM:
+
+PLAYERS:
+- Button: "Ready for next round"
+
+ADMIN:
+- Button: "Next Round"
+- Button: "End Game"
+
+LOGIC:
+- Admin CANNOT start next round until ALL players clicked "Ready"
+
+-------------------------------------
+
+NEXT ROUND:
+- Repeat same flow
+- Re-randomize imposter and words
+
+-------------------------------------
+
+END GAME:
+- Admin clicks "End Game"
+- All players return to homepage
+
+-------------------------------------
+
+TECH REQUIREMENTS:
+- Use simple backend (JSONBin or similar) for shared state
+- Real-time updates (polling or websocket)
+- Ensure countdown and reveal are synchronized across players
+- Mobile-first design (1080x1920 safe area)
+- Force landscape layout
+
+-------------------------------------
+
+UI REQUIREMENTS:
+- Minimal UI
+- Large bold text
+- Centered elements
+- No clutter
+- TikTok-safe layout (avoid bottom UI area)
+
+-------------------------------------
+
+CRITICAL RULES:
+- NO skip buttons
+- NO correct buttons
+- NO individual control during gameplay
+- ONLY admin controls round start/end
+- ALL players must see same timing
+
+-------------------------------------
+
+Build complete working version and deploy.

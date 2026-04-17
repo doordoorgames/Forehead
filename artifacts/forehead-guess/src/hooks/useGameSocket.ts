@@ -2,11 +2,9 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 export interface RoomState {
   code: string;
-  status: 'waiting' | 'playing' | 'finished';
+  status: 'waiting' | 'countdown' | 'word_display' | 'reveal' | 'finished';
   categoryId: number | null;
   categoryName: string | null;
-  turnDuration: number;
-  roundCount: number;
   players: Array<{
     id: number;
     name: string;
@@ -16,26 +14,31 @@ export interface RoomState {
   }>;
 }
 
-export interface TurnState {
-  currentPlayerId: number;
-  currentPlayerName: string;
-  turnNumber: number;
-  totalTurns: number;
-  assignment: { itemText: string; imageUrl: string | null } | null;
-  secondsLeft: number;
+export interface RoundInfo {
+  roundNumber: number;
+  myWord: string;
+  isImposter: boolean;
+  categoryName: string;
 }
 
-export interface GameResults {
-  players: Array<{ id: number; name: string; score: number; correctGuesses: number; turnsPlayed: number }>;
-  totalTurns: number;
-  winnerId: number;
+export interface RevealInfo {
+  myWord: string;
+  isImposter: boolean;
+  imposterName: string;
+  normalWord: string;
+  imposterWord: string;
+  categoryName: string;
+  roundNumber: number;
+  readyPlayerIds: number[];
 }
 
 interface SocketState {
   isConnected: boolean;
   roomState: RoomState | null;
-  turnState: TurnState | null;
-  gameResults: GameResults | null;
+  countdownSeconds: number;
+  roundInfo: RoundInfo | null;
+  revealInfo: RevealInfo | null;
+  readyPlayerIds: number[];
   error: string | null;
 }
 
@@ -43,8 +46,10 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
   const [state, setState] = useState<SocketState>({
     isConnected: false,
     roomState: null,
-    turnState: null,
-    gameResults: null,
+    countdownSeconds: 7,
+    roundInfo: null,
+    revealInfo: null,
+    readyPlayerIds: [],
     error: null,
   });
 
@@ -64,10 +69,7 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     socket.onopen = () => {
       reconnectAttemptsRef.current = 0;
       setState(s => ({ ...s, isConnected: true, error: null }));
-      socket.send(JSON.stringify({
-        type: 'join',
-        payload: { roomCode, playerId, playerName }
-      }));
+      socket.send(JSON.stringify({ type: 'join', payload: { roomCode, playerId, playerName } }));
     };
 
     socket.onmessage = (event) => {
@@ -77,23 +79,28 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
           case 'roomUpdate':
             setState(s => ({ ...s, roomState: msg.payload }));
             break;
-          case 'turnUpdate':
-            setState(s => ({ ...s, turnState: msg.payload }));
+          case 'countdownTick':
+            setState(s => ({ ...s, countdownSeconds: msg.payload.secondsLeft }));
             break;
-          case 'timerTick':
+          case 'roundStart':
+            setState(s => ({ ...s, roundInfo: msg.payload, revealInfo: null, readyPlayerIds: [] }));
+            break;
+          case 'revealInfo':
             setState(s => ({
               ...s,
-              turnState: s.turnState ? { ...s.turnState, secondsLeft: msg.payload.secondsLeft } : null
+              revealInfo: msg.payload,
+              readyPlayerIds: msg.payload.readyPlayerIds ?? [],
             }));
             break;
-          case 'turnEnd':
-            // Next turn will arrive via turnUpdate after server delay
+          case 'readyUpdate':
+            setState(s => ({ ...s, readyPlayerIds: msg.payload.readyPlayerIds ?? [] }));
             break;
           case 'gameEnd':
-            setState(s => ({ ...s, gameResults: msg.payload, turnState: null }));
+            setState(s => ({ ...s, roundInfo: null, revealInfo: null, readyPlayerIds: [] }));
             break;
           case 'error':
             setState(s => ({ ...s, error: msg.payload.message }));
+            setTimeout(() => setState(s => ({ ...s, error: null })), 3000);
             break;
         }
       } catch (err) {
@@ -103,7 +110,6 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
 
     socket.onclose = () => {
       setState(s => ({ ...s, isConnected: false }));
-      // Auto-reconnect with exponential backoff
       if (shouldReconnectRef.current && roomCode && playerId && playerName) {
         const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 15000);
         reconnectAttemptsRef.current++;
@@ -114,7 +120,6 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     };
 
     socket.onerror = () => {
-      // onerror is always followed by onclose, which handles reconnect
       setState(s => ({ ...s, error: 'Connection lost. Reconnecting...' }));
     };
   }, [roomCode, playerId, playerName]);
@@ -124,7 +129,6 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     shouldReconnectRef.current = true;
     reconnectAttemptsRef.current = 0;
     connect();
-
     return () => {
       shouldReconnectRef.current = false;
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
@@ -143,20 +147,24 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     sendMessage('setCategory', { roomCode, categoryId });
   }, [roomCode, sendMessage]);
 
-  const setOptions = useCallback((options: { turnDuration?: number; roundCount?: number }) => {
-    sendMessage('setOptions', { roomCode, ...options });
-  }, [roomCode, sendMessage]);
-
   const startGame = useCallback(() => {
     sendMessage('startGame', { roomCode });
   }, [roomCode, sendMessage]);
 
-  const correct = useCallback(() => {
-    sendMessage('correct', { roomCode });
+  const endRound = useCallback(() => {
+    sendMessage('endRound', { roomCode });
   }, [roomCode, sendMessage]);
 
-  const pass = useCallback(() => {
-    sendMessage('pass', { roomCode });
+  const playerReady = useCallback(() => {
+    sendMessage('playerReady', { roomCode });
+  }, [roomCode, sendMessage]);
+
+  const nextRound = useCallback(() => {
+    sendMessage('nextRound', { roomCode });
+  }, [roomCode, sendMessage]);
+
+  const endGame = useCallback(() => {
+    sendMessage('endGame', { roomCode });
   }, [roomCode, sendMessage]);
 
   const playAgain = useCallback(() => {
@@ -166,10 +174,11 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
   return {
     ...state,
     setCategory,
-    setOptions,
     startGame,
-    correct,
-    pass,
+    endRound,
+    playerReady,
+    nextRound,
+    endGame,
     playAgain,
   };
 }

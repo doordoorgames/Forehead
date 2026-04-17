@@ -1,222 +1,219 @@
 import { useEffect, useRef } from 'react';
 
-const PALETTE = {
-  building: ['#111215', '#17181c', '#1d1f24'],
-  neon: ['#ff4fa3', '#ff7a2f', '#ff4d4d', '#39d5ff'],
-};
+const SKY = '#13141a';
+const BUILDING_COLORS = ['#0c0d11', '#0f1014', '#111318', '#0a0b0f'];
+const NEON = ['#ff4fa3', '#39d5ff', '#ffd000']; // pink, blue, yellow
+const SCROLL_PX_PER_SEC = 60; // pixels per second
 
 function rand(min: number, max: number) { return Math.random() * (max - min) + min; }
 function randInt(min: number, max: number) { return Math.floor(rand(min, max + 1)); }
 function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
 
-interface LayerConfig {
-  widthMin: number; widthMax: number;
-  heightMin: number; heightMax: number;
-  gapMin: number; gapMax: number;
-  lightChance: number;
-  roofChance: number;
-  lampCount: number;
+interface Window_ { x: number; y: number; w: number; h: number; color: string; lit: boolean; }
+interface Building {
+  x: number;
+  w: number;
+  h: number;
+  color: string;
+  windows: Window_[];
 }
 
-function createSegment(config: LayerConfig): HTMLDivElement {
-  const segment = document.createElement('div');
-  segment.style.cssText = 'position:relative;width:50%;height:100%;flex-shrink:0;';
+function makeBuilding(startX: number, cityH: number): Building {
+  const cols = randInt(3, 5);
+  const floors = randInt(3, 20);
 
-  const width = window.innerWidth || 1400;
-  let x = -40;
+  const floorH = cityH / 22;                     // scale so 20-floor bldg ≈ 90% city height
+  const winH = floorH * 0.55;
+  const winGapY = floorH * 0.45;
+  const winW = winH * 1.5;
+  const winGapX = winH * 0.7;
+  const padX = winH * 1.2;
+  const padTop = winH * 1.2;
+  const padBot = winH * 0.6;
 
-  while (x < width + 120) {
-    const b = document.createElement('div');
-    const w = randInt(config.widthMin, config.widthMax);
-    const h = randInt(config.heightMin, config.heightMax);
-    b.style.cssText = `position:absolute;bottom:0;overflow:hidden;left:${x}px;width:${w}px;height:${h}px;background:${pick(PALETTE.building)};`;
+  const w = padX * 2 + cols * winW + (cols - 1) * winGapX;
+  const h = padTop + floors * winH + (floors - 1) * winGapY + padBot;
 
-    if (Math.random() < config.roofChance) {
-      const roof = document.createElement('div');
-      roof.style.cssText = `position:absolute;background:rgba(255,255,255,0.08);opacity:0.4;width:${randInt(2, 4)}px;height:${randInt(10, 24)}px;left:${randInt(6, Math.max(7, w - 10))}px;bottom:${h - 2}px;`;
-      segment.appendChild(roof);
+  const windows: Window_[] = [];
+  for (let row = 0; row < floors; row++) {
+    for (let col = 0; col < cols; col++) {
+      const lit = Math.random() < 0.62;
+      windows.push({
+        x: padX + col * (winW + winGapX),
+        y: padTop + row * (winH + winGapY),
+        w: winW,
+        h: winH,
+        color: lit ? pick(NEON) : 'rgba(0,0,0,0)',
+        lit,
+      });
     }
-
-    const cols = Math.max(2, Math.floor(w / randInt(14, 18)));
-    const rows = Math.max(2, Math.floor(h / randInt(18, 24)));
-    const padX = randInt(6, 10);
-    const padY = randInt(8, 12);
-    const gapX = randInt(6, 10);
-    const gapY = randInt(7, 11);
-    const ww = Math.max(3, Math.floor((w - padX * 2 - gapX * (cols - 1)) / cols));
-    const wh = randInt(4, 8);
-
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        const win = document.createElement('div');
-        const lit = Math.random() < config.lightChance;
-        const color = lit ? pick(PALETTE.neon) : 'rgba(255,255,255,0.04)';
-        const blur = color === '#39d5ff' ? 7 : 6;
-        win.style.cssText = `
-          position:absolute;border-radius:1px;
-          width:${ww}px;height:${wh}px;
-          left:${padX + col * (ww + gapX)}px;top:${padY + row * (wh + gapY)}px;
-          background:${color};
-          transition:opacity 2.8s ease,filter 2.8s ease,box-shadow 2.8s ease;
-          ${lit ? `opacity:0.9;box-shadow:0 0 ${blur}px ${color};` : 'opacity:0.22;'}
-        `;
-        if (lit) {
-          win.className = 'cb-win';
-          win.dataset.lit = '1';
-          win.dataset.base = color;
-        } else {
-          win.dataset.lit = '0';
-        }
-        b.appendChild(win);
-      }
-    }
-
-    segment.appendChild(b);
-    x += w + randInt(config.gapMin, config.gapMax);
   }
 
-  for (let i = 0; i < config.lampCount; i++) {
-    const lamp = document.createElement('div');
-    const glow = pick(['#ff4fa3', '#ff7a2f', '#ff4d4d']);
-    const lampH = randInt(16, 34);
-    lamp.style.cssText = `position:absolute;bottom:10px;left:${randInt(0, width)}px;width:4px;height:${lampH}px;background:rgba(255,255,255,0.08);transform:rotate(${rand(-8, 8)}deg);transform-origin:bottom center;`;
-    const head = document.createElement('div');
-    head.style.cssText = `position:absolute;left:50%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;bottom:100%;opacity:0.9;background:${glow};box-shadow:0 0 10px ${glow},0 0 18px ${glow};`;
-    lamp.appendChild(head);
-    segment.appendChild(lamp);
-  }
-
-  return segment;
+  return {
+    x: startX,
+    w,
+    h,
+    color: pick(BUILDING_COLORS),
+    windows,
+  };
 }
 
-function fillTrack(track: HTMLElement, config: LayerConfig) {
-  track.innerHTML = '';
-  track.style.cssText = 'position:absolute;left:0;bottom:0;width:200%;height:100%;display:flex;';
-  track.appendChild(createSegment(config));
-  track.appendChild(createSegment(config));
+function generateStrip(screenW: number, cityH: number): Building[] {
+  const buildings: Building[] = [];
+  let x = 0;
+  while (x < screenW * 2.5) {
+    const b = makeBuilding(x, cityH);
+    buildings.push(b);
+    x += b.w + randInt(2, 10);
+  }
+  return buildings;
+}
+
+function drawBuilding(ctx: CanvasRenderingContext2D, b: Building, offsetX: number, baseY: number) {
+  const bx = b.x - offsetX;
+  const by = baseY - b.h;
+
+  ctx.fillStyle = b.color;
+  ctx.fillRect(bx, by, b.w, b.h);
+
+  for (const win of b.windows) {
+    if (!win.lit) continue;
+    const wx = bx + win.x;
+    const wy = by + win.y;
+
+    // Glow
+    ctx.save();
+    ctx.shadowColor = win.color;
+    ctx.shadowBlur = win.h * 2.5;
+    ctx.fillStyle = win.color;
+    ctx.globalAlpha = 0.85;
+    ctx.fillRect(wx, wy, win.w, win.h);
+    ctx.restore();
+  }
 }
 
 export default function CyberpunkBackground() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const twinkleRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const resizeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
+    const ctx = canvas.getContext('2d')!;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    const backTrack = container.querySelector('#cb-back-track') as HTMLElement;
-    const midTrack = container.querySelector('#cb-mid-track') as HTMLElement;
-    const frontTrack = container.querySelector('#cb-front-track') as HTMLElement;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let animFrame: number;
+    let lastTime = 0;
+    let offsetX = 0;
+    let buildings: Building[] = [];
+    let stripEndX = 0;
 
-    function build() {
-      fillTrack(backTrack, { widthMin:70, widthMax:150, heightMin:50, heightMax:120, gapMin:10, gapMax:26, lightChance:0.04, roofChance:0.1, lampCount:0 });
-      fillTrack(midTrack, { widthMin:80, widthMax:180, heightMin:70, heightMax:160, gapMin:12, gapMax:28, lightChance:0.07, roofChance:0.14, lampCount:2 });
-      fillTrack(frontTrack, { widthMin:90, widthMax:210, heightMin:80, heightMax:175, gapMin:14, gapMax:30, lightChance:0.10, roofChance:0.18, lampCount:4 });
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.scale(dpr, dpr);
 
-      if (!reduceMotion) startTwinkle();
+      const cityH = window.innerHeight * 0.80;
+      buildings = generateStrip(window.innerWidth, cityH);
+      stripEndX = buildings[buildings.length - 1].x + buildings[buildings.length - 1].w;
+      offsetX = 0;
     }
 
-    function startTwinkle() {
-      if (twinkleRef.current) clearInterval(twinkleRef.current);
-      twinkleRef.current = setInterval(() => {
-        const litWindows = [...container.querySelectorAll<HTMLElement>('.cb-win[data-lit="1"]')];
-        if (!litWindows.length) return;
-        const batch = litWindows.sort(() => 0.5 - Math.random()).slice(0, Math.max(3, Math.floor(litWindows.length * 0.015)));
-        batch.forEach((win, i) => {
-          const base = win.dataset.base || '#ff7a2f';
-          const dim = Math.random() < 0.65;
-          setTimeout(() => {
-            win.style.opacity = dim ? '0.3' : '1';
-            win.style.boxShadow = dim ? 'none' : `0 0 8px ${base}`;
-            setTimeout(() => {
-              win.style.opacity = '0.9';
-              win.style.boxShadow = `0 0 6px ${base}`;
-            }, 1800);
-          }, i * 120);
-        });
-      }, 5000);
+    function addMoreBuildings() {
+      const cityH = window.innerHeight * 0.80;
+      const screenW = window.innerWidth;
+      // Add more when near the end
+      while (stripEndX - offsetX < screenW + 400) {
+        const b = makeBuilding(stripEndX, cityH);
+        buildings.push(b);
+        stripEndX += b.w + randInt(2, 10);
+      }
+      // Remove buildings that are far off-screen to the left
+      while (buildings.length > 0 && buildings[0].x + buildings[0].w < offsetX - 100) {
+        buildings.shift();
+      }
     }
 
-    build();
+    function draw(timestamp: number) {
+      const delta = Math.min((timestamp - lastTime) / 1000, 0.05); // seconds, capped
+      lastTime = timestamp;
 
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      const cityH = H * 0.80;
+      const skyH = H * 0.20;
+      const baseY = H;
+
+      if (!reduceMotion) {
+        offsetX += SCROLL_PX_PER_SEC * delta;
+        addMoreBuildings();
+      }
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Sky gradient (top 20%)
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, skyH + cityH * 0.1);
+      skyGrad.addColorStop(0, '#0e0f14');
+      skyGrad.addColorStop(0.6, '#12131a');
+      skyGrad.addColorStop(1, '#15161e');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Draw city layer
+      for (const b of buildings) {
+        const bx = b.x - offsetX;
+        if (bx > W + 20) break;
+        if (bx + b.w < -20) continue;
+        drawBuilding(ctx, b, offsetX, baseY);
+      }
+
+      // Subtle horizon glow
+      const glow = ctx.createLinearGradient(0, baseY - cityH * 0.06, 0, baseY);
+      glow.addColorStop(0, 'rgba(255,70,160,0)');
+      glow.addColorStop(1, 'rgba(255,70,160,0.07)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, baseY - cityH * 0.06, W, cityH * 0.06);
+
+      animFrame = requestAnimationFrame(draw);
+    }
+
+    resize();
+    lastTime = performance.now();
+    animFrame = requestAnimationFrame(draw);
+
+    let resizeTimer: ReturnType<typeof setTimeout>;
     const onResize = () => {
-      if (resizeRef.current) clearTimeout(resizeRef.current);
-      resizeRef.current = setTimeout(build, 180);
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        resize();
+      }, 150);
     };
     window.addEventListener('resize', onResize);
 
     return () => {
+      cancelAnimationFrame(animFrame);
       window.removeEventListener('resize', onResize);
-      if (twinkleRef.current) clearInterval(twinkleRef.current);
-      if (resizeRef.current) clearTimeout(resizeRef.current);
+      clearTimeout(resizeTimer);
     };
   }, []);
 
   return (
-    <div
-      ref={containerRef}
+    <canvas
+      ref={canvasRef}
       aria-hidden="true"
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 0,
-        overflow: 'hidden',
-        background: 'linear-gradient(to bottom, #232326 0%, #202126 48%, #1b1b1f 100%)',
+        display: 'block',
+        background: SKY,
         pointerEvents: 'none',
       }}
-    >
-      {/* Sky fog */}
-      <div style={{
-        position: 'absolute', left: 0, right: 0, bottom: '18vh', height: '18vh',
-        background: 'linear-gradient(to top, rgba(255,120,80,0.04), transparent)',
-        filter: 'blur(8px)', pointerEvents: 'none',
-      }} />
-
-      {/* City layers */}
-      <div style={{
-        position: 'absolute', left: 0, right: 0, bottom: 0,
-        height: '30vh', minHeight: '160px', pointerEvents: 'none',
-      }}>
-        {/* Back layer */}
-        <div style={{
-          position: 'absolute', left: 0, bottom: 0, width: '200%', height: '100%',
-          opacity: 0.22, filter: 'blur(0.8px)',
-          willChange: 'transform',
-          animation: 'cbDriftBack 180s linear infinite',
-        }}>
-          <div id="cb-back-track" />
-        </div>
-
-        {/* Mid layer */}
-        <div style={{
-          position: 'absolute', left: 0, bottom: 0, width: '200%', height: '100%',
-          opacity: 0.48,
-          willChange: 'transform',
-          animation: 'cbDriftMid 120s linear infinite',
-        }}>
-          <div id="cb-mid-track" />
-        </div>
-
-        {/* Front layer */}
-        <div style={{
-          position: 'absolute', left: 0, bottom: 0, width: '200%', height: '100%',
-          opacity: 0.90,
-          willChange: 'transform',
-          animation: 'cbDriftFront 90s linear infinite',
-        }}>
-          <div id="cb-front-track" />
-        </div>
-
-        {/* Ground glow */}
-        <div style={{
-          position: 'absolute', left: 0, right: 0, bottom: 0, height: '8vh',
-          background: 'linear-gradient(to top, rgba(255,90,90,0.04), transparent)',
-          pointerEvents: 'none',
-        }} />
-      </div>
-    </div>
+    />
   );
 }

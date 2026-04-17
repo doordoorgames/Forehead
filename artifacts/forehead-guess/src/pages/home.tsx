@@ -84,8 +84,8 @@ export default function Home() {
       
       <div className="max-w-md w-full relative z-10">
         <div className="text-center mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <h1 className="text-5xl md:text-7xl font-black text-foreground mb-4 rotate-[-2deg] drop-shadow-sm">
-            Forehead <span className="text-primary block rotate-[4deg] mt-2">Guess</span>
+          <h1 className="neon-word text-5xl md:text-7xl mb-4 rotate-[-2deg]" style={{ fontSize: 'clamp(52px, 14vw, 110px)' }}>
+            Forehead <span className="block rotate-[4deg] mt-1" style={{ color: '#ff4fa3' }}>Guess</span>
           </h1>
           <p className="text-xl font-medium text-muted-foreground mt-4">The ultimate party game!</p>
         </div>

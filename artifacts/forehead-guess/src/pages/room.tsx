@@ -233,8 +233,8 @@ function CountdownView({ seconds }: { seconds: number }) {
         Get ready — place phone on forehead
       </p>
       <div
-        className="text-[20vw] md:text-[15vw] font-black leading-none text-primary tabular-nums drop-shadow-xl"
-        style={{ fontSize: 'clamp(80px, 20vw, 220px)' }}
+        className="neon-word leading-none tabular-nums"
+        style={{ fontSize: 'clamp(100px, 22vw, 260px)' }}
       >
         {seconds > 0 ? seconds : '!'}
       </div>
@@ -265,8 +265,8 @@ function WordDisplayView({ playerId, roomState, roundInfo, onEndRound }: {
 
       {/* THE WORD — huge, designed for forehead mode */}
       <div
-        className="font-black text-center text-foreground leading-none px-6 break-words"
-        style={{ fontSize: 'clamp(56px, 12vw, 160px)', maxWidth: '90vw' }}
+        className="neon-word text-center leading-none px-6 break-words"
+        style={{ fontSize: 'clamp(64px, 14vw, 180px)', maxWidth: '90vw' }}
       >
         {word}
       </div>
@@ -327,8 +327,8 @@ function RevealView({ playerId, roomState, revealInfo, readyPlayerIds, onPlayerR
       <div className="text-center">
         <p className="text-base font-bold uppercase tracking-widest text-muted-foreground mb-1">Your word was</p>
         <div
-          className="font-black text-foreground leading-none"
-          style={{ fontSize: 'clamp(40px, 8vw, 100px)' }}
+          className="neon-word leading-none"
+          style={{ fontSize: 'clamp(44px, 9vw, 110px)' }}
         >
           {revealInfo.myWord}
         </div>

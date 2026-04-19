@@ -58,10 +58,12 @@ export default function Room() {
   return (
     <>
       {/* Force landscape hint overlay */}
-      <div className="portrait-warning fixed inset-0 z-[9999] bg-black flex-col items-center justify-center text-white text-center p-8 hidden">
-        <div className="text-6xl mb-6">↻</div>
-        <p className="text-2xl font-bold">Rotate your phone</p>
-        <p className="text-lg text-white/70 mt-2">This game is played in landscape mode</p>
+      <div className="portrait-warning fixed inset-0 z-[9999] bg-black flex-col items-center justify-center hidden">
+        <img
+          src={`${import.meta.env.BASE_URL}rotate-phone.png`}
+          alt="Rotate your phone to landscape"
+          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+        />
       </div>
 
       <div className="game-container min-h-[100dvh] text-foreground flex flex-col relative overflow-hidden">

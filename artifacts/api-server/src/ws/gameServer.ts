@@ -25,6 +25,7 @@ interface RoundState {
   imposterWord: string;
   categoryName: string;
   readyPlayerIds: number[];
+  playerWords: Record<number, string>; // playerId -> their unique word
 }
 
 const clients = new Map<WebSocket, WsClient>();
@@ -107,20 +108,36 @@ async function beginWordDisplay(roomCode: string) {
   if (connected.length < 2) return;
 
   const items = await db.select().from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, room.categoryId));
-  if (items.length < 2) {
-    broadcast(roomCode, { type: "error", payload: { message: "Need at least 2 items in category" } });
+
+  // Need at least one unique word per player so nobody shares a word
+  if (items.length < connected.length) {
+    broadcast(roomCode, {
+      type: "error",
+      payload: { message: `Need at least ${connected.length} words in this category for ${connected.length} players. Add more words or switch category.` },
+    });
     return;
   }
 
   const cat = await db.query.categoriesTable.findFirst({ where: eq(categoriesTable.id, room.categoryId) });
 
-  // Pick two distinct items for normal word and imposter word
-  const shuffled = [...items].sort(() => Math.random() - 0.5);
-  const normalItem = shuffled[0];
-  const imposterItem = shuffled[1];
+  // Shuffle all available words and take exactly one per player — no duplicates possible
+  const shuffledItems = [...items].sort(() => Math.random() - 0.5).slice(0, connected.length);
 
-  // Pick random imposter player
-  const imposterPlayer = connected[Math.floor(Math.random() * connected.length)];
+  // Shuffle players and pick imposter
+  const shuffledPlayers = [...connected].sort(() => Math.random() - 0.5);
+  const imposterPlayer = shuffledPlayers[0];
+  const normalPlayers = shuffledPlayers.slice(1);
+
+  // Assign unique words: imposter gets first shuffled word, each normal player gets the next
+  const playerWords: Record<number, string> = {};
+  playerWords[imposterPlayer.id] = shuffledItems[0].itemText;
+  normalPlayers.forEach((p, i) => {
+    playerWords[p.id] = shuffledItems[i + 1].itemText;
+  });
+
+  // Derive a representative "normalWord" (first normal player's word) for reveal reference
+  const normalWord = normalPlayers.length > 0 ? playerWords[normalPlayers[0].id] : shuffledItems[1]?.itemText ?? "";
+  const imposterWord = playerWords[imposterPlayer.id];
 
   const existingRound = roomRoundState.get(roomCode);
   const roundNumber = (existingRound?.roundNumber ?? 0) + 1;
@@ -129,24 +146,26 @@ async function beginWordDisplay(roomCode: string) {
     roundNumber,
     imposterId: imposterPlayer.id,
     imposterName: imposterPlayer.name,
-    normalWord: normalItem.itemText,
-    imposterWord: imposterItem.itemText,
+    normalWord,
+    imposterWord,
     categoryName: cat?.name ?? "Unknown",
     readyPlayerIds: [],
+    playerWords,
   };
   roomRoundState.set(roomCode, roundState);
 
   await db.update(roomsTable).set({ status: "word_display" }).where(eq(roomsTable.code, roomCode));
 
-  // Send personalized roundStart to each player
+  // Send each player their own unique word
   for (const [ws, client] of clients.entries()) {
     if (client.roomCode === roomCode && ws.readyState === WebSocket.OPEN && client.playerId) {
       const isImposter = client.playerId === imposterPlayer.id;
+      const myWord = playerWords[client.playerId] ?? "???";
       sendTo(ws, {
         type: "roundStart",
         payload: {
           roundNumber,
-          myWord: isImposter ? imposterItem.itemText : normalItem.itemText,
+          myWord,
           isImposter,
           categoryName: cat?.name ?? "Unknown",
         },
@@ -181,13 +200,14 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
 
     // If in word_display, resend their word
     const rs = roomRoundState.get(roomCode);
-    if (rs && state?.status === "word_display") {
+    if (rs && state?.status === "word_display" && client.playerId) {
       const isImposter = client.playerId === rs.imposterId;
+      const myWord = rs.playerWords?.[client.playerId] ?? (isImposter ? rs.imposterWord : rs.normalWord);
       sendTo(ws, {
         type: "roundStart",
         payload: {
           roundNumber: rs.roundNumber,
-          myWord: isImposter ? rs.imposterWord : rs.normalWord,
+          myWord,
           isImposter,
           categoryName: rs.categoryName,
         },
@@ -195,12 +215,13 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     }
 
     // If in reveal, resend reveal info
-    if (rs && state?.status === "reveal") {
+    if (rs && state?.status === "reveal" && client.playerId) {
       const isImposter = client.playerId === rs.imposterId;
+      const myWord = rs.playerWords?.[client.playerId] ?? (isImposter ? rs.imposterWord : rs.normalWord);
       sendTo(ws, {
         type: "revealInfo",
         payload: {
-          myWord: isImposter ? rs.imposterWord : rs.normalWord,
+          myWord,
           isImposter,
           imposterName: rs.imposterName,
           normalWord: rs.normalWord,
@@ -271,14 +292,15 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     const rs = roomRoundState.get(roomCode);
     if (!rs) return;
 
-    // Send personalized reveal to each player
+    // Send personalized reveal to each player — each sees their own unique word
     for (const [ws2, c] of clients.entries()) {
       if (c.roomCode === roomCode && ws2.readyState === WebSocket.OPEN && c.playerId) {
         const isImposter = c.playerId === rs.imposterId;
+        const myWord = rs.playerWords?.[c.playerId] ?? (isImposter ? rs.imposterWord : rs.normalWord);
         sendTo(ws2, {
           type: "revealInfo",
           payload: {
-            myWord: isImposter ? rs.imposterWord : rs.normalWord,
+            myWord,
             isImposter,
             imposterName: rs.imposterName,
             normalWord: rs.normalWord,

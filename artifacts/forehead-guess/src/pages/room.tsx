@@ -106,6 +106,7 @@ export default function Room() {
             onPlayerReady={socket.playerReady}
             onNextRound={socket.nextRound}
             onEndGame={socket.endGame}
+            onPlayAgain={socket.playAgain}
           />
         )}
 
@@ -292,7 +293,7 @@ function WordDisplayView({ playerId, roomState, roundInfo, onEndRound }: {
 
 // ─── REVEAL ───────────────────────────────────────────────────────────────────
 
-function RevealView({ playerId, roomState, revealInfo, readyPlayerIds, onPlayerReady, onNextRound, onEndGame }: {
+function RevealView({ playerId, roomState, revealInfo, readyPlayerIds, onPlayerReady, onNextRound, onEndGame, onPlayAgain }: {
   playerId: number;
   roomState: RoomState;
   revealInfo: RevealInfo | null;
@@ -300,11 +301,10 @@ function RevealView({ playerId, roomState, revealInfo, readyPlayerIds, onPlayerR
   onPlayerReady: () => void;
   onNextRound: () => void;
   onEndGame: () => void;
+  onPlayAgain: () => void;
 }) {
   const isHost = roomState.players.find(p => p.id === playerId)?.isHost ?? false;
   const connectedPlayers = roomState.players.filter(p => p.connected);
-  const allReady = connectedPlayers.every(p => readyPlayerIds.includes(p.id));
-  const iAmReady = readyPlayerIds.includes(playerId);
 
   if (!revealInfo) {
     return (
@@ -316,15 +316,6 @@ function RevealView({ playerId, roomState, revealInfo, readyPlayerIds, onPlayerR
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6 landscape-safe">
-      {/* Role badge */}
-      <div className={`px-6 py-2 rounded-full text-lg font-black uppercase tracking-widest border-2 ${
-        revealInfo.isImposter
-          ? 'bg-destructive/10 text-destructive border-destructive/40'
-          : 'bg-green-500/10 text-green-600 border-green-500/40'
-      }`}>
-        {revealInfo.isImposter ? '🕵️ IMPOSTER' : '✅ NORMAL PLAYER'}
-      </div>
-
       {/* Word reveal */}
       <div className="text-center">
         <p className="text-base font-bold uppercase tracking-widest text-muted-foreground mb-1">Your word was</p>
@@ -341,38 +332,49 @@ function RevealView({ playerId, roomState, revealInfo, readyPlayerIds, onPlayerR
         {readyPlayerIds.length} / {connectedPlayers.length} players ready
       </p>
 
-      {/* Player action */}
+      {/* Non-host: ready button */}
       {!isHost && (
         <Button
           size="lg"
           className="w-full max-w-sm h-14 text-xl font-black rounded-2xl"
-          disabled={iAmReady}
+          disabled={readyPlayerIds.includes(playerId)}
           onClick={onPlayerReady}
         >
-          {iAmReady ? '✓ Ready!' : 'Ready for next round'}
+          {readyPlayerIds.includes(playerId) ? '✓ Ready!' : 'Ready for next round'}
         </Button>
       )}
 
       {/* Host actions */}
       {isHost && (
-        <div className="flex gap-4 w-full max-w-sm">
+        <div className="flex flex-col gap-3 w-full max-w-sm">
           <Button
             size="lg"
-            variant="outline"
-            className="flex-1 h-14 text-lg font-bold rounded-2xl border-2"
-            onClick={onEndGame}
+            className="w-full h-14 text-xl font-black rounded-2xl"
+            style={{ background: '#2563eb', color: '#fff' }}
+            onClick={onPlayAgain}
           >
-            End Game
+            Lobby for a new word
           </Button>
-          <Button
-            size="lg"
-            className="flex-1 h-14 text-lg font-black rounded-2xl"
-            disabled={!allReady}
-            onClick={onNextRound}
-            title={!allReady ? 'Waiting for all players to be ready' : ''}
-          >
-            {allReady ? 'Next Round →' : `Waiting (${readyPlayerIds.length}/${connectedPlayers.length})`}
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              size="lg"
+              variant="outline"
+              className="flex-1 h-12 text-base font-bold rounded-2xl border-2"
+              onClick={onEndGame}
+            >
+              End Game
+            </Button>
+            <Button
+              size="lg"
+              className="flex-1 h-12 text-base font-black rounded-2xl"
+              disabled={!connectedPlayers.every(p => readyPlayerIds.includes(p.id))}
+              onClick={onNextRound}
+            >
+              {connectedPlayers.every(p => readyPlayerIds.includes(p.id))
+                ? 'Next Round →'
+                : `Waiting (${readyPlayerIds.length}/${connectedPlayers.length})`}
+            </Button>
+          </div>
         </div>
       )}
     </div>

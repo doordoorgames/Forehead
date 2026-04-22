@@ -128,8 +128,13 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
   startGame: () => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const { data: categories } = useListCategories();
-  const { t } = useLang();
+  const { data: allCategories } = useListCategories();
+  const { t, lang } = useLang();
+  const categories = allCategories?.filter((c: any) => {
+    if (c.type === 'en') return lang === 'en';
+    if (c.type === 'ar') return lang === 'ar';
+    return true;
+  });
   const players = roomState.players;
   const isHost = players.find(p => p.id === playerId)?.isHost ?? false;
   const currentCategoryId = roomState.categoryId;

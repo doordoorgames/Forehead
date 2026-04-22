@@ -337,17 +337,22 @@ router.post("/admin/upload-master", upload.single("file"), async (req, res) => {
     return;
   }
 
+  // lang tag: 'en' | 'ar' — stored in the type column
+  const lang = (req.query.lang as string) === "ar" ? "ar" : "en";
+
   // Upsert each column as a category and replace its items
   const results: Array<{ name: string; itemCount: number; created: boolean }> = [];
   for (const col of columns) {
-    // Find existing category by name (case-insensitive)
+    // Find existing category by name (case-insensitive) AND same language
     const allCats = await db.select().from(categoriesTable);
-    let cat = allCats.find((c) => c.name.toLowerCase() === col.name.toLowerCase()) ?? null;
+    let cat = allCats.find(
+      (c) => c.name.toLowerCase() === col.name.toLowerCase() && c.type === lang
+    ) ?? null;
 
     if (!cat) {
       const [newCat] = await db.insert(categoriesTable).values({
         name: col.name,
-        type: "text",
+        type: lang,
         enabled: true,
       }).returning();
       cat = newCat;
@@ -363,7 +368,7 @@ router.post("/admin/upload-master", upload.single("file"), async (req, res) => {
     }
   }
 
-  res.json({ categories: results, totalCategories: results.length, errors: [] });
+  res.json({ categories: results, totalCategories: results.length, errors: [], lang });
 });
 
 export default router;

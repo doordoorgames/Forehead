@@ -93,10 +93,14 @@ interface UploadResult {
 
 function AdminDashboard({ password, onLogout }: { password: string; onLogout: () => void }) {
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const enFileRef = useRef<HTMLInputElement>(null);
+  const arFileRef = useRef<HTMLInputElement>(null);
+  const [uploadingEn, setUploadingEn] = useState(false);
+  const [uploadingAr, setUploadingAr] = useState(false);
+  const [uploadResultEn, setUploadResultEn] = useState<UploadResult | null>(null);
+  const [uploadResultAr, setUploadResultAr] = useState<UploadResult | null>(null);
+  const [uploadErrorEn, setUploadErrorEn] = useState<string | null>(null);
+  const [uploadErrorAr, setUploadErrorAr] = useState<string | null>(null);
 
   const { data: categories, isLoading, refetch } = useAdminListCategories({
     request: { headers: { 'x-admin-password': password } }
@@ -104,33 +108,38 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const updateCategory = useAdminUpdateCategory();
   const deleteCategory = useAdminDeleteCategory();
 
-  const handleMasterUpload = async (file: File) => {
+  const handleMasterUpload = async (file: File, lang: 'en' | 'ar') => {
+    const setUploading = lang === 'en' ? setUploadingEn : setUploadingAr;
+    const setResult = lang === 'en' ? setUploadResultEn : setUploadResultAr;
+    const setError = lang === 'en' ? setUploadErrorEn : setUploadErrorAr;
+    const fileRef = lang === 'en' ? enFileRef : arFileRef;
+
     setUploading(true);
-    setUploadResult(null);
-    setUploadError(null);
+    setResult(null);
+    setError(null);
 
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      const res = await fetch('/api/admin/upload-master', {
+      const res = await fetch(`/api/admin/upload-master?lang=${lang}`, {
         method: 'POST',
         headers: { 'x-admin-password': password },
         body: formData,
       });
       const data = await res.json();
       if (!res.ok) {
-        setUploadError(data.error || 'Upload failed');
+        setError(data.error || 'Upload failed');
       } else {
-        setUploadResult(data as UploadResult);
-        toast({ title: 'Master file uploaded!', description: `${data.totalCategories} categories updated.` });
+        setResult(data as UploadResult);
+        toast({ title: `${lang === 'en' ? 'English' : 'Arabic'} categories uploaded!`, description: `${data.totalCategories} categories updated.` });
         refetch();
       }
     } catch {
-      setUploadError('Network error — could not upload file.');
+      setError('Network error — could not upload file.');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (fileRef.current) fileRef.current.value = '';
     }
   };
 
@@ -165,22 +174,18 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
       </div>
 
       <div className="space-y-6">
-        {/* ── Master File Upload ── */}
-        <Card className="border-2 border-primary/30 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileSpreadsheet className="w-5 h-5 text-primary" />
-              Upload Master Category File
+        {/* ── Format hint ── */}
+        <Card className="border bg-muted/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileSpreadsheet className="w-4 h-4" />
+              File Format
             </CardTitle>
-            <CardDescription className="text-base leading-relaxed">
-              Upload one CSV or Excel file where <strong>each column is a category</strong>.
-              The first row of each column is the <strong>category name</strong>.
-              Every row below it is a <strong>possible word</strong> for that category.
-              Adding a new column automatically creates a new category.
+            <CardDescription>
+              Each <strong>column</strong> = one category. Row 1 = category name. Rows below = words.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Format example */}
+          <CardContent>
             <div className="rounded-xl bg-card border p-4 font-mono text-sm overflow-x-auto">
               <div className="grid grid-cols-3 gap-4 text-center min-w-[300px]">
                 <div className="font-bold text-primary border-b pb-1">Sports</div>
@@ -192,69 +197,93 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
                 <div className="text-muted-foreground">Basketball</div>
                 <div className="text-muted-foreground">Avatar</div>
                 <div className="text-muted-foreground">Tiger</div>
-                <div className="text-muted-foreground">Tennis</div>
-                <div className="text-muted-foreground">Frozen</div>
-                <div className="text-muted-foreground">Penguin</div>
               </div>
             </div>
-
-            <div className="flex items-center gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                className="hidden"
-                data-testid="input-master-file"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleMasterUpload(file);
-                }}
-              />
-              <Button
-                size="lg"
-                className="gap-2"
-                disabled={uploading}
-                data-testid="button-upload-master"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="w-4 h-4" />
-                {uploading ? 'Uploading...' : 'Choose File to Upload'}
-              </Button>
-              <span className="text-sm text-muted-foreground">CSV or Excel (.xlsx)</span>
-            </div>
-
-            {/* Upload result */}
-            {uploadError && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                {uploadError}
-              </div>
-            )}
-            {uploadResult && (
-              <div className="p-4 rounded-xl bg-green-50 border border-green-200 space-y-2">
-                <div className="flex items-center gap-2 font-bold text-green-800">
-                  <CheckCircle className="w-4 h-4" />
-                  Upload complete — {uploadResult.totalCategories} categories updated
-                </div>
-                <div className="space-y-1">
-                  {uploadResult.categories.map((cat) => (
-                    <div key={cat.name} className="text-sm text-green-700 flex items-center gap-2">
-                      <span className="font-medium">{cat.name}</span>
-                      <span className="text-green-500">·</span>
-                      <span>{cat.itemCount} words</span>
-                      {cat.created && <span className="text-xs bg-green-200 text-green-800 px-1.5 py-0.5 rounded font-medium">NEW</span>}
-                    </div>
-                  ))}
-                </div>
-                {uploadResult.errors.length > 0 && (
-                  <div className="text-xs text-amber-700 mt-2">
-                    {uploadResult.errors.length} row(s) skipped: {uploadResult.errors.slice(0, 3).join(', ')}
-                  </div>
-                )}
-              </div>
-            )}
           </CardContent>
         </Card>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* ── English Upload ── */}
+          {(['en', 'ar'] as const).map((lang) => {
+            const isEn = lang === 'en';
+            const uploading = isEn ? uploadingEn : uploadingAr;
+            const uploadResult = isEn ? uploadResultEn : uploadResultAr;
+            const uploadError = isEn ? uploadErrorEn : uploadErrorAr;
+            const fileRef = isEn ? enFileRef : arFileRef;
+
+            return (
+              <Card key={lang} className={`border-2 ${isEn ? 'border-pink-400/40 bg-pink-50/30' : 'border-cyan-400/40 bg-cyan-50/30'}`}>
+                <CardHeader>
+                  <CardTitle className={`flex items-center gap-2 ${isEn ? 'text-pink-700' : 'text-cyan-700'}`}>
+                    <FileSpreadsheet className="w-5 h-5" />
+                    {isEn ? 'English Categories' : 'Arabic Categories — فئات عربية'}
+                  </CardTitle>
+                  <CardDescription>
+                    {isEn
+                      ? 'Upload an English-language word list. Players in English mode will see these categories.'
+                      : 'Upload an Arabic-language word list. Players in Arabic mode will see these categories.'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      className="hidden"
+                      data-testid={`input-master-file-${lang}`}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleMasterUpload(file, lang);
+                      }}
+                    />
+                    <Button
+                      size="lg"
+                      className={`gap-2 ${isEn ? 'bg-pink-600 hover:bg-pink-700' : 'bg-cyan-600 hover:bg-cyan-700'} text-white`}
+                      disabled={uploading}
+                      data-testid={`button-upload-master-${lang}`}
+                      onClick={() => fileRef.current?.click()}
+                    >
+                      <Upload className="w-4 h-4" />
+                      {uploading ? 'Uploading...' : 'Choose File'}
+                    </Button>
+                    <span className="text-sm text-muted-foreground">CSV or Excel (.xlsx)</span>
+                  </div>
+
+                  {uploadError && (
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                      <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                      {uploadError}
+                    </div>
+                  )}
+                  {uploadResult && (
+                    <div className="p-4 rounded-xl bg-green-50 border border-green-200 space-y-2">
+                      <div className="flex items-center gap-2 font-bold text-green-800">
+                        <CheckCircle className="w-4 h-4" />
+                        {uploadResult.totalCategories} categories updated
+                      </div>
+                      <div className="space-y-1">
+                        {uploadResult.categories.map((cat) => (
+                          <div key={cat.name} className="text-sm text-green-700 flex items-center gap-2">
+                            <span className="font-medium">{cat.name}</span>
+                            <span className="text-green-500">·</span>
+                            <span>{cat.itemCount} words</span>
+                            {cat.created && <span className="text-xs bg-green-200 text-green-800 px-1.5 py-0.5 rounded font-medium">NEW</span>}
+                          </div>
+                        ))}
+                      </div>
+                      {uploadResult.errors.length > 0 && (
+                        <div className="text-xs text-amber-700 mt-2">
+                          {uploadResult.errors.length} row(s) skipped
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
 
         {/* ── Category List ── */}
         <Card>
@@ -277,9 +306,17 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
                     data-testid={`card-category-${cat.id}`}
                     className="flex items-center justify-between p-4 border rounded-xl bg-card"
                   >
-                    <div>
-                      <h3 className="font-bold text-lg">{cat.name}</h3>
-                      <p className="text-sm text-muted-foreground">{cat.itemCount} words</p>
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <h3 className="font-bold text-lg">{cat.name}</h3>
+                        <p className="text-sm text-muted-foreground">{cat.itemCount} words</p>
+                      </div>
+                      {cat.type === 'en' && (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 border border-pink-300">EN</span>
+                      )}
+                      {cat.type === 'ar' && (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 border border-cyan-300">AR</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">

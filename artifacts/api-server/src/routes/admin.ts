@@ -3,6 +3,7 @@ import multer from "multer";
 import { db } from "@workspace/db";
 import { categoriesTable, categoryItemsTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
+import { setCharacterPool } from "../lib/characterPool";
 import {
   AdminListCategoriesHeader,
   AdminListCategoriesResponseItem,
@@ -369,6 +370,100 @@ router.post("/admin/upload-master", upload.single("file"), async (req, res) => {
   }
 
   res.json({ categories: results, totalCategories: results.length, errors: [], lang });
+});
+
+// POST /api/admin/upload-characters
+// CSV: Column A = answer, Columns B-K = hint1..hint10
+router.post("/admin/upload-characters", upload.single("file"), async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const file = req.file;
+  if (!file) {
+    res.status(400).json({ error: "No file uploaded" });
+    return;
+  }
+
+  const entries: Array<{ answer: string; hints: string[] }> = [];
+  const errors: string[] = [];
+
+  try {
+    const ext = file.originalname.toLowerCase().split(".").pop();
+    let rows: string[][] = [];
+
+    if (ext === "csv") {
+      const text = file.buffer.toString("utf-8");
+      const lines = text.split(/\r?\n/);
+      const splitCsvLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = "";
+        let inQuotes = false;
+        for (const ch of line) {
+          if (ch === '"') { inQuotes = !inQuotes; continue; }
+          if (ch === "," && !inQuotes) { result.push(current.trim()); current = ""; continue; }
+          current += ch;
+        }
+        result.push(current.trim());
+        return result;
+      };
+      rows = lines.map((l) => splitCsvLine(l));
+    } else if (ext === "xlsx" || ext === "xls") {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.read(file.buffer, { type: "buffer" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: "" }) as string[][];
+    } else {
+      res.status(400).json({ error: "Only CSV and XLSX files are supported" });
+      return;
+    }
+
+    // Skip header row if first cell looks like a label (non-data)
+    let startRow = 0;
+    if (rows.length > 0) {
+      const firstCell = String(rows[0][0] ?? "").toLowerCase().trim();
+      if (firstCell === "answer" || firstCell === "character" || firstCell === "") {
+        startRow = 1;
+      }
+    }
+
+    for (let i = startRow; i < rows.length; i++) {
+      const cols = rows[i].map((c) => String(c ?? "").trim());
+      const answer = cols[0] ?? "";
+      if (!answer) continue;
+
+      const hints = cols.slice(1, 11).filter((h) => h.length > 0);
+      if (hints.length === 0) {
+        errors.push(`Row ${i + 1}: "${answer}" has no hints — skipped`);
+        continue;
+      }
+      entries.push({ answer, hints });
+    }
+
+    if (entries.length === 0) {
+      res.status(400).json({ error: "No valid rows found. Each row needs an answer and at least one hint.", errors });
+      return;
+    }
+
+    setCharacterPool(entries);
+    res.json({ imported: entries.length, skipped: errors.length, errors });
+  } catch (err) {
+    req.log.error({ err }, "Error parsing character upload");
+    res.status(400).json({ error: "Failed to parse file" });
+  }
+});
+
+// GET /api/admin/characters/count
+router.get("/admin/characters/count", async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const { characterPoolSize } = await import("../lib/characterPool");
+  res.json({ count: characterPoolSize() });
 });
 
 export default router;

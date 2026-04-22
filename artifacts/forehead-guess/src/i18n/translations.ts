@@ -67,6 +67,38 @@ export const translations = {
 
     rotateHint: 'Rotate your phone',
     rotateSubHint: 'This game is played in landscape mode',
+
+    // Mode selection
+    chooseMode: 'Choose a Mode',
+    foreheadGame: 'Forehead Game',
+    foreheadGameDesc: 'Hold phone to forehead and guess your word',
+    guessTheCharacter: 'Guess the Character',
+    guessTheCharacterDesc: 'Guess the character from hints — one clue at a time',
+
+    // Character game — admin
+    youAreGameAdmin: 'You are the Game Admin',
+    theAnswer: 'The Answer',
+    hintLabel: 'Hint',
+    hintOf: 'of',
+    noHintShownYet: 'No hint shown yet — press Next Hint to begin',
+    nextHint: 'Next Hint',
+    revealAnswer: 'Reveal Answer',
+    nextCharacter: 'Next Character',
+    transferAdmin: 'Transfer Admin',
+    selectNewAdmin: 'Select new admin:',
+    cancel: 'Cancel',
+    allHintsRevealed: 'All hints revealed',
+    answerRevealedLabel: '✓ Answer Revealed',
+    noCharactersLoaded: 'No character data loaded. Upload a CSV from the Admin Panel first.',
+    backToLobby: 'Back to Lobby',
+
+    // Character game — player
+    waitingForAdmin: 'Waiting for Game Admin...',
+    currentHintLabel: 'Current Hint',
+    theAnswerIs: 'The Answer Is',
+    gameAdminLabel: 'Game Admin',
+    characterMode: 'Guess the Character',
+    waitingForFirstHint: 'Waiting for the first hint...',
   },
   ar: {
     appTitle1: 'خمّن',
@@ -134,6 +166,38 @@ export const translations = {
 
     rotateHint: 'اقلب هاتفك',
     rotateSubHint: 'تُلعب هذه اللعبة في وضع أفقي',
+
+    // Mode selection
+    chooseMode: 'اختر وضع اللعب',
+    foreheadGame: 'لعبة الجبهة',
+    foreheadGameDesc: 'ضع الهاتف على جبهتك وخمّن كلمتك',
+    guessTheCharacter: 'خمّن الشخصية',
+    guessTheCharacterDesc: 'خمّن الشخصية من التلميحات — تلميح واحد في كل مرة',
+
+    // Character game — admin
+    youAreGameAdmin: 'أنت مدير اللعبة',
+    theAnswer: 'الإجابة',
+    hintLabel: 'تلميح',
+    hintOf: 'من',
+    noHintShownYet: 'لم يُعرض أي تلميح — اضغط التلميح التالي للبدء',
+    nextHint: 'التلميح التالي',
+    revealAnswer: 'اكشف الإجابة',
+    nextCharacter: 'الشخصية التالية',
+    transferAdmin: 'نقل الإدارة',
+    selectNewAdmin: ':اختر المدير الجديد',
+    cancel: 'إلغاء',
+    allHintsRevealed: 'تم عرض جميع التلميحات',
+    answerRevealedLabel: '✓ تمت الكشف عن الإجابة',
+    noCharactersLoaded: 'لا توجد بيانات شخصيات. ارفع ملف CSV من لوحة الإدارة أولاً.',
+    backToLobby: 'العودة للقاعة',
+
+    // Character game — player
+    waitingForAdmin: '...انتظار مدير اللعبة',
+    currentHintLabel: 'التلميح الحالي',
+    theAnswerIs: 'الإجابة هي',
+    gameAdminLabel: 'مدير اللعبة',
+    characterMode: 'خمّن الشخصية',
+    waitingForFirstHint: '...في انتظار التلميح الأول',
   },
 } as const;
 

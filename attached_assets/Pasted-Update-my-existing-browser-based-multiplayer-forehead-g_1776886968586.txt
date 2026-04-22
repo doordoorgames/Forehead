@@ -1,0 +1,279 @@
+Update my existing browser-based multiplayer forehead game project.
+
+IMPORTANT:
+- Do not rebuild the existing forehead game from scratch.
+- The current forehead game mode is already working well.
+- Keep all existing functionality intact.
+- Add a NEW mode called “Guess the Character”.
+- This new mode must be inserted into the flow between the language selection screen and the create/join room screen.
+
+GOAL
+Right now the flow is:
+1. Arabic or English
+2. Create room / Join room
+
+I want the new flow to become:
+1. Arabic or English
+2. Mode selection screen
+3. Create room / Join room
+
+MODE SELECTION SCREEN
+After the user selects Arabic or English, show a new screen with 2 large buttons:
+- Forehead Game
+- Guess the Character
+
+Requirements:
+- Keep the same visual style as the current game
+- Mobile-first design
+- Large clean buttons
+- Same theme and aesthetic as the existing app
+- Save the selected mode in the room/session flow so the room knows which game mode it is using
+
+NEW MODE: GUESS THE CHARACTER
+Add a brand new multiplayer mode called “Guess the Character”.
+
+BASIC IDEA
+- Players join the room the same way they already do in the forehead game
+- Same create room / join room logic
+- Same 5-digit room code system
+- Same room/lobby logic if possible
+- One player is the admin/host
+- The admin secretly sees the answer and the hints
+- The other players do NOT see the answer
+- The other players only see the CURRENT hint, not previous hints
+- Players guess verbally out loud in real life
+- No in-app typing for guesses
+- No scoring system needed in this mode
+- When someone guesses correctly, the admin reveals the answer and moves to the next character
+
+ROOM / LOBBY BEHAVIOR
+For Guess the Character mode:
+- Reuse the existing room system
+- Reuse the existing 5-digit code system
+- Reuse the existing join flow
+- Reuse the existing player list if possible
+- Keep the room stable and mobile friendly
+
+Once players are in the room:
+- The admin controls the game flow
+- Non-admin players are just viewers/guessers
+- No answer should ever be visible to non-admin players
+
+GAMEPLAY FLOW FOR GUESS THE CHARACTER
+1. Players enter room
+2. Admin starts game
+3. System loads one character entry from uploaded dataset
+4. Admin sees:
+   - the hidden answer
+   - all hints for that character
+   - controls for gameplay
+5. Players see:
+   - only the current revealed hint
+   - no answer
+   - no future hints
+   - no previous hints
+6. Admin presses “Next Hint” to reveal the next hint one at a time
+7. Players guess verbally
+8. When someone gets it right, admin presses “Reveal Answer”
+9. Then admin presses “Next Character”
+10. Continue until admin decides to stop
+
+VERY IMPORTANT DISPLAY RULES
+ADMIN VIEW SHOULD SHOW:
+- Answer clearly visible
+- Full hint list for the current character
+- Which hint number is currently live
+- Buttons:
+  - Next Hint
+  - Reveal Answer
+  - Next Character
+  - Make Someone Else Admin
+
+PLAYER VIEW SHOULD SHOW:
+- Current hint only
+- No previous hints
+- No answer
+- No future hints
+- If answer is revealed, then show the answer after admin clicks Reveal Answer
+
+NO SCORING
+Do not add scoring for this mode.
+Do not add points.
+Do not add leaderboard.
+This is a casual verbal party mode only.
+
+ADMIN CONTROLS
+Add these admin controls for Guess the Character mode:
+
+1. Next Hint
+- Reveals the next hint only
+- Hints must go in order from vague to specific
+- Players only see the currently active hint
+- Players should not see older hints
+
+2. Reveal Answer
+- Reveals the answer to everyone in the room
+- Used when someone guessed correctly or admin decides to end the round
+
+3. Next Character
+- Loads a new character entry
+- Should not send users back to the lobby
+- Should stay inside the same room/game session
+- Should reset hint progress for the new character
+
+4. Make Someone Else Admin
+- Add a control that lets current admin transfer admin control to another player already inside the room
+- This should happen live without leaving the room
+- Show a player selection UI listing current room members
+- After transfer, the new admin gets the admin controls and answer visibility
+- The old admin becomes a normal player/viewer
+- Make sure this updates in real time across all connected clients
+
+DATA SOURCE / BACKEND ADMIN PAGE
+I want the character data to come from CSV upload through a backend admin page.
+
+Create an admin page at:
+- /admin
+
+This admin page should allow uploading CSV files for Guess the Character mode.
+
+ADMIN PAGE REQUIREMENTS
+- Simple, clean upload page
+- Accessible through /admin
+- Upload CSV file
+- Parse and store the data server-side
+- Show success/error feedback
+- Show how many valid rows were imported
+- Ignore empty/broken rows safely
+- Do not crash on bad uploads
+- Keep it simple and usable
+
+CSV FORMAT
+Use this exact CSV structure:
+- Column A = answer
+- Column B = hint 1
+- Column C = hint 2
+- Column D = hint 3
+- Column E = hint 4
+- Column F = hint 5
+- Column G = hint 6
+- Column H = hint 7
+- Column I = hint 8
+- Column J = hint 9
+- Column K = hint 10
+
+So each row contains:
+- 1 answer
+- 10 hints
+
+RULES FOR CSV PROCESSING
+- answer is required
+- at least 1 hint is required
+- if some later hints are empty, still allow the row if answer exists and at least one hint exists
+- trim whitespace
+- skip empty rows
+- store imported entries in a clean in-memory or lightweight server-side structure for now
+- structure code so persistent storage can be added later
+
+CHARACTER SELECTION LOGIC
+For each new round:
+- choose a random unused character row
+- do not repeat characters until all uploaded rows are exhausted
+- once all rows are exhausted, allow reshuffle/reuse or show a graceful message and reset the pool
+- hints should be revealed in order from hint 1 to hint 10
+
+ANSWER / HINT VISIBILITY RULES
+This is critical:
+- Only the current admin sees the answer and full hint list
+- Other players must never receive full answer data in the UI
+- Players only see the currently active hint
+- When answer is revealed, then everyone can see it
+- Be careful not to accidentally expose answer data in the player-facing frontend unnecessarily
+
+TECHNICAL REQUIREMENTS
+- Build on top of the existing project
+- Preserve all current forehead game functionality
+- Reuse existing architecture where sensible
+- Reuse existing room/socket system where possible
+- Reuse existing language system where possible
+- Reuse existing lobby flow where possible
+- Keep code organized and readable
+
+If the project already uses Socket.IO or similar realtime architecture, continue using that.
+Use realtime sync so that:
+- admin actions update all clients instantly
+- hint reveal updates instantly
+- answer reveal updates instantly
+- admin transfer updates instantly
+
+UI / UX REQUIREMENTS
+- Mobile-first
+- Clean, modern, readable
+- Same style as current forehead game
+- Do not make the new mode look visually disconnected from the rest of the site
+- Large buttons for admin controls
+- Strong separation between admin-only controls and player view
+- Make it obvious who is admin in the room
+- Smooth transitions, but keep it lightweight
+
+SUGGESTED SCREENS / STATES
+
+1. Language Selection
+- Keep existing screen
+
+2. New Mode Selection Screen
+- Button 1: Forehead Game
+- Button 2: Guess the Character
+
+3. Create / Join Room
+- Same as current flow
+
+4. Lobby
+- Same as current flow, adapted for selected mode
+- Show selected mode somewhere
+
+5. Guess the Character Admin Screen
+- current answer
+- full hint list
+- highlight current hint index
+- buttons for:
+  - Next Hint
+  - Reveal Answer
+  - Next Character
+  - Make Someone Else Admin
+
+6. Guess the Character Player Screen
+- show only current hint
+- show revealed answer only after admin reveals it
+- no extra clutter
+
+EDGE CASES
+Handle these safely:
+- admin disconnects
+- transferred admin disconnects
+- room becomes empty
+- no CSV uploaded yet
+- uploaded CSV has invalid rows
+- hints run out before answer is guessed
+- admin clicks Next Character before Reveal Answer
+- new admin is assigned mid-session
+- player refreshes page
+- duplicate joins / reconnect behavior as appropriate for the current architecture
+
+If no CSV data is available for Guess the Character mode:
+- show a clear admin-facing message
+- do not crash
+- ideally prevent starting that mode until character data exists
+
+IMPORTANT IMPLEMENTATION NOTES
+- Do not break the old forehead game mode
+- The old forehead game should remain selectable and fully functional
+- This task is to add a second mode cleanly, not replace the first one
+- Keep mode-specific logic separated cleanly in code
+- Keep room logic shared where possible, mode logic separated where needed
+
+DELIVERABLE
+Actually implement this in the existing Replit project.
+Do not just describe the approach.
+Create the new mode, the inserted mode selection screen, the /admin CSV upload page, the gameplay flow, the admin transfer feature, and the realtime updates.
+Make it runnable and usable immediately.

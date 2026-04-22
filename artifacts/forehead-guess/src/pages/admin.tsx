@@ -91,16 +91,26 @@ interface UploadResult {
   errors: string[];
 }
 
+interface CharacterUploadResult {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
 function AdminDashboard({ password, onLogout }: { password: string; onLogout: () => void }) {
   const { toast } = useToast();
   const enFileRef = useRef<HTMLInputElement>(null);
   const arFileRef = useRef<HTMLInputElement>(null);
+  const charFileRef = useRef<HTMLInputElement>(null);
   const [uploadingEn, setUploadingEn] = useState(false);
   const [uploadingAr, setUploadingAr] = useState(false);
+  const [uploadingChar, setUploadingChar] = useState(false);
   const [uploadResultEn, setUploadResultEn] = useState<UploadResult | null>(null);
   const [uploadResultAr, setUploadResultAr] = useState<UploadResult | null>(null);
+  const [uploadResultChar, setUploadResultChar] = useState<CharacterUploadResult | null>(null);
   const [uploadErrorEn, setUploadErrorEn] = useState<string | null>(null);
   const [uploadErrorAr, setUploadErrorAr] = useState<string | null>(null);
+  const [uploadErrorChar, setUploadErrorChar] = useState<string | null>(null);
 
   const { data: categories, isLoading, refetch } = useAdminListCategories({
     request: { headers: { 'x-admin-password': password } }
@@ -140,6 +150,33 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const handleCharacterUpload = async (file: File) => {
+    setUploadingChar(true);
+    setUploadResultChar(null);
+    setUploadErrorChar(null);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/admin/upload-characters', {
+        method: 'POST',
+        headers: { 'x-admin-password': password },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUploadErrorChar(data.error || 'Upload failed');
+      } else {
+        setUploadResultChar(data as CharacterUploadResult);
+        toast({ title: 'Characters uploaded!', description: `${data.imported} characters ready.` });
+      }
+    } catch {
+      setUploadErrorChar('Network error — could not upload file.');
+    } finally {
+      setUploadingChar(false);
+      if (charFileRef.current) charFileRef.current.value = '';
     }
   };
 
@@ -284,6 +321,67 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
             );
           })}
         </div>
+
+        {/* ── Character Upload ── */}
+        <Card className="border-2 border-[#39d5ff]/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span>🕵️</span> Guess the Character — Pool
+            </CardTitle>
+            <CardDescription>
+              Upload a CSV file to set the character pool. Column A = answer, Columns B–K = up to 10 hints.
+              Optionally include a header row — it will be skipped automatically.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-3 rounded-lg bg-muted text-sm font-mono">
+              answer, hint1, hint2, hint3, …<br />
+              Batman, Cape, Gotham, Bruce Wayne, …
+            </div>
+            <input
+              ref={charFileRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) handleCharacterUpload(file);
+              }}
+            />
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                className="gap-2 border-[#39d5ff] text-[#39d5ff] hover:bg-[#39d5ff]/10"
+                disabled={uploadingChar}
+                onClick={() => charFileRef.current?.click()}
+              >
+                <Upload className="w-4 h-4" />
+                {uploadingChar ? 'Uploading...' : 'Choose CSV File'}
+              </Button>
+            </div>
+
+            {uploadErrorChar && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                {uploadErrorChar}
+              </div>
+            )}
+            {uploadResultChar && (
+              <div className="p-4 rounded-xl bg-green-50 border border-green-200 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-green-800">
+                  <CheckCircle className="w-4 h-4" />
+                  {uploadResultChar.imported} characters imported
+                  {uploadResultChar.skipped > 0 && <span className="text-xs font-normal text-green-600">({uploadResultChar.skipped} skipped)</span>}
+                </div>
+                {uploadResultChar.errors.length > 0 && (
+                  <div className="text-xs text-amber-700">
+                    {uploadResultChar.errors.slice(0, 5).join(', ')}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* ── Category List ── */}
         <Card>

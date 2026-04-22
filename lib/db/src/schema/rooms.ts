@@ -6,7 +6,8 @@ import { categoriesTable } from "./categories";
 export const roomsTable = pgTable("rooms", {
   id: serial("id").primaryKey(),
   code: text("code").notNull().unique(),
-  status: text("status").notNull().default("waiting"), // "waiting" | "playing" | "finished"
+  status: text("status").notNull().default("waiting"),
+  mode: text("mode").notNull().default("forehead"), // "forehead" | "character"
   categoryId: integer("category_id").references(() => categoriesTable.id),
   turnDuration: integer("turn_duration").notNull().default(60),
   roundCount: integer("round_count").notNull().default(1),

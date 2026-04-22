@@ -7,6 +7,7 @@ import Home from "@/pages/home";
 import Admin from "@/pages/admin";
 import Room from "@/pages/room";
 import LanguageSelect from "@/pages/language-select";
+import ModeSelect from "@/pages/mode-select";
 import CyberpunkBackground from "@/components/CyberpunkBackground";
 import { LanguageProvider } from "@/context/LanguageContext";
 
@@ -16,6 +17,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={LanguageSelect} />
+      <Route path="/mode" component={ModeSelect} />
       <Route path="/home" component={Home} />
       <Route path="/admin" component={Admin} />
       <Route path="/room/:code" component={Room} />

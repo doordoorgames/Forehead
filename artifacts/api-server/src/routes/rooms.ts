@@ -30,6 +30,7 @@ async function getRoomWithPlayers(roomId: number) {
     id: room.id,
     code: room.code,
     status: room.status,
+    mode: room.mode,
     categoryId: room.categoryId ?? null,
     categoryName,
     turnDuration: room.turnDuration,
@@ -61,8 +62,10 @@ router.post("/rooms", async (req, res) => {
     existing = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, code) });
   }
 
+  const mode = (req.body.mode as string) === 'character' ? 'character' : 'forehead';
   const [room] = await db.insert(roomsTable).values({
     code,
+    mode,
     categoryId: body.data.categoryId ?? null,
     turnDuration: body.data.turnDuration ?? 60,
     roundCount: body.data.roundCount ?? 1,

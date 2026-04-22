@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 export interface RoomState {
   code: string;
-  status: 'waiting' | 'countdown' | 'word_display' | 'reveal' | 'finished';
+  status: 'waiting' | 'countdown' | 'word_display' | 'reveal' | 'finished' | 'character_playing';
+  mode: 'forehead' | 'character';
   categoryId: number | null;
   categoryName: string | null;
   players: Array<{
@@ -32,6 +33,21 @@ export interface RevealInfo {
   readyPlayerIds: number[];
 }
 
+export interface CharacterState {
+  // Both admin and player
+  isAdmin: boolean;
+  currentHintIndex: number;
+  answerRevealed: boolean;
+  adminId: number;
+  // Admin only
+  answer?: string;
+  hints?: string[];
+  totalHints?: number;
+  // Player only
+  currentHint?: string | null;
+  revealedAnswer?: string;
+}
+
 interface SocketState {
   isConnected: boolean;
   roomState: RoomState | null;
@@ -39,6 +55,7 @@ interface SocketState {
   roundInfo: RoundInfo | null;
   revealInfo: RevealInfo | null;
   readyPlayerIds: number[];
+  characterState: CharacterState | null;
   error: string | null;
 }
 
@@ -50,6 +67,7 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     roundInfo: null,
     revealInfo: null,
     readyPlayerIds: [],
+    characterState: null,
     error: null,
   });
 
@@ -77,7 +95,7 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
         const msg = JSON.parse(event.data);
         switch (msg.type) {
           case 'roomUpdate':
-            setState(s => ({ ...s, roomState: msg.payload }));
+            setState(s => ({ ...s, roomState: { mode: 'forehead', ...msg.payload } }));
             break;
           case 'countdownTick':
             setState(s => ({ ...s, countdownSeconds: msg.payload.secondsLeft }));
@@ -96,11 +114,14 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
             setState(s => ({ ...s, readyPlayerIds: msg.payload.readyPlayerIds ?? [] }));
             break;
           case 'gameEnd':
-            setState(s => ({ ...s, roundInfo: null, revealInfo: null, readyPlayerIds: [] }));
+            setState(s => ({ ...s, roundInfo: null, revealInfo: null, readyPlayerIds: [], characterState: null }));
+            break;
+          case 'gtcState':
+            setState(s => ({ ...s, characterState: msg.payload as CharacterState }));
             break;
           case 'error':
             setState(s => ({ ...s, error: msg.payload.message }));
-            setTimeout(() => setState(s => ({ ...s, error: null })), 3000);
+            setTimeout(() => setState(s => ({ ...s, error: null })), 4000);
             break;
         }
       } catch (err) {
@@ -143,6 +164,7 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     }
   }, []);
 
+  // ── Forehead game actions ─────────────────────────────────────────────────
   const setCategory = useCallback((categoryId: number) => {
     sendMessage('setCategory', { roomCode, categoryId });
   }, [roomCode, sendMessage]);
@@ -171,6 +193,35 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     sendMessage('playAgain', { roomCode });
   }, [roomCode, sendMessage]);
 
+  // ── Character game actions ────────────────────────────────────────────────
+  const gtcStart = useCallback(() => {
+    sendMessage('gtcStart', { roomCode });
+  }, [roomCode, sendMessage]);
+
+  const gtcNextHint = useCallback(() => {
+    sendMessage('gtcNextHint', { roomCode });
+  }, [roomCode, sendMessage]);
+
+  const gtcRevealAnswer = useCallback(() => {
+    sendMessage('gtcRevealAnswer', { roomCode });
+  }, [roomCode, sendMessage]);
+
+  const gtcNextCharacter = useCallback(() => {
+    sendMessage('gtcNextCharacter', { roomCode });
+  }, [roomCode, sendMessage]);
+
+  const gtcTransferAdmin = useCallback((targetPlayerId: number) => {
+    sendMessage('gtcTransferAdmin', { roomCode, targetPlayerId });
+  }, [roomCode, sendMessage]);
+
+  const gtcEndGame = useCallback(() => {
+    sendMessage('gtcEndGame', { roomCode });
+  }, [roomCode, sendMessage]);
+
+  const gtcBackToLobby = useCallback(() => {
+    sendMessage('gtcBackToLobby', { roomCode });
+  }, [roomCode, sendMessage]);
+
   return {
     ...state,
     setCategory,
@@ -180,5 +231,12 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     nextRound,
     endGame,
     playAgain,
+    gtcStart,
+    gtcNextHint,
+    gtcRevealAnswer,
+    gtcNextCharacter,
+    gtcTransferAdmin,
+    gtcEndGame,
+    gtcBackToLobby,
   };
 }

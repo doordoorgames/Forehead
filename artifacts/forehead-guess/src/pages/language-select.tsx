@@ -8,7 +8,7 @@ export default function LanguageSelect() {
 
   const choose = (l: Lang) => {
     setLang(l);
-    setLocation('/home');
+    setLocation('/mode');
   };
 
   return (

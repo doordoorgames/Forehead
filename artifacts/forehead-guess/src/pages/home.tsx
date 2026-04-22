@@ -40,8 +40,9 @@ export default function Home() {
   });
 
   const onCreateSubmit = (values: z.infer<typeof createRoomSchema>) => {
+    const mode = localStorage.getItem('fg_mode') || 'forehead';
     createRoomMutation.mutate(
-      { data: { hostName: values.hostName } },
+      { data: { hostName: values.hostName, mode } as any },
       {
         onSuccess: (data) => {
           const host = data.players.find(p => p.isHost);
@@ -116,7 +117,10 @@ export default function Home() {
               {t.joinRoom}
             </Button>
 
-            <Button variant="ghost" className="mt-8" onClick={() => setLocation('/admin')}>
+            <Button variant="ghost" size="sm" className="mt-2 text-muted-foreground" onClick={() => setLocation('/mode')}>
+              ← {t.back}
+            </Button>
+            <Button variant="ghost" className="mt-2" onClick={() => setLocation('/admin')}>
               {t.adminPanel}
             </Button>
           </div>

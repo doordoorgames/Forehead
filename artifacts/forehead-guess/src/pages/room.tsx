@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Copy, Check, Users } from 'lucide-react';
 import { useLang } from '@/context/LanguageContext';
+import CharacterRoom from './character-room';
 
 export default function Room() {
   const params = useParams<{ code: string }>();
@@ -50,13 +51,29 @@ export default function Room() {
   const roomState = socket.roomState || (initialRoom ? {
     code: initialRoom.code,
     status: initialRoom.status as RoomState['status'],
+    mode: ((initialRoom as any).mode ?? 'forehead') as RoomState['mode'],
     categoryId: initialRoom.categoryId ?? null,
     categoryName: null,
     players: initialRoom.players,
   } : null);
 
   const status = roomState?.status || 'waiting';
+  const mode = roomState?.mode ?? 'forehead';
 
+  // Character mode: render dedicated component
+  if (mode === 'character') {
+    return (
+      <CharacterRoom
+        code={code}
+        playerId={playerId}
+        roomState={roomState}
+        socket={socket}
+        onGoHome={() => setLocation('/home')}
+      />
+    );
+  }
+
+  // Forehead mode
   return (
     <>
       <div className="portrait-warning fixed inset-0 z-[9999] bg-black flex-col items-center justify-center hidden">

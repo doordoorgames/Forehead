@@ -1,6 +1,8 @@
 # Forehead Guess
 
-A full-stack real-time multiplayer web game where players guess what word/item is on their forehead while holding their phone up.
+A full-stack real-time multiplayer web game with two modes:
+1. **Forehead Game** — hold phone to forehead and guess the word.
+2. **Guess the Character** — admin reveals hints one at a time; players try to guess the character.
 
 ## Overview
 
@@ -58,21 +60,33 @@ pnpm workspace monorepo using TypeScript.
 ### WebSocket Protocol (`/ws`)
 Client sends JSON `{ type, payload }` messages. Server broadcasts state updates.
 
-**Client → Server:**
+**Client → Server (Forehead mode):**
 - `join` — connect to room after HTTP join
 - `setCategory` — host changes category
-- `setOptions` — host sets turn duration / round count
 - `startGame` — host starts the game
-- `correct` — active player got it right
-- `pass` — active player passes
+- `endRound` — end a round
+- `playerReady` — mark self ready for next round
+- `nextRound` — host advances to next round
+- `endGame` — host ends game
 - `playAgain` — host resets room
 
+**Client → Server (Character mode):**
+- `gtcStart` — admin starts character game
+- `gtcNextHint` — admin reveals next hint
+- `gtcRevealAnswer` — admin reveals the answer
+- `gtcNextCharacter` — admin moves to next character
+- `gtcTransferAdmin` — admin passes game admin role to another player
+- `gtcEndGame` — admin ends the game
+- `gtcBackToLobby` — admin returns all players to lobby
+
 **Server → Client:**
-- `roomUpdate` — full room state
-- `turnUpdate` — current turn info (assignment hidden from guesser)
-- `timerTick` — countdown seconds
-- `turnEnd` — turn result
-- `gameEnd` — final scores
+- `roomUpdate` — full room state (includes `mode` field)
+- `countdownTick` — countdown seconds
+- `roundStart` — round info (forehead mode)
+- `revealInfo` — reveal results (forehead mode)
+- `readyUpdate` — which players are ready
+- `gameEnd` — game finished
+- `gtcState` — character game state (admin gets full answer+hints, players get current hint only; answer revealed to all on reveal)
 
 ## Admin Panel
 
@@ -84,6 +98,7 @@ Admin can:
 - Create/edit/delete/enable/disable categories
 - Upload items via CSV or XLSX (columns: `item_text`, `image_url`)
 - View items in each category
+- Upload character pool for "Guess the Character" mode via CSV (Col A = answer, Cols B–K = up to 10 hints)
 
 ## Database Schema
 

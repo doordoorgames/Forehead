@@ -144,6 +144,13 @@
   }
 }
 
+/* Arabic mode — Changa font, RTL */
+.lang-ar .neon-word,
+.lang-ar h1, .lang-ar h2, .lang-ar h3 {
+  font-family: 'Changa', 'Arial', sans-serif !important;
+  font-weight: 800;
+}
+
 /* Neon game word — thick Broadway-style with pink glow + black stroke */
 .neon-word {
   font-family: 'Bebas Neue', 'Impact', 'Arial Black', sans-serif;

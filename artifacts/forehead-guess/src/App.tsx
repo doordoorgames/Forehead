@@ -6,14 +6,17 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Admin from "@/pages/admin";
 import Room from "@/pages/room";
+import LanguageSelect from "@/pages/language-select";
 import CyberpunkBackground from "@/components/CyberpunkBackground";
+import { LanguageProvider } from "@/context/LanguageContext";
 
 const queryClient = new QueryClient();
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={LanguageSelect} />
+      <Route path="/home" component={Home} />
       <Route path="/admin" component={Admin} />
       <Route path="/room/:code" component={Room} />
       <Route component={NotFound} />
@@ -23,17 +26,19 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <CyberpunkBackground />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-        </div>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <LanguageProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <CyberpunkBackground />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+          </div>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </LanguageProvider>
   );
 }
 

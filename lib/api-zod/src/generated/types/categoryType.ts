@@ -11,4 +11,6 @@ export type CategoryType = (typeof CategoryType)[keyof typeof CategoryType];
 export const CategoryType = {
   text: "text",
   image: "image",
+  en: "en",
+  ar: "ar",
 } as const;

@@ -21,7 +21,7 @@ export const ListCategoriesResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
   description: zod.string().nullish(),
-  type: zod.enum(["text", "image"]),
+  type: zod.string(),
   enabled: zod.boolean(),
   itemCount: zod.number(),
   createdAt: zod.string(),
@@ -39,7 +39,7 @@ export const AdminListCategoriesResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
   description: zod.string().nullish(),
-  type: zod.enum(["text", "image"]),
+  type: zod.string(),
   enabled: zod.boolean(),
   itemCount: zod.number(),
   createdAt: zod.string(),
@@ -58,7 +58,7 @@ export const AdminCreateCategoryHeader = zod.object({
 export const AdminCreateCategoryBody = zod.object({
   name: zod.string(),
   description: zod.string().nullish(),
-  type: zod.enum(["text", "image"]),
+  type: zod.string(),
   enabled: zod.boolean().optional(),
 });
 
@@ -76,7 +76,7 @@ export const AdminUpdateCategoryHeader = zod.object({
 export const AdminUpdateCategoryBody = zod.object({
   name: zod.string().optional(),
   description: zod.string().nullish(),
-  type: zod.enum(["text", "image"]).optional(),
+  type: zod.string().optional(),
   enabled: zod.boolean().optional(),
 });
 
@@ -84,7 +84,7 @@ export const AdminUpdateCategoryResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
   description: zod.string().nullish(),
-  type: zod.enum(["text", "image"]),
+  type: zod.string(),
   enabled: zod.boolean(),
   itemCount: zod.number(),
   createdAt: zod.string(),

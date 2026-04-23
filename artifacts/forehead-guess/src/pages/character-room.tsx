@@ -4,6 +4,7 @@ import { Copy, Check, Users, ChevronRight, Eye, RotateCcw, ArrowRight, Loader2 }
 import { Button } from '@/components/ui/button';
 import { useLang } from '@/context/LanguageContext';
 import { RoomState, CharacterState } from '@/hooks/useGameSocket';
+import SilhouettesBackground from '@/components/SilhouettesBackground';
 
 interface CharacterRoomProps {
   code: string;
@@ -31,7 +32,9 @@ export default function CharacterRoom({ code, playerId, roomState, socket, onGoH
   const status = roomState?.status ?? 'waiting';
 
   return (
-    <div className="min-h-[100dvh] text-foreground flex flex-col relative overflow-hidden bg-background">
+    <div className="min-h-[100dvh] text-white flex flex-col relative overflow-hidden" style={{ background: '#13141a' }}>
+      <SilhouettesBackground />
+
       {socket.error && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-destructive text-destructive-foreground p-3 text-center font-bold text-lg">
           {socket.error}
@@ -97,7 +100,7 @@ function CharacterLobbyView({
   };
 
   return (
-    <div className="flex-1 flex flex-col p-6 gap-6 max-w-2xl mx-auto w-full">
+    <div className="relative z-10 flex-1 flex flex-col p-6 gap-6 max-w-2xl mx-auto w-full">
       {/* Mode badge */}
       <div className="flex justify-center">
         <span
@@ -196,7 +199,7 @@ function CharacterGameView({
 
   if (!characterState) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="relative z-10 flex-1 flex items-center justify-center">
         <Loader2 className="w-16 h-16 animate-spin text-[#39d5ff]" />
       </div>
     );
@@ -265,7 +268,7 @@ function AdminGameView({
   const allHintsShown = currentIdx >= hints.length - 1;
 
   return (
-    <div className="flex flex-col min-h-[100dvh] p-4 gap-4 max-w-2xl mx-auto w-full">
+    <div className="relative z-10 flex flex-col min-h-[100dvh] p-4 gap-4 max-w-2xl mx-auto w-full">
       {/* Admin badge */}
       <div className="flex items-center justify-between">
         <span
@@ -437,7 +440,7 @@ function PlayerGameView({
   const revealedAnswer = (characterState as any).revealedAnswer as string | undefined;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 gap-8 max-w-lg mx-auto w-full text-center">
+    <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 gap-8 max-w-lg mx-auto w-full text-center">
       {/* Mode badge */}
       <span
         className="px-4 py-1.5 rounded-full text-sm font-bold border-2 border-[#39d5ff] text-[#39d5ff] bg-[#39d5ff]/10"
@@ -504,7 +507,7 @@ function PlayerGameView({
 
 function FinishedView({ onGoHome, t, fontStyle }: { onGoHome: () => void; t: any; fontStyle: object }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-6 p-6">
+    <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-6 p-6">
       <h1 className="text-6xl font-black text-center" style={fontStyle}>{t.gameOver}</h1>
       <Button size="lg" className="h-16 px-10 text-xl rounded-2xl" onClick={onGoHome} style={fontStyle}>
         {t.goHome}

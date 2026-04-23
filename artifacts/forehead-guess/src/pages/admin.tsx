@@ -23,9 +23,7 @@ const loginSchema = z.object({
 export default function Admin() {
   const { toast } = useToast();
   const [password, setPassword] = useState<string | null>(sessionStorage.getItem('fg_admin_pw'));
-
   const verifyMutation = useAdminVerify();
-
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { password: '' },
@@ -49,9 +47,7 @@ export default function Admin() {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-muted/30 p-4">
         <Card className="w-full max-w-sm">
-          <CardHeader>
-            <CardTitle>Admin Login</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Admin Login</CardTitle></CardHeader>
           <CardContent>
             <Form {...loginForm}>
               <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
@@ -91,54 +87,162 @@ interface UploadResult {
   errors: string[];
 }
 
-interface CharacterUploadResult {
+interface CharUploadResult {
   imported: number;
   skipped: number;
   errors: string[];
 }
 
+interface CharEntry {
+  id: number;
+  answer: string;
+  hints: string[];
+  lang: string;
+}
+
+function UploadButton({
+  label,
+  sublabel,
+  color,
+  uploading,
+  uploadResult,
+  uploadError,
+  fileRef,
+  accept,
+  onFile,
+  testId,
+}: {
+  label: string;
+  sublabel: string;
+  color: 'pink' | 'cyan';
+  uploading: boolean;
+  uploadResult: UploadResult | CharUploadResult | null;
+  uploadError: string | null;
+  fileRef: React.RefObject<HTMLInputElement | null>;
+  accept: string;
+  onFile: (f: File) => void;
+  testId?: string;
+}) {
+  const isForeheadResult = uploadResult && 'totalCategories' in uploadResult;
+  const isCharResult = uploadResult && 'imported' in uploadResult;
+
+  return (
+    <div className={`rounded-2xl border-2 p-5 space-y-3 ${
+      color === 'pink'
+        ? 'border-[#ff4fa3]/40 bg-[#ff4fa3]/5'
+        : 'border-[#39d5ff]/40 bg-[#39d5ff]/5'
+    }`}>
+      <div>
+        <p className={`font-bold text-base ${color === 'pink' ? 'text-[#ff4fa3]' : 'text-[#39d5ff]'}`}>{label}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{sublabel}</p>
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept={accept}
+        className="hidden"
+        data-testid={testId}
+        onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); }}
+      />
+      <Button
+        size="sm"
+        className={`gap-2 w-full ${
+          color === 'pink'
+            ? 'bg-[#ff4fa3] hover:bg-[#e03d91] text-white'
+            : 'bg-[#39d5ff] hover:bg-[#28b8e0] text-black'
+        }`}
+        disabled={uploading}
+        onClick={() => fileRef.current?.click()}
+      >
+        <Upload className="w-4 h-4" />
+        {uploading ? 'Uploading…' : 'Choose File'}
+      </Button>
+
+      {uploadError && (
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-xs">
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          {uploadError}
+        </div>
+      )}
+      {isForeheadResult && (
+        <div className="p-3 rounded-xl bg-green-50 border border-green-200 space-y-1">
+          <div className="flex items-center gap-2 font-bold text-green-800 text-sm">
+            <CheckCircle className="w-4 h-4" />
+            {(uploadResult as UploadResult).totalCategories} categories updated
+          </div>
+          {(uploadResult as UploadResult).categories.map(cat => (
+            <div key={cat.name} className="text-xs text-green-700 flex items-center gap-1.5 pl-1">
+              <span className="font-medium">{cat.name}</span>
+              <span className="text-green-400">·</span>
+              <span>{cat.itemCount} words</span>
+              {cat.created && <span className="text-xs bg-green-200 text-green-800 px-1.5 py-0.5 rounded font-medium">NEW</span>}
+            </div>
+          ))}
+        </div>
+      )}
+      {isCharResult && (
+        <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-sm">
+          <div className="flex items-center gap-2 font-bold text-green-800">
+            <CheckCircle className="w-4 h-4" />
+            {(uploadResult as CharUploadResult).imported} characters imported
+            {(uploadResult as CharUploadResult).skipped > 0 && (
+              <span className="text-xs font-normal text-green-600">({(uploadResult as CharUploadResult).skipped} skipped)</span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AdminDashboard({ password, onLogout }: { password: string; onLogout: () => void }) {
   const { toast } = useToast();
-  const enFileRef = useRef<HTMLInputElement>(null);
-  const arFileRef = useRef<HTMLInputElement>(null);
-  const charFileRef = useRef<HTMLInputElement>(null);
-  const [uploadingEn, setUploadingEn] = useState(false);
-  const [uploadingAr, setUploadingAr] = useState(false);
-  const [uploadingChar, setUploadingChar] = useState(false);
-  const [uploadResultEn, setUploadResultEn] = useState<UploadResult | null>(null);
-  const [uploadResultAr, setUploadResultAr] = useState<UploadResult | null>(null);
-  const [uploadResultChar, setUploadResultChar] = useState<CharacterUploadResult | null>(null);
-  const [uploadErrorEn, setUploadErrorEn] = useState<string | null>(null);
-  const [uploadErrorAr, setUploadErrorAr] = useState<string | null>(null);
-  const [uploadErrorChar, setUploadErrorChar] = useState<string | null>(null);
-  const [charLang, setCharLang] = useState<'en' | 'ar'>('en');
-  const [characters, setCharacters] = useState<Array<{id: number; answer: string; hints: string[]; lang: string}>>([]);
+
+  // Forehead upload refs + state
+  const fhEnRef = useRef<HTMLInputElement>(null);
+  const fhArRef = useRef<HTMLInputElement>(null);
+  const [fhEnUploading, setFhEnUploading] = useState(false);
+  const [fhArUploading, setFhArUploading] = useState(false);
+  const [fhEnResult, setFhEnResult] = useState<UploadResult | null>(null);
+  const [fhArResult, setFhArResult] = useState<UploadResult | null>(null);
+  const [fhEnError, setFhEnError] = useState<string | null>(null);
+  const [fhArError, setFhArError] = useState<string | null>(null);
+
+  // Character upload refs + state
+  const charEnRef = useRef<HTMLInputElement>(null);
+  const charArRef = useRef<HTMLInputElement>(null);
+  const [charEnUploading, setCharEnUploading] = useState(false);
+  const [charArUploading, setCharArUploading] = useState(false);
+  const [charEnResult, setCharEnResult] = useState<CharUploadResult | null>(null);
+  const [charArResult, setCharArResult] = useState<CharUploadResult | null>(null);
+  const [charEnError, setCharEnError] = useState<string | null>(null);
+  const [charArError, setCharArError] = useState<string | null>(null);
+
+  // Character list
+  const [characters, setCharacters] = useState<CharEntry[]>([]);
   const [charsLoading, setCharsLoading] = useState(false);
 
-  const { data: categories, isLoading, refetch } = useAdminListCategories({
+  const { data: categories, isLoading: catsLoading, refetch } = useAdminListCategories({
     request: { headers: { 'x-admin-password': password } }
   });
   const updateCategory = useAdminUpdateCategory();
   const deleteCategory = useAdminDeleteCategory();
 
-  const handleMasterUpload = async (file: File, lang: 'en' | 'ar') => {
-    const setUploading = lang === 'en' ? setUploadingEn : setUploadingAr;
-    const setResult = lang === 'en' ? setUploadResultEn : setUploadResultAr;
-    const setError = lang === 'en' ? setUploadErrorEn : setUploadErrorAr;
-    const fileRef = lang === 'en' ? enFileRef : arFileRef;
+  // ── Forehead upload ──────────────────────────────────────────────
+  const handleForeheadUpload = async (file: File, lang: 'en' | 'ar') => {
+    const setUploading = lang === 'en' ? setFhEnUploading : setFhArUploading;
+    const setResult   = lang === 'en' ? setFhEnResult   : setFhArResult;
+    const setError    = lang === 'en' ? setFhEnError    : setFhArError;
+    const ref         = lang === 'en' ? fhEnRef         : fhArRef;
 
-    setUploading(true);
-    setResult(null);
-    setError(null);
-
-    const formData = new FormData();
-    formData.append('file', file);
-
+    setUploading(true); setResult(null); setError(null);
+    const fd = new FormData();
+    fd.append('file', file);
     try {
       const res = await fetch(`/api/admin/upload-master?lang=${lang}`, {
         method: 'POST',
         headers: { 'x-admin-password': password },
-        body: formData,
+        body: fd,
       });
       const data = await res.json();
       if (!res.ok) {
@@ -152,95 +256,89 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
       setError('Network error — could not upload file.');
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = '';
+      if (ref.current) ref.current.value = '';
     }
   };
 
-  const fetchCharacters = useCallback(async () => {
-    setCharsLoading(true);
-    try {
-      const res = await fetch('/api/admin/characters', {
-        headers: { 'x-admin-password': password }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCharacters(data);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setCharsLoading(false);
-    }
-  }, [password]);
+  // ── Character upload ─────────────────────────────────────────────
+  const handleCharUpload = async (file: File, lang: 'en' | 'ar') => {
+    const setUploading = lang === 'en' ? setCharEnUploading : setCharArUploading;
+    const setResult   = lang === 'en' ? setCharEnResult   : setCharArResult;
+    const setError    = lang === 'en' ? setCharEnError    : setCharArError;
+    const ref         = lang === 'en' ? charEnRef         : charArRef;
 
-  useEffect(() => { fetchCharacters(); }, [fetchCharacters]);
-
-  const handleCharacterUpload = async (file: File, lang: 'en' | 'ar') => {
-    setUploadingChar(true);
-    setUploadResultChar(null);
-    setUploadErrorChar(null);
-    const formData = new FormData();
-    formData.append('file', file);
+    setUploading(true); setResult(null); setError(null);
+    const fd = new FormData();
+    fd.append('file', file);
     try {
       const res = await fetch(`/api/admin/upload-characters?lang=${lang}`, {
         method: 'POST',
         headers: { 'x-admin-password': password },
-        body: formData,
+        body: fd,
       });
       const data = await res.json();
       if (!res.ok) {
-        setUploadErrorChar(data.error || 'Upload failed');
+        setError(data.error || 'Upload failed');
       } else {
-        setUploadResultChar(data as CharacterUploadResult);
+        setResult(data as CharUploadResult);
         toast({ title: `${lang === 'en' ? 'English' : 'Arabic'} characters uploaded!`, description: `${data.imported} characters added.` });
         fetchCharacters();
       }
     } catch {
-      setUploadErrorChar('Network error — could not upload file.');
+      setError('Network error — could not upload file.');
     } finally {
-      setUploadingChar(false);
-      if (charFileRef.current) charFileRef.current.value = '';
+      setUploading(false);
+      if (ref.current) ref.current.value = '';
     }
   };
 
+  // ── Character list ───────────────────────────────────────────────
+  const fetchCharacters = useCallback(async () => {
+    setCharsLoading(true);
+    try {
+      const res = await fetch('/api/admin/characters', { headers: { 'x-admin-password': password } });
+      if (res.ok) setCharacters(await res.json());
+    } catch { /* ignore */ }
+    finally { setCharsLoading(false); }
+  }, [password]);
+
+  useEffect(() => { fetchCharacters(); }, [fetchCharacters]);
+
   const handleDeleteCharacter = async (id: number, answer: string) => {
-    if (!confirm(`Delete character "${answer}" and all its hints?`)) return;
+    if (!confirm(`Delete character "${answer}"?`)) return;
     try {
       const res = await fetch(`/api/admin/characters/${id}`, {
         method: 'DELETE',
         headers: { 'x-admin-password': password }
       });
-      if (res.ok) {
-        toast({ title: `"${answer}" deleted` });
-        fetchCharacters();
-      }
+      if (res.ok) { toast({ title: `"${answer}" deleted` }); fetchCharacters(); }
     } catch {
-      toast({ title: 'Failed to delete character', variant: 'destructive' });
+      toast({ title: 'Failed to delete', variant: 'destructive' });
     }
   };
 
+  // ── Category helpers ─────────────────────────────────────────────
   const toggleCategory = (id: number, enabled: boolean) => {
-    updateCategory.mutate(
-      { id, data: { enabled } },
-      {
-        request: { headers: { 'x-admin-password': password } },
-        onSuccess: () => refetch(),
-        onError: () => toast({ title: 'Failed to update category', variant: 'destructive' })
-      }
-    );
+    updateCategory.mutate({ id, data: { enabled } }, {
+      request: { headers: { 'x-admin-password': password } },
+      onSuccess: () => refetch(),
+      onError: () => toast({ title: 'Failed to update category', variant: 'destructive' })
+    });
   };
 
-  const handleDelete = (id: number, name: string) => {
+  const handleDeleteCategory = (id: number, name: string) => {
     if (!confirm(`Delete category "${name}" and all its words?`)) return;
-    deleteCategory.mutate(
-      { id },
-      {
-        request: { headers: { 'x-admin-password': password } },
-        onSuccess: () => { toast({ title: `"${name}" deleted` }); refetch(); },
-        onError: () => toast({ title: 'Failed to delete', variant: 'destructive' })
-      }
-    );
+    deleteCategory.mutate({ id }, {
+      request: { headers: { 'x-admin-password': password } },
+      onSuccess: () => { toast({ title: `"${name}" deleted` }); refetch(); },
+      onError: () => toast({ title: 'Failed to delete', variant: 'destructive' })
+    });
   };
+
+  const enCategories = categories?.filter(c => c.type === 'en') ?? [];
+  const arCategories = categories?.filter(c => c.type === 'ar') ?? [];
+  const enChars = characters.filter(c => c.lang === 'en');
+  const arChars = characters.filter(c => c.lang === 'ar');
 
   return (
     <div className="min-h-[100dvh] p-6 bg-muted/10 max-w-4xl mx-auto">
@@ -249,309 +347,249 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
         <Button variant="outline" onClick={onLogout} data-testid="button-logout">Logout</Button>
       </div>
 
-      <div className="space-y-6">
-        {/* ── Format hint ── */}
-        <Card className="border bg-muted/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <FileSpreadsheet className="w-4 h-4" />
-              File Format
-            </CardTitle>
-            <CardDescription>
-              Each <strong>column</strong> = one category. Row 1 = category name. Rows below = words.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-xl bg-card border p-4 font-mono text-sm overflow-x-auto">
-              <div className="grid grid-cols-3 gap-4 text-center min-w-[300px]">
-                <div className="font-bold text-primary border-b pb-1">Sports</div>
-                <div className="font-bold text-primary border-b pb-1">Movies</div>
-                <div className="font-bold text-primary border-b pb-1">Animals</div>
-                <div className="text-muted-foreground">Soccer</div>
-                <div className="text-muted-foreground">Titanic</div>
-                <div className="text-muted-foreground">Elephant</div>
-                <div className="text-muted-foreground">Basketball</div>
-                <div className="text-muted-foreground">Avatar</div>
-                <div className="text-muted-foreground">Tiger</div>
-              </div>
+      <div className="space-y-10">
+
+        {/* ══════════════════════════════════════════════════════
+            SECTION 1 — FOREHEAD GAME UPLOADS
+        ══════════════════════════════════════════════════════ */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl">🤚</span>
+            <div>
+              <h2 className="text-xl font-black">Forehead Game</h2>
+              <p className="text-sm text-muted-foreground">Upload word lists. Each column = one category. Row 1 = category name. Rows below = words.</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* ── English Upload ── */}
-          {(['en', 'ar'] as const).map((lang) => {
-            const isEn = lang === 'en';
-            const uploading = isEn ? uploadingEn : uploadingAr;
-            const uploadResult = isEn ? uploadResultEn : uploadResultAr;
-            const uploadError = isEn ? uploadErrorEn : uploadErrorAr;
-            const fileRef = isEn ? enFileRef : arFileRef;
-
-            return (
-              <Card key={lang} className={`border-2 ${isEn ? 'border-pink-400/40 bg-pink-50/30' : 'border-cyan-400/40 bg-cyan-50/30'}`}>
-                <CardHeader>
-                  <CardTitle className={`flex items-center gap-2 ${isEn ? 'text-pink-700' : 'text-cyan-700'}`}>
-                    <FileSpreadsheet className="w-5 h-5" />
-                    {isEn ? 'English Categories' : 'Arabic Categories — فئات عربية'}
-                  </CardTitle>
-                  <CardDescription>
-                    {isEn
-                      ? 'Upload an English-language word list. Players in English mode will see these categories.'
-                      : 'Upload an Arabic-language word list. Players in Arabic mode will see these categories.'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept=".csv,.xlsx,.xls"
-                      className="hidden"
-                      data-testid={`input-master-file-${lang}`}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleMasterUpload(file, lang);
-                      }}
-                    />
-                    <Button
-                      size="lg"
-                      className={`gap-2 ${isEn ? 'bg-pink-600 hover:bg-pink-700' : 'bg-cyan-600 hover:bg-cyan-700'} text-white`}
-                      disabled={uploading}
-                      data-testid={`button-upload-master-${lang}`}
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      <Upload className="w-4 h-4" />
-                      {uploading ? 'Uploading...' : 'Choose File'}
-                    </Button>
-                    <span className="text-sm text-muted-foreground">CSV or Excel (.xlsx)</span>
-                  </div>
-
-                  {uploadError && (
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-                      <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                      {uploadError}
-                    </div>
-                  )}
-                  {uploadResult && (
-                    <div className="p-4 rounded-xl bg-green-50 border border-green-200 space-y-2">
-                      <div className="flex items-center gap-2 font-bold text-green-800">
-                        <CheckCircle className="w-4 h-4" />
-                        {uploadResult.totalCategories} categories updated
-                      </div>
-                      <div className="space-y-1">
-                        {uploadResult.categories.map((cat) => (
-                          <div key={cat.name} className="text-sm text-green-700 flex items-center gap-2">
-                            <span className="font-medium">{cat.name}</span>
-                            <span className="text-green-500">·</span>
-                            <span>{cat.itemCount} words</span>
-                            {cat.created && <span className="text-xs bg-green-200 text-green-800 px-1.5 py-0.5 rounded font-medium">NEW</span>}
-                          </div>
-                        ))}
-                      </div>
-                      {uploadResult.errors.length > 0 && (
-                        <div className="text-xs text-amber-700 mt-2">
-                          {uploadResult.errors.length} row(s) skipped
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* ── Character Pool Management ── */}
-        <Card className="border-2 border-[#39d5ff]/40">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span>🕵️</span> Guess the Character — Pool
-            </CardTitle>
-            <CardDescription>
-              Upload characters per language. Column A = answer, Columns B–K = up to 10 hints.
-              A header row is skipped automatically.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Language tabs */}
-            <div className="flex gap-2">
-              {(['en', 'ar'] as const).map(l => (
-                <button
-                  key={l}
-                  onClick={() => setCharLang(l)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${
-                    charLang === l
-                      ? 'bg-[#39d5ff] text-black'
-                      : 'border border-[#39d5ff]/50 text-[#39d5ff] hover:bg-[#39d5ff]/10'
-                  }`}
-                >
-                  {l === 'en' ? '🇬🇧 English' : '🇸🇦 Arabic'}
-                </button>
-              ))}
-            </div>
-
-            {/* CSV format hint */}
-            <div className="p-3 rounded-lg bg-muted text-sm font-mono">
-              {charLang === 'en'
-                ? <>answer, hint1, hint2, hint3, …<br/>Batman, Cape, Gotham, Bruce Wayne, …</>
-                : <span dir="rtl">الجواب, تلميح1, تلميح2, …<br/>باتمان, رداء, غوثام, …</span>
-              }
-            </div>
-
-            {/* Upload button */}
-            <input
-              ref={charFileRef}
-              type="file"
-              accept=".csv"
-              className="hidden"
-              onChange={e => {
-                const file = e.target.files?.[0];
-                if (file) handleCharacterUpload(file, charLang);
-              }}
+          <div className="grid md:grid-cols-2 gap-4">
+            <UploadButton
+              label="🇬🇧 English Categories"
+              sublabel="CSV or Excel — words in English"
+              color="pink"
+              uploading={fhEnUploading}
+              uploadResult={fhEnResult}
+              uploadError={fhEnError}
+              fileRef={fhEnRef}
+              accept=".csv,.xlsx,.xls"
+              onFile={f => handleForeheadUpload(f, 'en')}
+              testId="input-master-file-en"
             />
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                className="gap-2 border-[#39d5ff] text-[#39d5ff] hover:bg-[#39d5ff]/10"
-                disabled={uploadingChar}
-                onClick={() => charFileRef.current?.click()}
-              >
-                <Upload className="w-4 h-4" />
-                {uploadingChar ? 'Uploading...' : `Upload ${charLang === 'en' ? 'English' : 'Arabic'} CSV`}
-              </Button>
-            </div>
+            <UploadButton
+              label="🇸🇦 Arabic Categories — فئات عربية"
+              sublabel="CSV or Excel — words in Arabic"
+              color="cyan"
+              uploading={fhArUploading}
+              uploadResult={fhArResult}
+              uploadError={fhArError}
+              fileRef={fhArRef}
+              accept=".csv,.xlsx,.xls"
+              onFile={f => handleForeheadUpload(f, 'ar')}
+              testId="input-master-file-ar"
+            />
+          </div>
+        </section>
 
-            {uploadErrorChar && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                {uploadErrorChar}
-              </div>
-            )}
-            {uploadResultChar && (
-              <div className="p-4 rounded-xl bg-green-50 border border-green-200 space-y-2">
-                <div className="flex items-center gap-2 font-bold text-green-800">
-                  <CheckCircle className="w-4 h-4" />
-                  {uploadResultChar.imported} characters imported
-                  {uploadResultChar.skipped > 0 && <span className="text-xs font-normal text-green-600">({uploadResultChar.skipped} skipped)</span>}
-                </div>
-                {uploadResultChar.errors.length > 0 && (
-                  <div className="text-xs text-amber-700">
-                    {uploadResultChar.errors.slice(0, 5).join(', ')}
+        {/* ══════════════════════════════════════════════════════
+            SECTION 2 — GUESS THE CHARACTER UPLOADS
+        ══════════════════════════════════════════════════════ */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl">🕵️</span>
+            <div>
+              <h2 className="text-xl font-black">Guess the Character</h2>
+              <p className="text-sm text-muted-foreground">Upload character pools. Column A = answer (character name). Columns B–K = up to 10 hints.</p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <UploadButton
+              label="🇬🇧 English Characters"
+              sublabel="CSV — answer in col A, hints in cols B–K"
+              color="pink"
+              uploading={charEnUploading}
+              uploadResult={charEnResult}
+              uploadError={charEnError}
+              fileRef={charEnRef}
+              accept=".csv"
+              onFile={f => handleCharUpload(f, 'en')}
+              testId="input-char-file-en"
+            />
+            <UploadButton
+              label="🇸🇦 Arabic Characters — شخصيات عربية"
+              sublabel="CSV — الجواب في العمود A، تلميحات في B–K"
+              color="cyan"
+              uploading={charArUploading}
+              uploadResult={charArResult}
+              uploadError={charArError}
+              fileRef={charArRef}
+              accept=".csv"
+              onFile={f => handleCharUpload(f, 'ar')}
+              testId="input-char-file-ar"
+            />
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════
+            SECTION 3 — FOREHEAD CATEGORIES LIST
+        ══════════════════════════════════════════════════════ */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl">📋</span>
+            <div>
+              <h2 className="text-xl font-black">Uploaded Forehead Categories</h2>
+              <p className="text-sm text-muted-foreground">Toggle categories on/off or delete them.</p>
+            </div>
+          </div>
+
+          {catsLoading ? (
+            <p className="text-muted-foreground text-sm">Loading…</p>
+          ) : (enCategories.length === 0 && arCategories.length === 0) ? (
+            <p className="text-muted-foreground text-sm">No categories yet. Upload a file above.</p>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* English */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#ff4fa3] mb-2">🇬🇧 English ({enCategories.length})</p>
+                {enCategories.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">None uploaded yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {enCategories.map(cat => (
+                      <div key={cat.id} data-testid={`card-category-${cat.id}`}
+                        className="flex items-center justify-between p-3 border rounded-xl bg-card">
+                        <div>
+                          <p className="font-semibold">{cat.name}</p>
+                          <p className="text-xs text-muted-foreground">{cat.itemCount} words</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Switch
+                            data-testid={`switch-category-${cat.id}`}
+                            checked={cat.enabled}
+                            onCheckedChange={v => toggleCategory(cat.id, v)}
+                          />
+                          <Button variant="ghost" size="icon"
+                            data-testid={`button-delete-category-${cat.id}`}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteCategory(cat.id, cat.name)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-            )}
 
-            {/* Character list */}
-            <div>
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                Loaded Characters
-                <span className="text-xs font-normal text-muted-foreground">
-                  ({characters.filter(c => c.lang === charLang).length} {charLang === 'en' ? 'English' : 'Arabic'})
-                </span>
-                <button onClick={fetchCharacters} className="text-xs text-[#39d5ff] hover:underline ml-auto">
-                  Refresh
-                </button>
-              </h3>
-              {charsLoading ? (
-                <p className="text-muted-foreground text-sm">Loading...</p>
-              ) : characters.filter(c => c.lang === charLang).length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No {charLang === 'en' ? 'English' : 'Arabic'} characters yet. Upload a CSV above.
-                </p>
-              ) : (
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                  {characters
-                    .filter(c => c.lang === charLang)
-                    .map(char => (
-                      <div
-                        key={char.id}
-                        className="flex items-center justify-between p-3 border rounded-xl bg-card"
-                      >
-                        <div className="min-w-0">
-                          <p className="font-semibold truncate" dir={charLang === 'ar' ? 'rtl' : 'ltr'}>
-                            {char.answer}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {char.hints.length} hint{char.hints.length !== 1 ? 's' : ''}
-                          </p>
+              {/* Arabic */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#39d5ff] mb-2">🇸🇦 Arabic ({arCategories.length})</p>
+                {arCategories.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">None uploaded yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {arCategories.map(cat => (
+                      <div key={cat.id} data-testid={`card-category-${cat.id}`}
+                        className="flex items-center justify-between p-3 border rounded-xl bg-card">
+                        <div>
+                          <p className="font-semibold" dir="rtl">{cat.name}</p>
+                          <p className="text-xs text-muted-foreground">{cat.itemCount} words</p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
+                        <div className="flex items-center gap-3">
+                          <Switch
+                            data-testid={`switch-category-${cat.id}`}
+                            checked={cat.enabled}
+                            onCheckedChange={v => toggleCategory(cat.id, v)}
+                          />
+                          <Button variant="ghost" size="icon"
+                            data-testid={`button-delete-category-${cat.id}`}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteCategory(cat.id, cat.name)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ══════════════════════════════════════════════════════
+            SECTION 4 — GUESS THE CHARACTER LIST
+        ══════════════════════════════════════════════════════ */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl">🗃️</span>
+            <div>
+              <h2 className="text-xl font-black">Uploaded Characters</h2>
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                Showing all characters in the pool.
+                <button onClick={fetchCharacters} className="text-[#39d5ff] text-xs hover:underline">Refresh</button>
+              </p>
+            </div>
+          </div>
+
+          {charsLoading ? (
+            <p className="text-muted-foreground text-sm">Loading…</p>
+          ) : (enChars.length === 0 && arChars.length === 0) ? (
+            <p className="text-muted-foreground text-sm">No characters yet. Upload a CSV above.</p>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* English */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#ff4fa3] mb-2">🇬🇧 English ({enChars.length})</p>
+                {enChars.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">None uploaded yet.</p>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                    {enChars.map(char => (
+                      <div key={char.id}
+                        className="flex items-center justify-between p-3 border rounded-xl bg-card">
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{char.answer}</p>
+                          <p className="text-xs text-muted-foreground">{char.hints.length} hint{char.hints.length !== 1 ? 's' : ''}</p>
+                        </div>
+                        <Button variant="ghost" size="icon"
                           className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2"
-                          onClick={() => handleDeleteCharacter(char.id, char.answer)}
-                        >
+                          onClick={() => handleDeleteCharacter(char.id, char.answer)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     ))}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ── Category List ── */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Categories</CardTitle>
-            <CardDescription>
-              Toggle categories on or off for players to see. Delete ones you no longer need.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <p className="text-muted-foreground">Loading...</p>
-            ) : categories?.length === 0 ? (
-              <p className="text-muted-foreground">No categories yet. Upload your master file above to get started.</p>
-            ) : (
-              <div className="space-y-3">
-                {categories?.map((cat) => (
-                  <div
-                    key={cat.id}
-                    data-testid={`card-category-${cat.id}`}
-                    className="flex items-center justify-between p-4 border rounded-xl bg-card"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <h3 className="font-bold text-lg">{cat.name}</h3>
-                        <p className="text-sm text-muted-foreground">{cat.itemCount} words</p>
-                      </div>
-                      {cat.type === 'en' && (
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 border border-pink-300">EN</span>
-                      )}
-                      {cat.type === 'ar' && (
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 border border-cyan-300">AR</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          {cat.enabled ? 'Active' : 'Hidden'}
-                        </span>
-                        <Switch
-                          data-testid={`switch-category-${cat.id}`}
-                          checked={cat.enabled}
-                          onCheckedChange={(checked) => toggleCategory(cat.id, checked)}
-                        />
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        data-testid={`button-delete-category-${cat.id}`}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDelete(cat.id, cat.name)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              {/* Arabic */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#39d5ff] mb-2">🇸🇦 Arabic ({arChars.length})</p>
+                {arChars.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">None uploaded yet.</p>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                    {arChars.map(char => (
+                      <div key={char.id}
+                        className="flex items-center justify-between p-3 border rounded-xl bg-card">
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate" dir="rtl">{char.answer}</p>
+                          <p className="text-xs text-muted-foreground">{char.hints.length} hint{char.hints.length !== 1 ? 's' : ''}</p>
+                        </div>
+                        <Button variant="ghost" size="icon"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2"
+                          onClick={() => handleDeleteCharacter(char.id, char.answer)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
       </div>
     </div>
   );

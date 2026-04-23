@@ -3,7 +3,7 @@ import multer from "multer";
 import { db } from "@workspace/db";
 import { categoriesTable, categoryItemsTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
-import { setCharacterPool } from "../lib/characterPool";
+import { insertCharacters, listAllCharacters, deleteCharacter } from "../lib/characterPool";
 import {
   AdminListCategoriesHeader,
   AdminListCategoriesResponseItem,
@@ -372,12 +372,18 @@ router.post("/admin/upload-master", upload.single("file"), async (req, res) => {
   res.json({ categories: results, totalCategories: results.length, errors: [], lang });
 });
 
-// POST /api/admin/upload-characters
+// POST /api/admin/upload-characters?lang=en|ar
 // CSV: Column A = answer, Columns B-K = hint1..hint10
 router.post("/admin/upload-characters", upload.single("file"), async (req, res) => {
   const password = req.headers["x-admin-password"] as string | undefined;
   if (!checkAdminPassword(password)) {
     res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const lang = (req.query.lang as string) || (req.body?.lang as string) || "en";
+  if (lang !== "en" && lang !== "ar") {
+    res.status(400).json({ error: "lang must be 'en' or 'ar'" });
     return;
   }
 
@@ -387,7 +393,7 @@ router.post("/admin/upload-characters", upload.single("file"), async (req, res) 
     return;
   }
 
-  const entries: Array<{ answer: string; hints: string[] }> = [];
+  const entries: Array<{ answer: string; hints: string[]; lang: string }> = [];
   const errors: string[] = [];
 
   try {
@@ -420,7 +426,7 @@ router.post("/admin/upload-characters", upload.single("file"), async (req, res) 
       return;
     }
 
-    // Skip header row if first cell looks like a label (non-data)
+    // Skip header row if first cell looks like a label
     let startRow = 0;
     if (rows.length > 0) {
       const firstCell = String(rows[0][0] ?? "").toLowerCase().trim();
@@ -439,7 +445,7 @@ router.post("/admin/upload-characters", upload.single("file"), async (req, res) 
         errors.push(`Row ${i + 1}: "${answer}" has no hints — skipped`);
         continue;
       }
-      entries.push({ answer, hints });
+      entries.push({ answer, hints, lang });
     }
 
     if (entries.length === 0) {
@@ -447,23 +453,40 @@ router.post("/admin/upload-characters", upload.single("file"), async (req, res) 
       return;
     }
 
-    setCharacterPool(entries);
-    res.json({ imported: entries.length, skipped: errors.length, errors });
+    await insertCharacters(entries);
+    res.json({ imported: entries.length, skipped: errors.length, errors, lang });
   } catch (err) {
     req.log.error({ err }, "Error parsing character upload");
     res.status(400).json({ error: "Failed to parse file" });
   }
 });
 
-// GET /api/admin/characters/count
-router.get("/admin/characters/count", async (req, res) => {
+// GET /api/admin/characters?lang=en|ar  (optional lang filter)
+router.get("/admin/characters", async (req, res) => {
   const password = req.headers["x-admin-password"] as string | undefined;
   if (!checkAdminPassword(password)) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  const { characterPoolSize } = await import("../lib/characterPool");
-  res.json({ count: characterPoolSize() });
+  const lang = req.query.lang as string | undefined;
+  const chars = await listAllCharacters(lang);
+  res.json(chars);
+});
+
+// DELETE /api/admin/characters/:id
+router.delete("/admin/characters/:id", async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  await deleteCharacter(id);
+  res.json({ ok: true });
 });
 
 export default router;

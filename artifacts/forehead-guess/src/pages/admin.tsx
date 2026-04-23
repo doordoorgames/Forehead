@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -111,6 +111,9 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const [uploadErrorEn, setUploadErrorEn] = useState<string | null>(null);
   const [uploadErrorAr, setUploadErrorAr] = useState<string | null>(null);
   const [uploadErrorChar, setUploadErrorChar] = useState<string | null>(null);
+  const [charLang, setCharLang] = useState<'en' | 'ar'>('en');
+  const [characters, setCharacters] = useState<Array<{id: number; answer: string; hints: string[]; lang: string}>>([]);
+  const [charsLoading, setCharsLoading] = useState(false);
 
   const { data: categories, isLoading, refetch } = useAdminListCategories({
     request: { headers: { 'x-admin-password': password } }
@@ -153,14 +156,33 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
     }
   };
 
-  const handleCharacterUpload = async (file: File) => {
+  const fetchCharacters = useCallback(async () => {
+    setCharsLoading(true);
+    try {
+      const res = await fetch('/api/admin/characters', {
+        headers: { 'x-admin-password': password }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCharacters(data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setCharsLoading(false);
+    }
+  }, [password]);
+
+  useEffect(() => { fetchCharacters(); }, [fetchCharacters]);
+
+  const handleCharacterUpload = async (file: File, lang: 'en' | 'ar') => {
     setUploadingChar(true);
     setUploadResultChar(null);
     setUploadErrorChar(null);
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch('/api/admin/upload-characters', {
+      const res = await fetch(`/api/admin/upload-characters?lang=${lang}`, {
         method: 'POST',
         headers: { 'x-admin-password': password },
         body: formData,
@@ -170,13 +192,30 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
         setUploadErrorChar(data.error || 'Upload failed');
       } else {
         setUploadResultChar(data as CharacterUploadResult);
-        toast({ title: 'Characters uploaded!', description: `${data.imported} characters ready.` });
+        toast({ title: `${lang === 'en' ? 'English' : 'Arabic'} characters uploaded!`, description: `${data.imported} characters added.` });
+        fetchCharacters();
       }
     } catch {
       setUploadErrorChar('Network error — could not upload file.');
     } finally {
       setUploadingChar(false);
       if (charFileRef.current) charFileRef.current.value = '';
+    }
+  };
+
+  const handleDeleteCharacter = async (id: number, answer: string) => {
+    if (!confirm(`Delete character "${answer}" and all its hints?`)) return;
+    try {
+      const res = await fetch(`/api/admin/characters/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-password': password }
+      });
+      if (res.ok) {
+        toast({ title: `"${answer}" deleted` });
+        fetchCharacters();
+      }
+    } catch {
+      toast({ title: 'Failed to delete character', variant: 'destructive' });
     }
   };
 
@@ -322,22 +361,44 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
           })}
         </div>
 
-        {/* ── Character Upload ── */}
+        {/* ── Character Pool Management ── */}
         <Card className="border-2 border-[#39d5ff]/40">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <span>🕵️</span> Guess the Character — Pool
             </CardTitle>
             <CardDescription>
-              Upload a CSV file to set the character pool. Column A = answer, Columns B–K = up to 10 hints.
-              Optionally include a header row — it will be skipped automatically.
+              Upload characters per language. Column A = answer, Columns B–K = up to 10 hints.
+              A header row is skipped automatically.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-3 rounded-lg bg-muted text-sm font-mono">
-              answer, hint1, hint2, hint3, …<br />
-              Batman, Cape, Gotham, Bruce Wayne, …
+          <CardContent className="space-y-6">
+            {/* Language tabs */}
+            <div className="flex gap-2">
+              {(['en', 'ar'] as const).map(l => (
+                <button
+                  key={l}
+                  onClick={() => setCharLang(l)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${
+                    charLang === l
+                      ? 'bg-[#39d5ff] text-black'
+                      : 'border border-[#39d5ff]/50 text-[#39d5ff] hover:bg-[#39d5ff]/10'
+                  }`}
+                >
+                  {l === 'en' ? '🇬🇧 English' : '🇸🇦 Arabic'}
+                </button>
+              ))}
             </div>
+
+            {/* CSV format hint */}
+            <div className="p-3 rounded-lg bg-muted text-sm font-mono">
+              {charLang === 'en'
+                ? <>answer, hint1, hint2, hint3, …<br/>Batman, Cape, Gotham, Bruce Wayne, …</>
+                : <span dir="rtl">الجواب, تلميح1, تلميح2, …<br/>باتمان, رداء, غوثام, …</span>
+              }
+            </div>
+
+            {/* Upload button */}
             <input
               ref={charFileRef}
               type="file"
@@ -345,7 +406,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
               className="hidden"
               onChange={e => {
                 const file = e.target.files?.[0];
-                if (file) handleCharacterUpload(file);
+                if (file) handleCharacterUpload(file, charLang);
               }}
             />
             <div className="flex items-center gap-3">
@@ -356,7 +417,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
                 onClick={() => charFileRef.current?.click()}
               >
                 <Upload className="w-4 h-4" />
-                {uploadingChar ? 'Uploading...' : 'Choose CSV File'}
+                {uploadingChar ? 'Uploading...' : `Upload ${charLang === 'en' ? 'English' : 'Arabic'} CSV`}
               </Button>
             </div>
 
@@ -380,6 +441,54 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
                 )}
               </div>
             )}
+
+            {/* Character list */}
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                Loaded Characters
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({characters.filter(c => c.lang === charLang).length} {charLang === 'en' ? 'English' : 'Arabic'})
+                </span>
+                <button onClick={fetchCharacters} className="text-xs text-[#39d5ff] hover:underline ml-auto">
+                  Refresh
+                </button>
+              </h3>
+              {charsLoading ? (
+                <p className="text-muted-foreground text-sm">Loading...</p>
+              ) : characters.filter(c => c.lang === charLang).length === 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  No {charLang === 'en' ? 'English' : 'Arabic'} characters yet. Upload a CSV above.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                  {characters
+                    .filter(c => c.lang === charLang)
+                    .map(char => (
+                      <div
+                        key={char.id}
+                        className="flex items-center justify-between p-3 border rounded-xl bg-card"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate" dir={charLang === 'ar' ? 'rtl' : 'ltr'}>
+                            {char.answer}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {char.hints.length} hint{char.hints.length !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2"
+                          onClick={() => handleDeleteCharacter(char.id, char.answer)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 

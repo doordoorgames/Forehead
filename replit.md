@@ -4,6 +4,8 @@ A full-stack real-time multiplayer web game with two modes:
 1. **Forehead Game** — hold phone to forehead and guess the word.
 2. **Guess the Character** — admin reveals hints one at a time; players try to guess the character.
 
+Both modes support **English and Arabic** (lang stored per-room in DB). Character pool is DB-backed with per-language upload and management in the admin panel.
+
 ## Overview
 
 pnpm workspace monorepo using TypeScript.

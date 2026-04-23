@@ -19,10 +19,21 @@ export const categoryItemsTable = pgTable("category_items", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const charactersTable = pgTable("characters", {
+  id: serial("id").primaryKey(),
+  answer: text("answer").notNull(),
+  hints: text("hints").array().notNull(),
+  lang: text("lang").notNull().default("en"), // "en" | "ar"
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertCategorySchema = createInsertSchema(categoriesTable).omit({ id: true, createdAt: true });
 export const insertCategoryItemSchema = createInsertSchema(categoryItemsTable).omit({ id: true, createdAt: true });
+export const insertCharacterSchema = createInsertSchema(charactersTable).omit({ id: true, createdAt: true });
 
 export type Category = typeof categoriesTable.$inferSelect;
 export type CategoryItem = typeof categoryItemsTable.$inferSelect;
+export type Character = typeof charactersTable.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertCategoryItem = z.infer<typeof insertCategoryItemSchema>;
+export type InsertCharacter = z.infer<typeof insertCharacterSchema>;

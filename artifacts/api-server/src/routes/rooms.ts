@@ -63,9 +63,11 @@ router.post("/rooms", async (req, res) => {
   }
 
   const mode = (req.body.mode as string) === 'character' ? 'character' : 'forehead';
+  const lang = (req.body.lang as string) === 'ar' ? 'ar' : 'en';
   const [room] = await db.insert(roomsTable).values({
     code,
     mode,
+    lang,
     categoryId: body.data.categoryId ?? null,
     turnDuration: body.data.turnDuration ?? 60,
     roundCount: body.data.roundCount ?? 1,

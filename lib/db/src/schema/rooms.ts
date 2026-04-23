@@ -8,6 +8,7 @@ export const roomsTable = pgTable("rooms", {
   code: text("code").notNull().unique(),
   status: text("status").notNull().default("waiting"),
   mode: text("mode").notNull().default("forehead"), // "forehead" | "character"
+  lang: text("lang").notNull().default("en"), // "en" | "ar"
   categoryId: integer("category_id").references(() => categoriesTable.id),
   turnDuration: integer("turn_duration").notNull().default(60),
   roundCount: integer("round_count").notNull().default(1),

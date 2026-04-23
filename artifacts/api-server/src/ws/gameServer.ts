@@ -9,7 +9,7 @@ import {
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
-import { getCharacterPool } from "../lib/characterPool";
+import { getCharacterPool, CharacterEntry } from "../lib/characterPool";
 
 // ── CLIENT REGISTRY ──────────────────────────────────────────────────────────
 
@@ -41,7 +41,8 @@ interface CharacterRoundState {
   hints: string[];
   currentHintIndex: number; // -1 = no hint shown yet
   answerRevealed: boolean;
-  usedPoolIndices: number[];
+  usedPoolIndices: number[]; // stores character IDs (DB ids)
+  lang: string;
 }
 
 const clients = new Map<WebSocket, WsClient>();
@@ -87,6 +88,7 @@ async function getRoomState(code: string) {
     code: room.code,
     status: room.status,
     mode: room.mode,
+    lang: room.lang ?? "en",
     categoryId: room.categoryId ?? null,
     categoryName,
     players: players.map((p) => ({
@@ -101,20 +103,20 @@ async function getRoomState(code: string) {
 
 // ── CHARACTER GAME HELPERS ────────────────────────────────────────────────────
 
-function pickNextCharacter(existing: CharacterRoundState | undefined): { idx: number; entry: { answer: string; hints: string[] } } | null {
-  const pool = getCharacterPool();
+async function pickNextCharacter(lang: string, existing: CharacterRoundState | undefined): Promise<{ entry: CharacterEntry } | null> {
+  const pool = await getCharacterPool(lang);
   if (pool.length === 0) return null;
 
   const usedSoFar = existing?.usedPoolIndices ?? [];
-  let available = pool.map((_, i) => i).filter(i => !usedSoFar.includes(i));
+  let available = pool.filter(e => !usedSoFar.includes(e.id));
 
   if (available.length === 0) {
     // All used — reset
-    available = pool.map((_, i) => i);
+    available = pool;
   }
 
-  const idx = available[Math.floor(Math.random() * available.length)];
-  return { idx, entry: pool[idx] };
+  const entry = available[Math.floor(Math.random() * available.length)];
+  return { entry };
 }
 
 async function broadcastCharacterState(roomCode: string) {
@@ -484,14 +486,12 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     });
     if (host?.id !== client.playerId) return;
 
-    const pool = getCharacterPool();
-    if (pool.length === 0) {
-      sendTo(ws, { type: "error", payload: { message: "No character data loaded. Please upload a CSV from the admin panel first." } });
+    const lang = room.lang ?? "en";
+    const picked = await pickNextCharacter(lang, undefined);
+    if (!picked) {
+      sendTo(ws, { type: "error", payload: { message: "No character data loaded for this language. Please upload characters from the admin panel first." } });
       return;
     }
-
-    const picked = pickNextCharacter(undefined);
-    if (!picked) return;
 
     const cs: CharacterRoundState = {
       adminId: client.playerId!,
@@ -499,7 +499,8 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
       hints: picked.entry.hints,
       currentHintIndex: -1,
       answerRevealed: false,
-      usedPoolIndices: [picked.idx],
+      usedPoolIndices: [picked.entry.id],
+      lang,
     };
     roomCharacterState.set(roomCode, cs);
 
@@ -535,23 +536,18 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
   // ── CHARACTER: NEXT CHARACTER ─────────────────────────────────────────────
   if (type === "gtcNextCharacter") {
     const { roomCode } = payload as { roomCode: string };
-    const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
-    if (!room || room.mode !== "character") return;
     const cs = roomCharacterState.get(roomCode);
     if (!cs || cs.adminId !== client.playerId) return;
 
-    const pool = getCharacterPool();
-    if (pool.length === 0) {
+    const picked = await pickNextCharacter(cs.lang, cs);
+    if (!picked) {
       sendTo(ws, { type: "error", payload: { message: "No character data available." } });
       return;
     }
 
-    const picked = pickNextCharacter(cs);
-    if (!picked) return;
-
-    const updatedUsed = cs.usedPoolIndices.includes(picked.idx)
-      ? [picked.idx] // reset happened — start fresh
-      : [...cs.usedPoolIndices, picked.idx];
+    const updatedUsed = cs.usedPoolIndices.includes(picked.entry.id)
+      ? [picked.entry.id] // reset happened — start fresh
+      : [...cs.usedPoolIndices, picked.entry.id];
 
     const newCs: CharacterRoundState = {
       adminId: cs.adminId,
@@ -560,6 +556,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
       currentHintIndex: -1,
       answerRevealed: false,
       usedPoolIndices: updatedUsed,
+      lang: cs.lang,
     };
     roomCharacterState.set(roomCode, newCs);
     await broadcastCharacterState(roomCode);

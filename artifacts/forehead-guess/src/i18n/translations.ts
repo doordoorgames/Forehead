@@ -114,13 +114,16 @@ export const translations = {
     charadesWordNumber: 'Word',
     charadesOf: 'of',
     charadesNext: 'Next Player →',
+    charadesEndTurn: 'End Turn',
+    charadesTimesUp: "Time's up!",
     charadesEndGame: 'End Game',
     charadesAdminLabel: 'Host Controls',
     charadesCurrentWord: 'Current Word',
     charadesCurrentPerformer: 'Performing Now',
     charadesUpNext: 'Up Next',
     charadesWaitingToStart: 'Waiting for host to start...',
-    charadesHostInstructions: 'Press Next to cycle to the next player with a new word',
+    charadesHostInstructions: 'Press End Turn to move to the next player',
+    charadesSecondsLeft: 's left',
   },
   ar: {
     appTitle1: 'خمّن',
@@ -195,7 +198,7 @@ export const translations = {
     foreheadGameDesc: 'ضع الهاتف على جبهتك وخمّن كلمتك',
     guessTheCharacter: 'خمّن الشخصية',
     guessTheCharacterDesc: 'خمّن الشخصية من التلميحات — تلميح واحد في كل مرة',
-    charadesMode: 'شاردز',
+    charadesMode: 'بدون كلام',
     charadesModeDesc: 'بدّل الأدوار في تمثيل الكلمات — هاتفك يعرض كلمتك',
 
     // Character game — admin
@@ -224,8 +227,8 @@ export const translations = {
     waitingForFirstHint: '...في انتظار التلميح الأول',
 
     // Charades game
-    charadesLobbyTitle: 'شاردز',
-    charadesStartGame: '!ابدأ شاردز',
+    charadesLobbyTitle: 'بدون كلام',
+    charadesStartGame: '!ابدأ',
     charadesNoWords: 'لا توجد كلمات شاردز. ارفع قائمة كلمات من لوحة الإدارة أولاً.',
     charadesNeedPlayers: 'تحتاج لاعبَين على الأقل للبدء',
     charadesYourTurn: '!دورك الآن',
@@ -235,13 +238,16 @@ export const translations = {
     charadesWordNumber: 'كلمة',
     charadesOf: 'من',
     charadesNext: '← اللاعب التالي',
+    charadesEndTurn: 'انتهاء الدور',
+    charadesTimesUp: '!انتهى الوقت',
     charadesEndGame: 'إنهاء اللعبة',
     charadesAdminLabel: 'تحكم المضيف',
     charadesCurrentWord: 'الكلمة الحالية',
     charadesCurrentPerformer: 'يؤدي الآن',
     charadesUpNext: 'التالي',
     charadesWaitingToStart: '...انتظار بدء المضيف',
-    charadesHostInstructions: 'اضغط التالي للانتقال للاعب التالي بكلمة جديدة',
+    charadesHostInstructions: 'اضغط انتهاء الدور للانتقال للاعب التالي',
+    charadesSecondsLeft: 'ث',
   },
 } as const;
 

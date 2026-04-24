@@ -206,7 +206,7 @@ async function broadcastCharadesState(roomCode: string) {
         nextPerformerName: nextPerformer?.name ?? "",
         wordNumber: cs.wordNumber,
         totalWords: cs.words.length,
-        word: isHost || isPerformer ? cs.currentWord : undefined,
+        word: isPerformer ? cs.currentWord : undefined,
       },
     });
   }
@@ -405,7 +405,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
             nextPerformerName: nextPerformer?.name ?? "",
             wordNumber: cs.wordNumber,
             totalWords: cs.words.length,
-            word: isHost || isPerformer ? cs.currentWord : undefined,
+            word: isPerformer ? cs.currentWord : undefined,
           },
         });
       }

@@ -520,7 +520,11 @@ router.post("/admin/upload-charades", upload.single("file"), async (req, res) =>
 
     if (ext === "csv") {
       const text = file.buffer.toString("utf-8");
-      rows = text.split(/\r?\n/).map((l) => l.trim().replace(/^"(.*)"$/, "$1").trim()).filter(Boolean);
+      rows = text.split(/\r?\n/).map((l) => {
+        // Take only the first column (handles multi-column CSVs / trailing commas)
+        const firstCol = l.split(",")[0].trim().replace(/^"(.*)"$/, "$1").trim();
+        return firstCol;
+      }).filter(Boolean);
     } else if (ext === "xlsx" || ext === "xls") {
       const XLSX = await import("xlsx");
       const wb = XLSX.read(file.buffer, { type: "buffer" });

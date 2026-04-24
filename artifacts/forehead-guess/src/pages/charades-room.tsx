@@ -369,24 +369,13 @@ function CharadesGameView({
 
   const { isHost, isPerformer, performerName, nextPerformerName, word, wordNumber, totalWords } = charadesState;
 
-  if (isPerformer) {
-    return (
-      <PerformerView
-        word={word}
-        wordNumber={wordNumber}
-        totalWords={totalWords}
-        timeLeft={timeLeft}
-        timesUp={timesUp}
-        t={t}
-        fontStyle={fontStyle}
-      />
-    );
-  }
-
+  // Host always gets End Turn — check isHost first.
+  // When host is also performer, HostGameView shows the word.
   if (isHost) {
     return (
       <HostGameView
         word={word}
+        isPerformer={isPerformer}
         performerName={performerName}
         nextPerformerName={nextPerformerName}
         wordNumber={wordNumber}
@@ -396,6 +385,20 @@ function CharadesGameView({
         onNext={onNext}
         onEndGame={onEndGame}
         onBackToLobby={onBackToLobby}
+        t={t}
+        fontStyle={fontStyle}
+      />
+    );
+  }
+
+  if (isPerformer) {
+    return (
+      <PerformerView
+        word={word}
+        wordNumber={wordNumber}
+        totalWords={totalWords}
+        timeLeft={timeLeft}
+        timesUp={timesUp}
         t={t}
         fontStyle={fontStyle}
       />
@@ -483,11 +486,11 @@ function PerformerView({ word, wordNumber, totalWords, timeLeft, timesUp, t, fon
 // ─── HOST GAME VIEW ───────────────────────────────────────────────────────────
 
 function HostGameView({
-  word, performerName, nextPerformerName, wordNumber, totalWords,
+  word, isPerformer, performerName, nextPerformerName, wordNumber, totalWords,
   timeLeft, timesUp,
   onNext, onEndGame, onBackToLobby, t, fontStyle,
 }: {
-  word?: string; performerName: string; nextPerformerName: string;
+  word?: string; isPerformer: boolean; performerName: string; nextPerformerName: string;
   wordNumber: number; totalWords: number;
   timeLeft: number; timesUp: boolean;
   onNext: () => void; onEndGame: () => void; onBackToLobby: () => void;
@@ -497,12 +500,16 @@ function HostGameView({
 
   return (
     <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-5 gap-4 max-w-md mx-auto w-full text-center">
-      {/* Host badge */}
+      {/* Badge — shows "Your Turn!" when performing, otherwise "Host Controls" */}
       <span
         className="px-4 py-1.5 rounded-full text-xs font-bold border"
-        style={{ borderColor: `${AMBER}60`, color: AMBER, background: `${AMBER}12` }}
+        style={
+          isPerformer
+            ? { borderColor: `${PURPLE}80`, color: PURPLE, background: `${PURPLE}15` }
+            : { borderColor: `${AMBER}60`, color: AMBER, background: `${AMBER}12` }
+        }
       >
-        👑 {t.charadesAdminLabel}
+        {isPerformer ? `🎭 ${t.charadesYourTurn}` : `👑 ${t.charadesAdminLabel}`}
       </span>
 
       {/* Timer — always visible at top */}
@@ -517,38 +524,49 @@ function HostGameView({
         </div>
       )}
 
-      {/* Performing now */}
-      <div
-        className="w-full rounded-2xl p-3 border-2"
-        style={{ borderColor: `${PURPLE}50`, background: 'rgba(0,0,0,0.5)' }}
+      {/* Word number badge */}
+      <span
+        className="px-4 py-1 rounded-full text-xs font-bold border"
+        style={{ borderColor: `${GOLD}60`, color: GOLD, background: `${GOLD}12` }}
       >
-        <p className="text-xs text-white/40 font-bold uppercase tracking-widest mb-1" style={fontStyle}>
-          {t.charadesCurrentPerformer}
-        </p>
-        <p className="text-2xl font-black" style={{ color: PURPLE, ...fontStyle }}>
-          {performerName}
-        </p>
-      </div>
+        {t.charadesWordNumber} {wordNumber}
+      </span>
 
-      {/* Current word */}
-      <div
-        className="w-full rounded-2xl p-4 border-2"
-        style={{ borderColor: `${GOLD}60`, background: `${GOLD}08`, ...goldGlow }}
-      >
-        <p className="text-xs text-white/40 font-bold uppercase tracking-widest mb-1" style={fontStyle}>
-          {t.charadesCurrentWord} · {t.charadesWordNumber} {wordNumber}
-        </p>
-        <p
-          className="font-black leading-tight break-words"
-          style={{
-            fontSize: 'clamp(28px, 7vw, 64px)',
-            color: GOLD,
-            textShadow: `0 0 30px ${GOLD}80`,
-          }}
+      {/* Show word only when host is the current performer */}
+      {isPerformer ? (
+        <div
+          className="w-full rounded-2xl p-5 border-2"
+          style={{ borderColor: `${GOLD}60`, background: `${GOLD}08`, ...goldGlow }}
         >
-          {word ?? '...'}
-        </p>
-      </div>
+          <p className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2" style={fontStyle}>
+            {t.charadesPerformWord}
+          </p>
+          <p
+            className="font-black leading-tight break-words"
+            style={{
+              fontSize: 'clamp(36px, 9vw, 80px)',
+              color: GOLD,
+              textShadow: `0 0 30px ${GOLD}80`,
+              opacity: timesUp ? 0.4 : 1,
+            }}
+          >
+            {word ?? '...'}
+          </p>
+        </div>
+      ) : (
+        /* Performing now — without revealing the word */
+        <div
+          className="w-full rounded-2xl p-3 border-2"
+          style={{ borderColor: `${PURPLE}50`, background: 'rgba(0,0,0,0.5)' }}
+        >
+          <p className="text-xs text-white/40 font-bold uppercase tracking-widest mb-1" style={fontStyle}>
+            {t.charadesCurrentPerformer}
+          </p>
+          <p className="text-2xl font-black" style={{ color: PURPLE, ...fontStyle }}>
+            {performerName}
+          </p>
+        </div>
+      )}
 
       {/* Up next */}
       {nextPerformerName && nextPerformerName !== performerName && (

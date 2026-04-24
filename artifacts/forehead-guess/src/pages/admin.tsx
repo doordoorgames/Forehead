@@ -100,6 +100,75 @@ interface CharEntry {
   lang: string;
 }
 
+interface CharadeEntry {
+  id: number;
+  answer: string;
+  lang: string;
+}
+
+function UploadButtonPurple({
+  label,
+  sublabel,
+  uploading,
+  uploadResult,
+  uploadError,
+  fileRef,
+  accept,
+  onFile,
+}: {
+  label: string;
+  sublabel: string;
+  uploading: boolean;
+  uploadResult: CharUploadResult | null;
+  uploadError: string | null;
+  fileRef: React.RefObject<HTMLInputElement | null>;
+  accept: string;
+  onFile: (f: File) => void;
+}) {
+  return (
+    <div className="rounded-2xl border-2 p-5 space-y-3 border-[#a855f7]/40 bg-[#a855f7]/5">
+      <div>
+        <p className="font-bold text-base text-[#a855f7]">{label}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{sublabel}</p>
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); }}
+      />
+      <Button
+        size="sm"
+        className="gap-2 w-full bg-[#a855f7] hover:bg-[#9333ea] text-white"
+        disabled={uploading}
+        onClick={() => fileRef.current?.click()}
+      >
+        <Upload className="w-4 h-4" />
+        {uploading ? 'Uploading…' : 'Choose File'}
+      </Button>
+      {uploadError && (
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-xs">
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          {uploadError}
+        </div>
+      )}
+      {uploadResult && (
+        <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-sm">
+          <div className="flex items-center gap-2 font-bold text-green-800">
+            <CheckCircle className="w-4 h-4" />
+            {uploadResult.imported} words imported
+            {uploadResult.skipped > 0 && (
+              <span className="text-xs font-normal text-green-600">({uploadResult.skipped} skipped)</span>
+            )}
+          </div>
+          <p className="text-xs text-green-700 mt-1">Previous list replaced.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function UploadButton({
   label,
   sublabel,
@@ -218,9 +287,23 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const [charEnError, setCharEnError] = useState<string | null>(null);
   const [charArError, setCharArError] = useState<string | null>(null);
 
+  // Charades upload refs + state
+  const crdEnRef = useRef<HTMLInputElement>(null);
+  const crdArRef = useRef<HTMLInputElement>(null);
+  const [crdEnUploading, setCrdEnUploading] = useState(false);
+  const [crdArUploading, setCrdArUploading] = useState(false);
+  const [crdEnResult, setCrdEnResult] = useState<CharUploadResult | null>(null);
+  const [crdArResult, setCrdArResult] = useState<CharUploadResult | null>(null);
+  const [crdEnError, setCrdEnError] = useState<string | null>(null);
+  const [crdArError, setCrdArError] = useState<string | null>(null);
+
   // Character list
   const [characters, setCharacters] = useState<CharEntry[]>([]);
   const [charsLoading, setCharsLoading] = useState(false);
+
+  // Charades list
+  const [charades, setCharades] = useState<CharadeEntry[]>([]);
+  const [crdLoading, setCrdLoading] = useState(false);
 
   const { data: categories, isLoading: catsLoading, refetch } = useAdminListCategories({
     request: { headers: { 'x-admin-password': password } }
@@ -304,6 +387,63 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
 
   useEffect(() => { fetchCharacters(); }, [fetchCharacters]);
 
+  // ── Charades upload ──────────────────────────────────────────────
+  const handleCharadesUpload = async (file: File, lang: 'en' | 'ar') => {
+    const setUploading = lang === 'en' ? setCrdEnUploading : setCrdArUploading;
+    const setResult   = lang === 'en' ? setCrdEnResult   : setCrdArResult;
+    const setError    = lang === 'en' ? setCrdEnError    : setCrdArError;
+    const ref         = lang === 'en' ? crdEnRef         : crdArRef;
+
+    setUploading(true); setResult(null); setError(null);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await fetch(`/api/admin/upload-charades?lang=${lang}`, {
+        method: 'POST',
+        headers: { 'x-admin-password': password },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Upload failed');
+      } else {
+        setResult(data as CharUploadResult);
+        toast({ title: `${lang === 'en' ? 'English' : 'Arabic'} charades uploaded!`, description: `${data.imported} words added.` });
+        fetchCharades();
+      }
+    } catch {
+      setError('Network error — could not upload file.');
+    } finally {
+      setUploading(false);
+      if (ref.current) ref.current.value = '';
+    }
+  };
+
+  // ── Charades list ────────────────────────────────────────────────
+  const fetchCharades = useCallback(async () => {
+    setCrdLoading(true);
+    try {
+      const res = await fetch('/api/admin/charades', { headers: { 'x-admin-password': password } });
+      if (res.ok) setCharades(await res.json());
+    } catch { /* ignore */ }
+    finally { setCrdLoading(false); }
+  }, [password]);
+
+  useEffect(() => { fetchCharades(); }, [fetchCharades]);
+
+  const handleDeleteCharade = async (id: number, answer: string) => {
+    if (!confirm(`Delete charade "${answer}"?`)) return;
+    try {
+      const res = await fetch(`/api/admin/charades/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-password': password }
+      });
+      if (res.ok) { toast({ title: `"${answer}" deleted` }); fetchCharades(); }
+    } catch {
+      toast({ title: 'Failed to delete', variant: 'destructive' });
+    }
+  };
+
   const handleDeleteCharacter = async (id: number, answer: string) => {
     if (!confirm(`Delete character "${answer}"?`)) return;
     try {
@@ -339,6 +479,8 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const arCategories = categories?.filter(c => c.type === 'ar') ?? [];
   const enChars = characters.filter(c => c.lang === 'en');
   const arChars = characters.filter(c => c.lang === 'ar');
+  const enCharades = charades.filter(c => c.lang === 'en');
+  const arCharades = charades.filter(c => c.lang === 'ar');
 
   return (
     <div className="min-h-[100dvh] p-6 bg-muted/10 max-w-4xl mx-auto">
@@ -585,6 +727,89 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ══════════════════════════════════════════════════════
+            SECTION 5 — CHARADES UPLOADS & LIST
+        ══════════════════════════════════════════════════════ */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl">🎭</span>
+            <div>
+              <h2 className="text-xl font-black">Charades</h2>
+              <p className="text-sm text-muted-foreground">Upload a single-column list of charade answers. One word/phrase per row.</p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <UploadButtonPurple
+              label="🇬🇧 English Charades"
+              sublabel="CSV or Excel — one answer per row"
+              uploading={crdEnUploading}
+              uploadResult={crdEnResult}
+              uploadError={crdEnError}
+              fileRef={crdEnRef}
+              accept=".csv,.xlsx,.xls"
+              onFile={f => handleCharadesUpload(f, 'en')}
+            />
+            <UploadButtonPurple
+              label="🇸🇦 Arabic Charades — شاردز عربي"
+              sublabel="CSV or Excel — كلمة أو عبارة في كل سطر"
+              uploading={crdArUploading}
+              uploadResult={crdArResult}
+              uploadError={crdArError}
+              fileRef={crdArRef}
+              accept=".csv,.xlsx,.xls"
+              onFile={f => handleCharadesUpload(f, 'ar')}
+            />
+          </div>
+
+          {crdLoading ? (
+            <p className="text-muted-foreground text-sm">Loading…</p>
+          ) : (enCharades.length === 0 && arCharades.length === 0) ? (
+            <p className="text-muted-foreground text-sm">No charades yet. Upload a CSV above.</p>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#a855f7] mb-2">
+                  🇬🇧 English ({enCharades.length})
+                </p>
+                <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
+                  {enCharades.map(c => (
+                    <div key={c.id} className="flex items-center justify-between p-2.5 border rounded-xl bg-card">
+                      <p className="font-medium text-sm truncate">{c.answer}</p>
+                      <Button
+                        variant="ghost" size="icon"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2 h-7 w-7"
+                        onClick={() => handleDeleteCharade(c.id, c.answer)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#a855f7] mb-2">
+                  🇸🇦 Arabic ({arCharades.length})
+                </p>
+                <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
+                  {arCharades.map(c => (
+                    <div key={c.id} className="flex items-center justify-between p-2.5 border rounded-xl bg-card">
+                      <p className="font-medium text-sm truncate" dir="rtl">{c.answer}</p>
+                      <Button
+                        variant="ghost" size="icon"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2 h-7 w-7"
+                        onClick={() => handleDeleteCharade(c.id, c.answer)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

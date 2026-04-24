@@ -74,6 +74,8 @@ export const translations = {
     foreheadGameDesc: 'Hold phone to forehead and guess your word',
     guessTheCharacter: 'Guess the Character',
     guessTheCharacterDesc: 'Guess the character from hints — one clue at a time',
+    charadesMode: 'Charades',
+    charadesModeDesc: 'Take turns acting out words — your phone shows your word',
 
     // Character game — admin
     youAreGameAdmin: 'You are the Game Admin',
@@ -99,6 +101,26 @@ export const translations = {
     gameAdminLabel: 'Game Admin',
     characterMode: 'Guess the Character',
     waitingForFirstHint: 'Waiting for the first hint...',
+
+    // Charades game
+    charadesLobbyTitle: 'Charades',
+    charadesStartGame: 'Start Charades!',
+    charadesNoWords: 'No charades loaded. Upload a word list from the Admin Panel first.',
+    charadesNeedPlayers: 'Need at least 2 players to start',
+    charadesYourTurn: "It's Your Turn!",
+    charadesPerformWord: 'Act it out — no speaking!',
+    charadesWatchingTitle: "It's {name}'s turn!",
+    charadesWatchingDesc: 'Watch them perform...',
+    charadesWordNumber: 'Word',
+    charadesOf: 'of',
+    charadesNext: 'Next Player →',
+    charadesEndGame: 'End Game',
+    charadesAdminLabel: 'Host Controls',
+    charadesCurrentWord: 'Current Word',
+    charadesCurrentPerformer: 'Performing Now',
+    charadesUpNext: 'Up Next',
+    charadesWaitingToStart: 'Waiting for host to start...',
+    charadesHostInstructions: 'Press Next to cycle to the next player with a new word',
   },
   ar: {
     appTitle1: 'خمّن',
@@ -173,6 +195,8 @@ export const translations = {
     foreheadGameDesc: 'ضع الهاتف على جبهتك وخمّن كلمتك',
     guessTheCharacter: 'خمّن الشخصية',
     guessTheCharacterDesc: 'خمّن الشخصية من التلميحات — تلميح واحد في كل مرة',
+    charadesMode: 'شاردز',
+    charadesModeDesc: 'بدّل الأدوار في تمثيل الكلمات — هاتفك يعرض كلمتك',
 
     // Character game — admin
     youAreGameAdmin: 'أنت مدير اللعبة',
@@ -198,6 +222,26 @@ export const translations = {
     gameAdminLabel: 'مدير اللعبة',
     characterMode: 'خمّن الشخصية',
     waitingForFirstHint: '...في انتظار التلميح الأول',
+
+    // Charades game
+    charadesLobbyTitle: 'شاردز',
+    charadesStartGame: '!ابدأ شاردز',
+    charadesNoWords: 'لا توجد كلمات شاردز. ارفع قائمة كلمات من لوحة الإدارة أولاً.',
+    charadesNeedPlayers: 'تحتاج لاعبَين على الأقل للبدء',
+    charadesYourTurn: '!دورك الآن',
+    charadesPerformWord: 'مثّل الكلمة — بدون كلام!',
+    charadesWatchingTitle: 'دور {name}',
+    charadesWatchingDesc: '...شاهد أداءه',
+    charadesWordNumber: 'كلمة',
+    charadesOf: 'من',
+    charadesNext: '← اللاعب التالي',
+    charadesEndGame: 'إنهاء اللعبة',
+    charadesAdminLabel: 'تحكم المضيف',
+    charadesCurrentWord: 'الكلمة الحالية',
+    charadesCurrentPerformer: 'يؤدي الآن',
+    charadesUpNext: 'التالي',
+    charadesWaitingToStart: '...انتظار بدء المضيف',
+    charadesHostInstructions: 'اضغط التالي للانتقال للاعب التالي بكلمة جديدة',
   },
 } as const;
 

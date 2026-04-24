@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Copy, Check, Users } from 'lucide-react';
 import { useLang } from '@/context/LanguageContext';
 import CharacterRoom from './character-room';
+import CharadesRoom from './charades-room';
 
 export default function Room() {
   const params = useParams<{ code: string }>();
@@ -64,6 +65,19 @@ export default function Room() {
   if (mode === 'character') {
     return (
       <CharacterRoom
+        code={code}
+        playerId={playerId}
+        roomState={roomState}
+        socket={socket}
+        onGoHome={() => setLocation('/home')}
+      />
+    );
+  }
+
+  // Charades mode: render dedicated component
+  if (mode === 'charades') {
+    return (
+      <CharadesRoom
         code={code}
         playerId={playerId}
         roomState={roomState}

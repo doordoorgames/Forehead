@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { categoriesTable, categoryItemsTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
 import { insertCharacters, listAllCharacters, deleteCharacter } from "../lib/characterPool";
+import { insertCharades, listAllCharades, deleteCharade, deleteAllCharades } from "../lib/charadesPool";
 import {
   AdminListCategoriesHeader,
   AdminListCategoriesResponseItem,
@@ -486,6 +487,104 @@ router.delete("/admin/characters/:id", async (req, res) => {
     return;
   }
   await deleteCharacter(id);
+  res.json({ ok: true });
+});
+
+// POST /api/admin/upload-charades?lang=en|ar
+// CSV: single column of charade answers (no header required)
+router.post("/admin/upload-charades", upload.single("file"), async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const lang = (req.query.lang as string) || "en";
+  if (lang !== "en" && lang !== "ar") {
+    res.status(400).json({ error: "lang must be 'en' or 'ar'" });
+    return;
+  }
+
+  const file = req.file;
+  if (!file) {
+    res.status(400).json({ error: "No file uploaded" });
+    return;
+  }
+
+  const entries: string[] = [];
+  const errors: string[] = [];
+
+  try {
+    const ext = file.originalname.toLowerCase().split(".").pop();
+    let rows: string[] = [];
+
+    if (ext === "csv") {
+      const text = file.buffer.toString("utf-8");
+      rows = text.split(/\r?\n/).map((l) => l.trim().replace(/^"(.*)"$/, "$1").trim()).filter(Boolean);
+    } else if (ext === "xlsx" || ext === "xls") {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.read(file.buffer, { type: "buffer" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: "" }) as string[][];
+      rows = data.map((r) => String(r[0] ?? "").trim()).filter(Boolean);
+    } else {
+      res.status(400).json({ error: "Only CSV and XLSX files are supported" });
+      return;
+    }
+
+    // Skip header-like row if it reads "answer" or "word"
+    if (rows.length > 0) {
+      const firstLower = rows[0].toLowerCase();
+      if (firstLower === "answer" || firstLower === "word" || firstLower === "charade") {
+        rows = rows.slice(1);
+      }
+    }
+
+    for (const row of rows) {
+      if (!row) continue;
+      entries.push(row);
+    }
+
+    if (entries.length === 0) {
+      res.status(400).json({ error: "No valid rows found.", errors });
+      return;
+    }
+
+    // Replace all charades for this language
+    await deleteAllCharades(lang);
+    await insertCharades(entries.map((answer) => ({ answer, lang })));
+    res.json({ imported: entries.length, skipped: errors.length, errors, lang, replaced: true });
+  } catch (err) {
+    req.log.error({ err }, "Error parsing charades upload");
+    res.status(400).json({ error: "Failed to parse file" });
+  }
+});
+
+// GET /api/admin/charades?lang=en|ar
+router.get("/admin/charades", async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const lang = req.query.lang as string | undefined;
+  const charades = await listAllCharades(lang);
+  res.json(charades);
+});
+
+// DELETE /api/admin/charades/:id
+router.delete("/admin/charades/:id", async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  await deleteCharade(id);
   res.json({ ok: true });
 });
 

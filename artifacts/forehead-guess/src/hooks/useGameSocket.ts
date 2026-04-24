@@ -1,9 +1,21 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
+export interface CharadesState {
+  isHost: boolean;
+  isPerformer: boolean;
+  hostId: number;
+  performerName: string;
+  performerId: number | null;
+  nextPerformerName: string;
+  wordNumber: number;
+  totalWords: number;
+  word?: string;
+}
+
 export interface RoomState {
   code: string;
-  status: 'waiting' | 'countdown' | 'word_display' | 'reveal' | 'finished' | 'character_playing';
-  mode: 'forehead' | 'character';
+  status: 'waiting' | 'countdown' | 'word_display' | 'reveal' | 'finished' | 'character_playing' | 'charades_playing';
+  mode: 'forehead' | 'character' | 'charades';
   categoryId: number | null;
   categoryName: string | null;
   players: Array<{
@@ -56,6 +68,7 @@ interface SocketState {
   revealInfo: RevealInfo | null;
   readyPlayerIds: number[];
   characterState: CharacterState | null;
+  charadesState: CharadesState | null;
   error: string | null;
 }
 
@@ -68,6 +81,7 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     revealInfo: null,
     readyPlayerIds: [],
     characterState: null,
+    charadesState: null,
     error: null,
   });
 
@@ -118,6 +132,9 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
             break;
           case 'gtcState':
             setState(s => ({ ...s, characterState: msg.payload as CharacterState }));
+            break;
+          case 'charadesState':
+            setState(s => ({ ...s, charadesState: msg.payload as CharadesState }));
             break;
           case 'error':
             setState(s => ({ ...s, error: msg.payload.message }));
@@ -222,6 +239,23 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     sendMessage('gtcBackToLobby', { roomCode });
   }, [roomCode, sendMessage]);
 
+  // ── Charades game actions ─────────────────────────────────────────────────
+  const charadesStart = useCallback(() => {
+    sendMessage('charadesStart', { roomCode });
+  }, [roomCode, sendMessage]);
+
+  const charadesNext = useCallback(() => {
+    sendMessage('charadesNext', { roomCode });
+  }, [roomCode, sendMessage]);
+
+  const charadesEndGame = useCallback(() => {
+    sendMessage('charadesEndGame', { roomCode });
+  }, [roomCode, sendMessage]);
+
+  const charadesBackToLobby = useCallback(() => {
+    sendMessage('charadesBackToLobby', { roomCode });
+  }, [roomCode, sendMessage]);
+
   return {
     ...state,
     setCategory,
@@ -238,5 +272,9 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     gtcTransferAdmin,
     gtcEndGame,
     gtcBackToLobby,
+    charadesStart,
+    charadesNext,
+    charadesEndGame,
+    charadesBackToLobby,
   };
 }

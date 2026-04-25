@@ -8,7 +8,7 @@ export default function ModeSelect() {
 
   const fontStyle = isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 800 } : {};
 
-  const choose = (mode: 'forehead' | 'character' | 'charades') => {
+  const choose = (mode: 'forehead' | 'character') => {
     localStorage.setItem('fg_mode', mode);
     setLocation('/home');
   };
@@ -65,23 +65,7 @@ export default function ModeSelect() {
             </div>
           </button>
 
-          {/* Charades */}
-          <button
-            onClick={() => choose('charades')}
-            className="group relative w-full overflow-hidden rounded-3xl border-4 border-[#a855f7] bg-black/60 backdrop-blur-sm p-6 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-[#a855f7]/10 active:scale-[0.98] shadow-[0_0_24px_#a855f740]"
-          >
-            <div className="flex items-center gap-4">
-              <span className="text-5xl">🎭</span>
-              <div>
-                <p className="text-2xl font-black text-[#a855f7]" style={fontStyle}>
-                  {t.charadesMode}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1" style={fontStyle}>
-                  {t.charadesModeDesc}
-                </p>
-              </div>
-            </div>
-          </button>
+
         </div>
 
         <button

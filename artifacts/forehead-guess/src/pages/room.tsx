@@ -3,9 +3,8 @@ import { useLocation, useParams } from 'wouter';
 import { useGetRoom, useListCategories } from '@workspace/api-client-react';
 import { useGameSocket, RoomState, RoundInfo, RevealInfo } from '@/hooks/useGameSocket';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Copy, Check, Users } from 'lucide-react';
+import { Loader2, Copy, Check, Users, CheckCircle2 } from 'lucide-react';
 import { useLang } from '@/context/LanguageContext';
 import CharacterRoom from './character-room';
 import CharadesRoom from './charades-room';
@@ -215,21 +214,36 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
         <div className="space-y-3">
           <div>
             <p className="font-bold mb-1.5">{t.selectCategory}</p>
-            <Select
-              value={currentCategoryId ? String(currentCategoryId) : undefined}
-              onValueChange={(val) => setCategory(Number(val))}
+            <div
+              className="rounded-xl border-2 border-border overflow-y-auto"
+              style={{ maxHeight: '38vh', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
             >
-              <SelectTrigger className="h-12 text-base rounded-xl border-2">
-                <SelectValue placeholder={t.chooseCategory} />
-              </SelectTrigger>
-              <SelectContent className="z-[200]">
-                {categories?.map((c: any) => (
-                  <SelectItem key={c.id} value={String(c.id)} className="text-base">
-                    {c.name} · {c.itemCount} {t.words}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {(!categories || categories.length === 0) ? (
+                <p className="px-4 py-3 text-sm text-muted-foreground text-center">{t.chooseCategory}</p>
+              ) : (
+                categories.map((c: any, idx: number) => {
+                  const selected = currentCategoryId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setCategory(c.id)}
+                      className={[
+                        'w-full flex items-center justify-between px-4 py-3 text-left transition-colors',
+                        idx > 0 ? 'border-t border-border' : '',
+                        selected ? 'bg-primary/10' : 'hover:bg-muted/60 active:bg-muted',
+                      ].join(' ')}
+                    >
+                      <span className={`text-base font-semibold ${selected ? 'text-primary' : ''}`}>{c.name}</span>
+                      <span className="flex items-center gap-2 text-sm text-muted-foreground shrink-0 ml-2">
+                        {c.itemCount} {t.words}
+                        {selected && <CheckCircle2 className="w-5 h-5 text-primary" />}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
 
           <Button

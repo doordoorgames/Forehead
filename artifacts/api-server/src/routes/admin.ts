@@ -145,6 +145,22 @@ router.delete("/admin/categories/:id", async (req, res) => {
   res.json({ success: true });
 });
 
+// DELETE /api/admin/categories?lang=en|ar  — wipe all categories for a language
+router.delete("/admin/categories", async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const lang = req.query.lang as string | undefined;
+  if (lang !== "en" && lang !== "ar") {
+    res.status(400).json({ error: "lang must be 'en' or 'ar'" });
+    return;
+  }
+  const deleted = await db.delete(categoriesTable).where(eq(categoriesTable.type, lang)).returning({ id: categoriesTable.id });
+  res.json({ deleted: deleted.length });
+});
+
 // GET /api/admin/categories/:id/items
 router.get("/admin/categories/:id/items", async (req, res) => {
   const params = AdminListItemsParams.safeParse({ id: Number(req.params.id) });

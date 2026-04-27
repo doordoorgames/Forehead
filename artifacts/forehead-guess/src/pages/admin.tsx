@@ -475,6 +475,31 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
     });
   };
 
+  const [deletingAllLang, setDeletingAllLang] = useState<'en' | 'ar' | null>(null);
+
+  const handleDeleteAllCategories = async (lang: 'en' | 'ar') => {
+    const label = lang === 'en' ? 'English' : 'Arabic';
+    if (!confirm(`Delete ALL ${label} Forehead categories and their words? This cannot be undone.`)) return;
+    setDeletingAllLang(lang);
+    try {
+      const res = await fetch(`/api/admin/categories?lang=${lang}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-password': password },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: `All ${label} categories deleted`, description: `${data.deleted} categories removed.` });
+        refetch();
+      } else {
+        toast({ title: 'Delete failed', description: data.error, variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Network error', variant: 'destructive' });
+    } finally {
+      setDeletingAllLang(null);
+    }
+  };
+
   const enCategories = categories?.filter(c => c.type === 'en') ?? [];
   const arCategories = categories?.filter(c => c.type === 'ar') ?? [];
   const enChars = characters.filter(c => c.lang === 'en');
@@ -591,7 +616,20 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
             <div className="grid md:grid-cols-2 gap-6">
               {/* English */}
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-[#ff4fa3] mb-2">🇬🇧 English ({enCategories.length})</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#ff4fa3]">🇬🇧 English ({enCategories.length})</p>
+                  {enCategories.length > 0 && (
+                    <Button
+                      variant="outline" size="sm"
+                      className="h-7 text-xs gap-1.5 border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      disabled={deletingAllLang === 'en'}
+                      onClick={() => handleDeleteAllCategories('en')}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      {deletingAllLang === 'en' ? 'Deleting…' : 'Delete All'}
+                    </Button>
+                  )}
+                </div>
                 {enCategories.length === 0 ? (
                   <p className="text-muted-foreground text-sm">None uploaded yet.</p>
                 ) : (
@@ -624,7 +662,20 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
 
               {/* Arabic */}
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-[#39d5ff] mb-2">🇸🇦 Arabic ({arCategories.length})</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#39d5ff]">🇸🇦 Arabic ({arCategories.length})</p>
+                  {arCategories.length > 0 && (
+                    <Button
+                      variant="outline" size="sm"
+                      className="h-7 text-xs gap-1.5 border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      disabled={deletingAllLang === 'ar'}
+                      onClick={() => handleDeleteAllCategories('ar')}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      {deletingAllLang === 'ar' ? 'Deleting…' : 'Delete All'}
+                    </Button>
+                  )}
+                </div>
                 {arCategories.length === 0 ? (
                   <p className="text-muted-foreground text-sm">None uploaded yet.</p>
                 ) : (

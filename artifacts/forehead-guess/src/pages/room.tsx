@@ -88,63 +88,54 @@ export default function Room() {
 
   // Forehead mode
   return (
-    <>
-      <div className="portrait-warning fixed inset-0 z-[9999] bg-black flex-col items-center justify-center hidden">
-        <img
-          src={`${import.meta.env.BASE_URL}rotate-phone.png`}
-          alt="Rotate your phone to landscape"
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+    <div className="game-container min-h-[100dvh] text-foreground flex flex-col relative" style={{ overflowX: 'hidden', overflowY: 'auto' }}>
+      {socket.error && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-destructive text-destructive-foreground p-3 text-center font-bold text-lg">
+          {socket.error}
+        </div>
+      )}
+
+      {status === 'waiting' && roomState && (
+        <LobbyView
+          roomCode={code}
+          playerId={playerId}
+          roomState={roomState}
+          setCategory={socket.setCategory}
+          startGame={socket.startGame}
         />
-      </div>
+      )}
 
-      <div className="game-container min-h-[100dvh] text-foreground flex flex-col relative" style={{ overflowX: 'hidden', overflowY: status === 'waiting' ? 'auto' : 'hidden' }}>
-        {socket.error && (
-          <div className="fixed top-0 left-0 right-0 z-50 bg-destructive text-destructive-foreground p-3 text-center font-bold text-lg">
-            {socket.error}
-          </div>
-        )}
+      {status === 'countdown' && (
+        <CountdownView seconds={socket.countdownSeconds} />
+      )}
 
-        {status === 'waiting' && roomState && (
-          <LobbyView
-            roomCode={code}
-            playerId={playerId}
-            roomState={roomState}
-            setCategory={socket.setCategory}
-            startGame={socket.startGame}
-          />
-        )}
+      {status === 'word_display' && roomState && (
+        <WordDisplayView
+          playerId={playerId}
+          roomState={roomState}
+          roundInfo={socket.roundInfo}
+          onNewWord={socket.newWord}
+          onBackToLobby={socket.playAgain}
+        />
+      )}
 
-        {status === 'countdown' && (
-          <CountdownView seconds={socket.countdownSeconds} />
-        )}
+      {status === 'reveal' && roomState && (
+        <RevealView
+          playerId={playerId}
+          roomState={roomState}
+          revealInfo={socket.revealInfo}
+          readyPlayerIds={socket.readyPlayerIds}
+          onPlayerReady={socket.playerReady}
+          onNextRound={socket.nextRound}
+          onEndGame={socket.endGame}
+          onPlayAgain={socket.playAgain}
+        />
+      )}
 
-        {status === 'word_display' && roomState && (
-          <WordDisplayView
-            playerId={playerId}
-            roomState={roomState}
-            roundInfo={socket.roundInfo}
-            onEndRound={socket.endRound}
-          />
-        )}
-
-        {status === 'reveal' && roomState && (
-          <RevealView
-            playerId={playerId}
-            roomState={roomState}
-            revealInfo={socket.revealInfo}
-            readyPlayerIds={socket.readyPlayerIds}
-            onPlayerReady={socket.playerReady}
-            onNextRound={socket.nextRound}
-            onEndGame={socket.endGame}
-            onPlayAgain={socket.playAgain}
-          />
-        )}
-
-        {status === 'finished' && (
-          <FinishedView onGoHome={() => setLocation('/home')} />
-        )}
-      </div>
-    </>
+      {status === 'finished' && (
+        <FinishedView onGoHome={() => setLocation('/home')} />
+      )}
+    </div>
   );
 }
 
@@ -279,13 +270,13 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
 function CountdownView({ seconds }: { seconds: number }) {
   const { t } = useLang();
   return (
-    <div className="flex-1 flex flex-col items-center justify-center landscape-safe">
+    <div className="flex-1 flex flex-col items-center justify-center" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       <p className="text-2xl md:text-3xl font-bold text-white/60 mb-4 tracking-wide text-center px-8">
         {t.getReady}
       </p>
       <div
         className="neon-word leading-none tabular-nums"
-        style={{ fontSize: 'clamp(100px, 22vw, 260px)' }}
+        style={{ fontSize: 'clamp(100px, 30vw, 260px)' }}
       >
         {seconds > 0 ? seconds : '!'}
       </div>
@@ -296,40 +287,83 @@ function CountdownView({ seconds }: { seconds: number }) {
 
 // ─── WORD DISPLAY ─────────────────────────────────────────────────────────────
 
-function WordDisplayView({ playerId, roomState, roundInfo, onEndRound }: {
+function WordDisplayView({ playerId, roomState, roundInfo, onNewWord, onBackToLobby }: {
   playerId: number;
   roomState: RoomState;
   roundInfo: RoundInfo | null;
-  onEndRound: () => void;
+  onNewWord: () => void;
+  onBackToLobby: () => void;
 }) {
   const { t } = useLang();
   const isHost = roomState.players.find(p => p.id === playerId)?.isHost ?? false;
-  const word = roundInfo?.myWord ?? '...';
+  const allWords = roundInfo?.allPlayerWords ?? [];
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center relative landscape-safe select-none">
+    <div className="flex-1 flex flex-col select-none min-h-[100dvh]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      {/* Category */}
       {roundInfo?.categoryName && (
-        <p className="absolute top-4 left-0 right-0 text-center text-base font-bold uppercase tracking-widest text-muted-foreground">
+        <p className="text-center text-xs font-bold uppercase tracking-widest text-muted-foreground pt-4 pb-1 px-4">
           {roundInfo.categoryName}
         </p>
       )}
 
-      <div
-        className="neon-word text-center leading-none px-6 break-words"
-        style={{ fontSize: 'clamp(64px, 14vw, 180px)', maxWidth: '90vw' }}
-      >
-        {word}
+      {/* Your word */}
+      <div className="text-center pt-3 pb-4 px-4">
+        <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-1">{t.yourWord}</p>
+        <div className="neon-word leading-none" style={{ fontSize: 'clamp(72px, 22vw, 130px)' }}>???</div>
       </div>
 
+      {/* All players list */}
+      <div
+        className="flex-1 overflow-y-auto px-4 pb-2"
+        style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+      >
+        <div className="rounded-2xl border-2 border-border overflow-hidden">
+          {allWords.length === 0 ? (
+            <div className="px-4 py-3 text-center text-muted-foreground text-sm">...</div>
+          ) : (
+            allWords.map((pw, idx) => {
+              const isMe = pw.playerId === playerId;
+              return (
+                <div
+                  key={pw.playerId}
+                  className={[
+                    'flex items-center justify-between px-4 py-3',
+                    idx > 0 ? 'border-t border-border' : '',
+                    isMe ? 'bg-primary/5' : '',
+                  ].join(' ')}
+                >
+                  <span className={`font-bold text-base ${isMe ? 'text-primary' : ''}`}>
+                    {pw.playerName}
+                    {isMe && <span className="text-xs font-normal text-muted-foreground ml-1">{t.you}</span>}
+                  </span>
+                  <span className={`text-lg font-black ${pw.word === '???' ? 'text-muted-foreground/50' : 'text-foreground'}`}>
+                    {pw.word}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Host controls */}
       {isHost && (
-        <div className="absolute bottom-8 right-8">
+        <div className="px-4 pt-3 pb-4 flex gap-3">
+          <Button
+            variant="outline"
+            size="lg"
+            className="flex-1 h-13 font-bold rounded-2xl border-2 text-base"
+            onClick={onBackToLobby}
+          >
+            {t.backToLobby}
+          </Button>
           <Button
             size="lg"
-            variant="outline"
-            className="text-lg font-bold h-14 px-8 rounded-2xl border-2"
-            onClick={onEndRound}
+            className="flex-1 h-13 font-black rounded-2xl text-base"
+            onClick={onNewWord}
           >
-            {t.showReveal}
+            {t.getAnotherWord}
           </Button>
         </div>
       )}

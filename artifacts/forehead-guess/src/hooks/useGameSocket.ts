@@ -32,6 +32,7 @@ export interface RoundInfo {
   myWord: string;
   isImposter: boolean;
   categoryName: string;
+  allPlayerWords: Array<{ playerId: number; playerName: string; word: string }>;
 }
 
 export interface RevealInfo {
@@ -210,6 +211,10 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     sendMessage('playAgain', { roomCode });
   }, [roomCode, sendMessage]);
 
+  const newWord = useCallback(() => {
+    sendMessage('newWord', { roomCode });
+  }, [roomCode, sendMessage]);
+
   // ── Character game actions ────────────────────────────────────────────────
   const gtcStart = useCallback(() => {
     sendMessage('gtcStart', { roomCode });
@@ -265,6 +270,7 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     nextRound,
     endGame,
     playAgain,
+    newWord,
     gtcStart,
     gtcNextHint,
     gtcRevealAnswer,

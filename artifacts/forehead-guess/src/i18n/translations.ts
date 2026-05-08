@@ -44,9 +44,11 @@ export const translations = {
     waitingForHost: 'Waiting for host to start...',
     categoryLabel: 'Category',
 
-    getReady: 'Get ready — place phone on forehead',
-    holdTight: 'Hold on tight!',
+    getReady: 'Get Ready!',
+    holdTight: 'Words are being assigned...',
 
+    yourWord: 'Your Word',
+    getAnotherWord: 'New Words',
     showReveal: 'Show Reveal →',
 
     yourWordWas: 'Your word was',
@@ -168,9 +170,11 @@ export const translations = {
     waitingForHost: '...انتظار بدء المضيف',
     categoryLabel: 'الفئة',
 
-    getReady: 'استعد — ضع الهاتف على جبهتك',
-    holdTight: '!تمسك جيداً',
+    getReady: '!استعد',
+    holdTight: '...جاري توزيع الكلمات',
 
+    yourWord: 'كلمتك',
+    getAnotherWord: 'كلمات جديدة',
     showReveal: '← عرض الكشف',
 
     yourWordWas: 'كانت كلمتك',

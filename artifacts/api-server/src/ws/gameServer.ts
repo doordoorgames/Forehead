@@ -289,6 +289,11 @@ async function beginWordDisplay(roomCode: string) {
     if (client.roomCode === roomCode && ws.readyState === WebSocket.OPEN && client.playerId) {
       const isImposter = client.playerId === imposterPlayer.id;
       const myWord = playerWords[client.playerId] ?? "???";
+      const allPlayerWords = connected.map((p) => ({
+        playerId: p.id,
+        playerName: p.name,
+        word: p.id === client.playerId ? "???" : (playerWords[p.id] ?? "???"),
+      }));
       sendTo(ws, {
         type: "roundStart",
         payload: {
@@ -296,6 +301,7 @@ async function beginWordDisplay(roomCode: string) {
           myWord,
           isImposter,
           categoryName: cat?.name ?? "Unknown",
+          allPlayerWords,
         },
       });
     }
@@ -333,9 +339,14 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     if (rs && state?.status === "word_display" && client.playerId) {
       const isImposter = client.playerId === rs.imposterId;
       const myWord = rs.playerWords?.[client.playerId] ?? (isImposter ? rs.imposterWord : rs.normalWord);
+      const allPlayerWords = state.players.map((p) => ({
+        playerId: p.id,
+        playerName: p.name,
+        word: p.id === client.playerId ? "???" : (rs.playerWords?.[p.id] ?? "???"),
+      }));
       sendTo(ws, {
         type: "roundStart",
-        payload: { roundNumber: rs.roundNumber, myWord, isImposter, categoryName: rs.categoryName },
+        payload: { roundNumber: rs.roundNumber, myWord, isImposter, categoryName: rs.categoryName, allPlayerWords },
       });
     }
     if (rs && state?.status === "reveal" && client.playerId) {
@@ -487,6 +498,19 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     }
 
     broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
+    return;
+  }
+
+  // ── FOREHEAD: NEW WORD (re-deal immediately, no countdown) ───────────────
+  if (type === "newWord") {
+    const { roomCode } = payload as { roomCode: string };
+    const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+    if (!room || room.status !== "word_display") return;
+    const host = await db.query.playersTable.findFirst({
+      where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)),
+    });
+    if (host?.id !== client.playerId) return;
+    await beginWordDisplay(roomCode);
     return;
   }
 

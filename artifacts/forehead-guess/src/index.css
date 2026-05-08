@@ -166,21 +166,6 @@
   letter-spacing: 0.03em;
 }
 
-/* ── Landscape game mode ── */
-@media screen and (orientation: portrait) and (max-width: 1024px) {
-  .portrait-warning {
-    display: flex !important;
-  }
-  .game-container {
-    opacity: 0;
-    pointer-events: none;
-  }
-}
-
-.landscape-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-top: env(safe-area-inset-top, 0px);
-}
 
 /* ── Cyberpunk parallax keyframes ── */
 @keyframes cbDriftBack {

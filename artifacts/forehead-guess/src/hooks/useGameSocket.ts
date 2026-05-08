@@ -215,6 +215,10 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     sendMessage('newWord', { roomCode });
   }, [roomCode, sendMessage]);
 
+  const regenPlayerWord = useCallback((targetPlayerId: number) => {
+    sendMessage('regenPlayerWord', { roomCode, targetPlayerId });
+  }, [roomCode, sendMessage]);
+
   // ── Character game actions ────────────────────────────────────────────────
   const gtcStart = useCallback(() => {
     sendMessage('gtcStart', { roomCode });
@@ -271,6 +275,7 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     endGame,
     playAgain,
     newWord,
+    regenPlayerWord,
     gtcStart,
     gtcNextHint,
     gtcRevealAnswer,

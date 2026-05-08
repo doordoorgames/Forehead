@@ -116,6 +116,7 @@ export default function Room() {
           roundInfo={socket.roundInfo}
           onNewWord={socket.newWord}
           onBackToLobby={socket.playAgain}
+          onRegenPlayerWord={socket.regenPlayerWord}
         />
       )}
 
@@ -173,14 +174,14 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
       <div className="text-center">
         <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-0.5 landscape:hidden">{t.roomCodeLabel}</p>
         <div className="flex items-center justify-center gap-3">
-          <span className="text-5xl landscape:text-3xl font-black tracking-widest text-primary leading-none">{roomCode}</span>
-          <button onClick={handleCopy} className="p-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors">
+          <span className="text-5xl font-black tracking-widest text-primary leading-none">{roomCode}</span>
+          <button onClick={handleCopy} className="p-2 bg-muted hover:bg-muted/80 transition-colors">
             {copied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      <div className="bg-card border-2 border-border rounded-2xl overflow-hidden">
+      <div className="bg-card border-2 border-border overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-2 border-b-2 border-border bg-muted/50">
           <Users className="w-4 h-4 text-primary" />
           <span className="font-bold">{t.players} ({players.filter(p => p.connected).length})</span>
@@ -192,7 +193,7 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
                 {p.name} {p.id === playerId && <span className="text-sm font-normal text-muted-foreground">{t.you}</span>}
               </span>
               {p.isHost && (
-                <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded-full border border-primary/30">
+                <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-1 border border-primary/30">
                   {t.host}
                 </span>
               )}
@@ -216,7 +217,7 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
                       key={c.id}
                       type="button"
                       onClick={() => setCategory(c.id)}
-                      className="relative flex flex-col items-center justify-center text-center px-3 py-4 rounded-2xl font-bold text-white transition-all active:scale-95"
+                      className="relative flex flex-col items-center justify-center text-center px-3 py-4 font-bold text-white transition-all active:scale-95"
                       style={{
                         background: selected ? '#5b21b6' : '#3b0764',
                         boxShadow: selected
@@ -238,7 +239,7 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
 
           <Button
             size="lg"
-            className="w-full h-14 text-xl font-black rounded-2xl"
+            className="w-full h-14 text-xl font-black rounded-none"
             disabled={!canStart}
             onClick={startGame}
           >
@@ -286,16 +287,28 @@ function CountdownView({ seconds }: { seconds: number }) {
 
 // ─── WORD DISPLAY ─────────────────────────────────────────────────────────────
 
-function WordDisplayView({ playerId, roomState, roundInfo, onNewWord, onBackToLobby }: {
+function WordDisplayView({ playerId, roomState, roundInfo, onNewWord, onBackToLobby, onRegenPlayerWord }: {
   playerId: number;
   roomState: RoomState;
   roundInfo: RoundInfo | null;
   onNewWord: () => void;
   onBackToLobby: () => void;
+  onRegenPlayerWord: (targetPlayerId: number) => void;
 }) {
   const { t } = useLang();
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const isHost = roomState.players.find(p => p.id === playerId)?.isHost ?? false;
   const allWords = roundInfo?.allPlayerWords ?? [];
+
+  const handleRowTap = (id: number) => {
+    if (!isHost) return;
+    setSelectedPlayerId(prev => prev === id ? null : id);
+  };
+
+  const handleRegen = (id: number) => {
+    onRegenPlayerWord(id);
+    setSelectedPlayerId(null);
+  };
 
   return (
     <div className="flex-1 flex flex-col select-none min-h-[100dvh]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
@@ -312,33 +325,55 @@ function WordDisplayView({ playerId, roomState, roundInfo, onNewWord, onBackToLo
         <div className="neon-word leading-none" style={{ fontSize: 'clamp(72px, 22vw, 130px)' }}>???</div>
       </div>
 
+      {/* Admin hint */}
+      {isHost && (
+        <p className="text-center text-xs text-muted-foreground pb-2 px-4">{t.tapPlayerHint}</p>
+      )}
+
       {/* All players list */}
       <div
         className="flex-1 overflow-y-auto px-4 pb-2"
         style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       >
-        <div className="rounded-2xl border-2 border-border overflow-hidden">
+        <div className="border-2 border-border overflow-hidden">
           {allWords.length === 0 ? (
             <div className="px-4 py-3 text-center text-muted-foreground text-sm">...</div>
           ) : (
             allWords.map((pw, idx) => {
               const isMe = pw.playerId === playerId;
+              const isExpanded = selectedPlayerId === pw.playerId;
               return (
-                <div
-                  key={pw.playerId}
-                  className={[
-                    'flex items-center justify-between px-4 py-3',
-                    idx > 0 ? 'border-t border-border' : '',
-                    isMe ? 'bg-primary/5' : '',
-                  ].join(' ')}
-                >
-                  <span className={`font-bold text-base ${isMe ? 'text-primary' : ''}`}>
-                    {pw.playerName}
-                    {isMe && <span className="text-xs font-normal text-muted-foreground ml-1">{t.you}</span>}
-                  </span>
-                  <span className={`text-lg font-black ${pw.word === '???' ? 'text-muted-foreground/50' : 'text-foreground'}`}>
-                    {pw.word}
-                  </span>
+                <div key={pw.playerId}>
+                  <button
+                    type="button"
+                    onClick={() => handleRowTap(pw.playerId)}
+                    className={[
+                      'w-full flex items-center justify-between px-4 py-3 text-left transition-colors',
+                      idx > 0 ? 'border-t border-border' : '',
+                      isExpanded ? 'bg-purple-950/60' : isMe ? 'bg-primary/5' : 'active:bg-muted/30',
+                    ].join(' ')}
+                  >
+                    <span className={`font-bold text-base ${isMe ? 'text-primary' : ''}`}>
+                      {pw.playerName}
+                      {isMe && <span className="text-xs font-normal text-muted-foreground ml-1">{t.you}</span>}
+                    </span>
+                    <span className={`text-lg font-black ${pw.word === '???' ? 'text-muted-foreground/50' : 'text-foreground'}`}>
+                      {pw.word}
+                    </span>
+                  </button>
+                  {isExpanded && isHost && (
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-purple-900/40 border-t border-purple-700/50">
+                      <span className="text-sm text-purple-200 font-medium">{pw.playerName}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRegen(pw.playerId)}
+                        className="text-sm font-black text-white px-4 py-2 transition-colors active:opacity-80"
+                        style={{ background: '#7c3aed' }}
+                      >
+                        {t.generateNewWord}
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -352,14 +387,14 @@ function WordDisplayView({ playerId, roomState, roundInfo, onNewWord, onBackToLo
           <Button
             variant="outline"
             size="lg"
-            className="flex-1 h-13 font-bold rounded-2xl border-2 text-base"
+            className="flex-1 h-13 font-bold rounded-none border-2 text-base"
             onClick={onBackToLobby}
           >
             {t.backToLobby}
           </Button>
           <Button
             size="lg"
-            className="flex-1 h-13 font-black rounded-2xl text-base"
+            className="flex-1 h-13 font-black rounded-none text-base"
             onClick={onNewWord}
           >
             {t.getAnotherWord}
@@ -415,7 +450,7 @@ function RevealView({ playerId, roomState, revealInfo, readyPlayerIds, onPlayerR
       {!isHost && (
         <Button
           size="lg"
-          className="w-full max-w-sm h-14 text-xl font-black rounded-2xl"
+          className="w-full max-w-sm h-14 text-xl font-black rounded-none"
           disabled={readyPlayerIds.includes(playerId)}
           onClick={onPlayerReady}
         >
@@ -427,7 +462,7 @@ function RevealView({ playerId, roomState, revealInfo, readyPlayerIds, onPlayerR
         <div className="flex flex-col gap-3 w-full max-w-sm">
           <Button
             size="lg"
-            className="w-full h-14 text-xl font-black rounded-2xl"
+            className="w-full h-14 text-xl font-black rounded-none"
             style={{ background: '#2563eb', color: '#fff' }}
             onClick={onPlayAgain}
           >
@@ -437,14 +472,14 @@ function RevealView({ playerId, roomState, revealInfo, readyPlayerIds, onPlayerR
             <Button
               size="lg"
               variant="outline"
-              className="flex-1 h-12 text-base font-bold rounded-2xl border-2"
+              className="flex-1 h-12 text-base font-bold rounded-none border-2"
               onClick={onEndGame}
             >
               {t.endGame}
             </Button>
             <Button
               size="lg"
-              className="flex-1 h-12 text-base font-black rounded-2xl"
+              className="flex-1 h-12 text-base font-black rounded-none"
               disabled={!allReady}
               onClick={onNextRound}
             >
@@ -477,7 +512,7 @@ function FinishedView({ onGoHome }: { onGoHome: () => void }) {
         {t.gameOver}
       </div>
       <p className="text-xl text-muted-foreground">{t.returningHome}</p>
-      <Button size="lg" className="h-14 px-10 text-xl font-bold rounded-2xl" onClick={onGoHome}>
+      <Button size="lg" className="h-14 px-10 text-xl font-bold rounded-none" onClick={onGoHome}>
         {t.goHome}
       </Button>
     </div>

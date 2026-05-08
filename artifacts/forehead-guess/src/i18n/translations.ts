@@ -49,6 +49,8 @@ export const translations = {
 
     yourWord: 'Your Word',
     getAnotherWord: 'New Words',
+    generateNewWord: 'Generate New Word',
+    tapPlayerHint: 'Tap a player to change their word',
     showReveal: 'Show Reveal →',
 
     yourWordWas: 'Your word was',
@@ -175,6 +177,8 @@ export const translations = {
 
     yourWord: 'كلمتك',
     getAnotherWord: 'كلمات جديدة',
+    generateNewWord: 'كلمة جديدة',
+    tapPlayerHint: 'اضغط على لاعب لتغيير كلمته',
     showReveal: '← عرض الكشف',
 
     yourWordWas: 'كانت كلمتك',

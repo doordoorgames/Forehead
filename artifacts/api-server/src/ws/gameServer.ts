@@ -501,6 +501,67 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     return;
   }
 
+  // ── FOREHEAD: REGEN ONE PLAYER'S WORD ────────────────────────────────────
+  if (type === "regenPlayerWord") {
+    const { roomCode, targetPlayerId } = payload as { roomCode: string; targetPlayerId: number };
+    const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+    if (!room || room.status !== "word_display" || !room.categoryId) return;
+    const host = await db.query.playersTable.findFirst({
+      where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)),
+    });
+    if (host?.id !== client.playerId) return;
+
+    const rs = roomRoundState.get(roomCode);
+    if (!rs) return;
+
+    const items = await db.select().from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, room.categoryId));
+    // Exclude words currently held by other players
+    const usedWords = new Set(
+      Object.entries(rs.playerWords)
+        .filter(([id]) => Number(id) !== targetPlayerId)
+        .map(([, word]) => word)
+    );
+    const available = items.filter((item) => !usedWords.has(item.itemText));
+    if (available.length === 0) return;
+
+    const newWord = available[Math.floor(Math.random() * available.length)].itemText;
+    rs.playerWords[targetPlayerId] = newWord;
+
+    // Keep normalWord / imposterWord in sync
+    if (targetPlayerId === rs.imposterId) {
+      rs.imposterWord = newWord;
+    } else {
+      const normalWords = Object.entries(rs.playerWords)
+        .filter(([id]) => Number(id) !== rs.imposterId)
+        .map(([, w]) => w);
+      if (normalWords.length > 0) rs.normalWord = normalWords[0];
+    }
+
+    const cat = await db.query.categoriesTable.findFirst({ where: eq(categoriesTable.id, room.categoryId) });
+    const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
+    const connected = players.filter((p) => p.connected);
+
+    for (const [ws2, c] of clients.entries()) {
+      if (c.roomCode !== roomCode || ws2.readyState !== WebSocket.OPEN || !c.playerId) continue;
+      const allPlayerWords = connected.map((p) => ({
+        playerId: p.id,
+        playerName: p.name,
+        word: p.id === c.playerId ? "???" : (rs.playerWords[p.id] ?? "???"),
+      }));
+      sendTo(ws2, {
+        type: "roundStart",
+        payload: {
+          roundNumber: rs.roundNumber,
+          myWord: rs.playerWords[c.playerId] ?? "???",
+          isImposter: c.playerId === rs.imposterId,
+          categoryName: cat?.name ?? rs.categoryName,
+          allPlayerWords,
+        },
+      });
+    }
+    return;
+  }
+
   // ── FOREHEAD: NEW WORD (re-deal immediately, no countdown) ───────────────
   if (type === "newWord") {
     const { roomCode } = payload as { roomCode: string };

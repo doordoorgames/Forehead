@@ -205,36 +205,35 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
         <div className="space-y-3">
           <div>
             <p className="font-bold mb-1.5">{t.selectCategory}</p>
-            <div
-              className="rounded-xl border-2 border-border overflow-y-auto"
-              style={{ maxHeight: '38vh', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
-            >
-              {(!categories || categories.length === 0) ? (
-                <p className="px-4 py-3 text-sm text-muted-foreground text-center">{t.chooseCategory}</p>
-              ) : (
-                categories.map((c: any, idx: number) => {
+            {(!categories || categories.length === 0) ? (
+              <p className="text-sm text-muted-foreground text-center py-2">{t.chooseCategory}</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {categories.map((c: any) => {
                   const selected = currentCategoryId === c.id;
                   return (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => setCategory(c.id)}
-                      className={[
-                        'w-full flex items-center justify-between px-4 py-3 text-left transition-colors',
-                        idx > 0 ? 'border-t border-border' : '',
-                        selected ? 'bg-primary/10' : 'hover:bg-muted/60 active:bg-muted',
-                      ].join(' ')}
+                      className="relative flex flex-col items-center justify-center text-center px-3 py-4 rounded-2xl font-bold text-white transition-all active:scale-95"
+                      style={{
+                        background: selected ? '#5b21b6' : '#3b0764',
+                        boxShadow: selected
+                          ? '0 0 0 3px #a855f7, 0 4px 16px rgba(168,85,247,0.4)'
+                          : '0 2px 8px rgba(0,0,0,0.4)',
+                      }}
                     >
-                      <span className={`text-base font-semibold ${selected ? 'text-primary' : ''}`}>{c.name}</span>
-                      <span className="flex items-center gap-2 text-sm text-muted-foreground shrink-0 ml-2">
-                        {c.itemCount} {t.words}
-                        {selected && <CheckCircle2 className="w-5 h-5 text-primary" />}
-                      </span>
+                      <span className="text-sm font-black leading-tight">{c.name}</span>
+                      <span className="text-xs font-medium mt-1 opacity-70">{c.itemCount} {t.words}</span>
+                      {selected && (
+                        <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-purple-300" />
+                      )}
                     </button>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </div>
 
           <Button

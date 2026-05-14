@@ -20,7 +20,13 @@ const joinRoomSchema = z.object({
   playerName: z.string().min(1).max(20),
 });
 
-export default function Home() {
+const modeBackPath: Record<string, string> = {
+  forehead: '/forehead',
+  character: '/character',
+  charades: '/charades',
+};
+
+export default function Home({ mode }: { mode: 'forehead' | 'character' | 'charades' }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { t, lang } = useLang();
@@ -40,7 +46,6 @@ export default function Home() {
   });
 
   const onCreateSubmit = (values: z.infer<typeof createRoomSchema>) => {
-    const mode = localStorage.getItem('fg_mode') || 'forehead';
     createRoomMutation.mutate(
       { data: { hostName: values.hostName, mode, lang } as any },
       {

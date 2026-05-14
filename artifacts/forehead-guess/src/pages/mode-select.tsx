@@ -8,11 +8,6 @@ export default function ModeSelect() {
 
   const fontStyle = isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 800 } : {};
 
-  const choose = (mode: 'forehead' | 'character' | 'charades') => {
-    localStorage.setItem('fg_mode', mode);
-    setLocation('/home');
-  };
-
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 relative overflow-hidden">
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-3xl" />
@@ -31,7 +26,7 @@ export default function ModeSelect() {
         <div className="flex flex-col gap-5">
           {/* Forehead Game */}
           <button
-            onClick={() => choose('forehead')}
+            onClick={() => setLocation('/forehead')}
             className="group relative w-full overflow-hidden rounded-3xl border-4 border-[#ff4fa3] bg-black/60 backdrop-blur-sm p-6 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-[#ff4fa3]/10 active:scale-[0.98] shadow-[0_0_24px_#ff4fa340]"
           >
             <div className="flex items-center gap-4">
@@ -49,7 +44,7 @@ export default function ModeSelect() {
 
           {/* Guess the Character */}
           <button
-            onClick={() => choose('character')}
+            onClick={() => setLocation('/character')}
             className="group relative w-full overflow-hidden rounded-3xl border-4 border-[#39d5ff] bg-black/60 backdrop-blur-sm p-6 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-[#39d5ff]/10 active:scale-[0.98] shadow-[0_0_24px_#39d5ff40]"
           >
             <div className="flex items-center gap-4">
@@ -67,7 +62,7 @@ export default function ModeSelect() {
 
           {/* Charades */}
           <button
-            onClick={() => choose('charades')}
+            onClick={() => setLocation('/charades')}
             className="group relative w-full overflow-hidden rounded-3xl border-4 border-[#a855f7] bg-black/60 backdrop-blur-sm p-6 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-[#a855f7]/10 active:scale-[0.98] shadow-[0_0_24px_#a855f740]"
           >
             <div className="flex items-center gap-4">
@@ -82,7 +77,6 @@ export default function ModeSelect() {
               </div>
             </div>
           </button>
-
         </div>
 
         <button

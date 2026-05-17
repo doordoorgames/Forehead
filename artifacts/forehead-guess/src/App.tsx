@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,18 +14,24 @@ import { LanguageProvider } from "@/context/LanguageContext";
 const queryClient = new QueryClient();
 
 function Router() {
+  const [location] = useLocation();
+  const showCyberpunk = !location.startsWith('/character');
+
   return (
-    <Switch>
-      <Route path="/" component={LanguageSelect} />
-      <Route path="/mode" component={ModeSelect} />
-      <Route path="/forehead">{() => <Home mode="forehead" />}</Route>
-      <Route path="/character">{() => <Home mode="character" />}</Route>
-      <Route path="/charades">{() => <Home mode="charades" />}</Route>
-      <Route path="/home">{() => <Redirect to="/mode" />}</Route>
-      <Route path="/admin" component={Admin} />
-      <Route path="/room/:code" component={Room} />
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      {showCyberpunk && <CyberpunkBackground />}
+      <Switch>
+        <Route path="/" component={LanguageSelect} />
+        <Route path="/mode" component={ModeSelect} />
+        <Route path="/forehead">{() => <Home mode="forehead" />}</Route>
+        <Route path="/character">{() => <Home mode="character" />}</Route>
+        <Route path="/charades">{() => <Home mode="charades" />}</Route>
+        <Route path="/home">{() => <Redirect to="/mode" />}</Route>
+        <Route path="/admin" component={Admin} />
+        <Route path="/room/:code" component={Room} />
+        <Route component={NotFound} />
+      </Switch>
+    </>
   );
 }
 
@@ -34,7 +40,6 @@ function App() {
     <LanguageProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <CyberpunkBackground />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <Router />

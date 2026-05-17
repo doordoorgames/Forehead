@@ -84,8 +84,27 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-3xl" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary/20 blur-3xl" />
+      {/* Character mode: replace the cyberpunk city with the vending-machine scene */}
+      {mode === 'character' && (
+        <>
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: "url('/character-bg.png')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center top',
+              backgroundRepeat: 'no-repeat',
+            }}
+          />
+          <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.52)' }} />
+        </>
+      )}
+      {mode !== 'character' && (
+        <>
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-3xl" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary/20 blur-3xl" />
+        </>
+      )}
 
       <div className="max-w-md w-full relative z-10">
         <div className="text-center mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">

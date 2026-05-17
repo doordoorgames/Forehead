@@ -23,58 +23,70 @@ interface CharacterRoomProps {
 }
 
 // ─── NEON FLICKER OVERLAY ──────────────────────────────────────────────────────
+// Soft circular blobs — border-radius 50%, heavy blur, mix-blend-mode screen.
+// Each blob is invisible most of the cycle, then fires a short double-pulse.
+// Staggered delays ensure at most one is visible at a time.
 
 function NeonFlicker() {
+  const base: React.CSSProperties = {
+    position: 'absolute',
+    borderRadius: '50%',
+    mixBlendMode: 'screen',
+    opacity: 0,
+    pointerEvents: 'none',
+  };
+
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 2 }}>
-      {/* Top pink neon bar — matches the wide pink strip at top of image */}
-      <div
-        style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: '60px',
-          background: 'linear-gradient(to bottom, rgba(255,20,200,0.92), transparent)',
-          animation: 'flicker-fast 2.4s infinite',
-        }}
-      />
-      {/* Left vending machine pink glow */}
-      <div
-        style={{
-          position: 'absolute', top: '5%', left: 0, width: '55%', height: '75%',
-          background: 'radial-gradient(ellipse at 30% 40%, rgba(255,10,210,0.38), transparent 68%)',
-          animation: 'flicker-pink 4.3s infinite 0.6s',
-        }}
-      />
-      {/* Second vending machine — slightly offset flicker */}
-      <div
-        style={{
-          position: 'absolute', top: '8%', left: '20%', width: '45%', height: '65%',
-          background: 'radial-gradient(ellipse at 60% 40%, rgba(255,60,220,0.28), transparent 65%)',
-          animation: 'flicker-pink 3.7s infinite 1.1s',
-        }}
-      />
-      {/* Cyan signs on the right */}
-      <div
-        style={{
-          position: 'absolute', top: '2%', right: 0, width: '35%', height: '65%',
-          background: 'radial-gradient(ellipse at 70% 25%, rgba(0,220,255,0.42), transparent 60%)',
-          animation: 'flicker-cyan 3.9s infinite 0.3s',
-        }}
-      />
-      {/* Small cyan accent top-right */}
-      <div
-        style={{
-          position: 'absolute', top: '15%', right: '5%', width: '18%', height: '30%',
-          background: 'radial-gradient(ellipse, rgba(0,200,255,0.55), transparent 65%)',
-          animation: 'flicker-fast 1.8s infinite 0.9s',
-        }}
-      />
-      {/* Floor wet reflection */}
-      <div
-        style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: '38%',
-          background: 'linear-gradient(to top, rgba(200,0,180,0.35), transparent)',
-          animation: 'flicker-slow 5.2s infinite 1.4s',
-        }}
-      />
+      {/* Blob A — wide pink smear from top-left (vending machine sign) */}
+      <div style={{
+        ...base,
+        top: '-15%', left: '-10%',
+        width: '80%', height: '70%',
+        background: 'radial-gradient(ellipse, rgba(255,0,210,0.95) 0%, transparent 65%)',
+        filter: 'blur(72px)',
+        animation: 'neon-blob-a 5.67s infinite 0s',
+      }} />
+
+      {/* Blob B — left vending machine interior glow */}
+      <div style={{
+        ...base,
+        top: '15%', left: '-8%',
+        width: '60%', height: '65%',
+        background: 'radial-gradient(ellipse, rgba(255,30,220,0.90) 0%, transparent 60%)',
+        filter: 'blur(88px)',
+        animation: 'neon-blob-b 7.02s infinite 1.8s',
+      }} />
+
+      {/* Blob C — cyan right-side signs */}
+      <div style={{
+        ...base,
+        top: '0%', right: '-12%',
+        width: '55%', height: '65%',
+        background: 'radial-gradient(ellipse, rgba(0,220,255,0.90) 0%, transparent 62%)',
+        filter: 'blur(80px)',
+        animation: 'neon-blob-c 6.30s infinite 3.6s',
+      }} />
+
+      {/* Blob D — small bright cyan accent, tight and sharp-pulsing */}
+      <div style={{
+        ...base,
+        top: '5%', right: '10%',
+        width: '28%', height: '35%',
+        background: 'radial-gradient(ellipse, rgba(0,240,255,0.98) 0%, transparent 58%)',
+        filter: 'blur(48px)',
+        animation: 'neon-blob-d 4.86s infinite 5.4s',
+      }} />
+
+      {/* Blob E — floor wet-pavement reflection, wide and low */}
+      <div style={{
+        ...base,
+        bottom: '-20%', left: '5%',
+        width: '90%', height: '55%',
+        background: 'radial-gradient(ellipse, rgba(200,0,180,0.80) 0%, transparent 60%)',
+        filter: 'blur(100px)',
+        animation: 'neon-blob-e 8.28s infinite 7.2s',
+      }} />
     </div>
   );
 }

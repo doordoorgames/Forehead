@@ -190,20 +190,42 @@
   }
 }
 
-/* ── Neon flicker animations for character room ─────────────────────────── */
-@keyframes flicker-pink {
-  0%, 18%, 22%, 24%, 53%, 57%, 100% { opacity: var(--flicker-base, 0.75); }
-  20%, 23%, 55% { opacity: 0.06; }
+/* ── Neon blob flicker animations for character room ────────────────────── */
+/* Pattern: long silence → sharp double-pulse → smooth fade → silence       */
+/* Each blob has its own keyframe so staggered delays never overlap.        */
+
+@keyframes neon-blob-a {
+  0%, 62%, 100% { opacity: 0; }
+  64.8%         { opacity: 0.88; }
+  66.6%         { opacity: 0.12; }
+  68.4%         { opacity: 0.95; }
+  74.7%         { opacity: 0; }
 }
-@keyframes flicker-cyan {
-  0%, 38%, 42%, 44%, 83%, 87%, 100% { opacity: var(--flicker-base, 0.55); }
-  40%, 43%, 85% { opacity: 0.04; }
+@keyframes neon-blob-b {
+  0%, 58%, 100% { opacity: 0; }
+  60.3%         { opacity: 0.82; }
+  62.1%         { opacity: 0.08; }
+  63.9%         { opacity: 0.90; }
+  70.2%         { opacity: 0; }
 }
-@keyframes flicker-slow {
-  0%, 48%, 52%, 100% { opacity: var(--flicker-base, 0.45); }
-  50% { opacity: 0.12; }
+@keyframes neon-blob-c {
+  0%, 70%, 100% { opacity: 0; }
+  72.0%         { opacity: 0.78; }
+  73.8%         { opacity: 0.14; }
+  75.6%         { opacity: 0.86; }
+  81.0%         { opacity: 0; }
 }
-@keyframes flicker-fast {
-  0%, 9%, 11%, 14%, 91%, 94%, 96%, 100% { opacity: var(--flicker-base, 0.8); }
-  10%, 13%, 93%, 95% { opacity: 0.02; }
+@keyframes neon-blob-d {
+  0%, 55%, 100% { opacity: 0; }
+  57.6%         { opacity: 0.92; }
+  59.4%         { opacity: 0.06; }
+  61.2%         { opacity: 0.96; }
+  67.5%         { opacity: 0; }
+}
+@keyframes neon-blob-e {
+  0%, 75%, 100% { opacity: 0; }
+  77.4%         { opacity: 0.72; }
+  79.2%         { opacity: 0.16; }
+  81.0%         { opacity: 0.80; }
+  87.3%         { opacity: 0; }
 }

@@ -189,3 +189,21 @@
     transition: none !important;
   }
 }
+
+/* ── Neon flicker animations for character room ─────────────────────────── */
+@keyframes flicker-pink {
+  0%, 18%, 22%, 24%, 53%, 57%, 100% { opacity: var(--flicker-base, 0.75); }
+  20%, 23%, 55% { opacity: 0.06; }
+}
+@keyframes flicker-cyan {
+  0%, 38%, 42%, 44%, 83%, 87%, 100% { opacity: var(--flicker-base, 0.55); }
+  40%, 43%, 85% { opacity: 0.04; }
+}
+@keyframes flicker-slow {
+  0%, 48%, 52%, 100% { opacity: var(--flicker-base, 0.45); }
+  50% { opacity: 0.12; }
+}
+@keyframes flicker-fast {
+  0%, 9%, 11%, 14%, 91%, 94%, 96%, 100% { opacity: var(--flicker-base, 0.8); }
+  10%, 13%, 93%, 95% { opacity: 0.02; }
+}

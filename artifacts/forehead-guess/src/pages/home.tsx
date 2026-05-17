@@ -89,16 +89,42 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
 
       <div className="max-w-md w-full relative z-10">
         <div className="text-center mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <h1
-            className="neon-word mb-4 rotate-[-2deg] leading-none"
-            style={{
-              fontSize: 'clamp(52px, 14vw, 110px)',
-              fontFamily: isAr ? "'Changa', sans-serif" : undefined,
-            }}
-          >
-            <span className="block">{t.appTitle1}</span>
-            <span className="block rotate-[4deg] mt-1" style={{ color: '#ff4fa3' }}>{t.appTitle2}</span>
-          </h1>
+          {mode === 'forehead' && (
+            <h1
+              className="neon-word mb-4 rotate-[-2deg] leading-none"
+              style={{
+                fontSize: 'clamp(52px, 14vw, 110px)',
+                fontFamily: isAr ? "'Changa', sans-serif" : undefined,
+              }}
+            >
+              <span className="block">{t.appTitle1}</span>
+              <span className="block rotate-[4deg] mt-1" style={{ color: '#ff4fa3' }}>{t.appTitle2}</span>
+            </h1>
+          )}
+          {mode === 'character' && (
+            <h1
+              className="neon-word mb-4 leading-tight"
+              style={{
+                fontSize: 'clamp(36px, 10vw, 80px)',
+                color: '#39d5ff',
+                fontFamily: isAr ? "'Changa', sans-serif" : undefined,
+              }}
+            >
+              {t.guessTheCharacter}
+            </h1>
+          )}
+          {mode === 'charades' && (
+            <h1
+              className="neon-word mb-4 leading-none"
+              style={{
+                fontSize: 'clamp(48px, 13vw, 100px)',
+                color: '#a855f7',
+                fontFamily: isAr ? "'Changa', sans-serif" : undefined,
+              }}
+            >
+              {t.charadesMode}
+            </h1>
+          )}
           <p className="text-xl font-medium text-muted-foreground mt-4">{t.tagline}</p>
         </div>
 

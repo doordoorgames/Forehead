@@ -106,6 +106,16 @@ export const translations = {
     gameAdminLabel: 'Game Admin',
     characterMode: 'Guess the Character',
     waitingForFirstHint: 'Waiting for the first hint...',
+    yourGuessLabel: 'Your Guess',
+    guessOf: 'of',
+    submitGuess: 'Submit',
+    guessPlaceholder: 'Type your guess...',
+    outOfGuesses: 'No more guesses remaining',
+
+    // Character game — admin guesses panel
+    answersSubmitted: 'Answers Submitted',
+    newAnswersBelow: 'New answers ↓',
+    crownWinner: 'Crown as Winner',
 
     // Charades game
     charadesLobbyTitle: 'Charades',
@@ -235,6 +245,14 @@ export const translations = {
     gameAdminLabel: 'مدير اللعبة',
     characterMode: 'خمّن الشخصية',
     waitingForFirstHint: '...في انتظار التلميح الأول',
+    yourGuessLabel: 'تخمينك',
+    guessOf: 'من',
+    submitGuess: 'أرسل',
+    guessPlaceholder: 'اكتب تخمينك...',
+    outOfGuesses: 'لا تخمينات متبقية',
+    answersSubmitted: 'تم إرسال الإجابات',
+    newAnswersBelow: 'إجابات جديدة ↓',
+    crownWinner: 'تتويج كفائز',
 
     // Charades game
     charadesLobbyTitle: 'بدون كلام',

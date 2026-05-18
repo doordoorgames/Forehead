@@ -46,6 +46,13 @@ export interface RevealInfo {
   readyPlayerIds: number[];
 }
 
+export interface PlayerGuess {
+  playerId: number;
+  playerName: string;
+  guess: string;
+  guessNumber: number;
+}
+
 export interface CharacterState {
   // Both admin and player
   isAdmin: boolean;
@@ -56,9 +63,17 @@ export interface CharacterState {
   answer?: string;
   hints?: string[];
   totalHints?: number;
+  playerGuesses?: PlayerGuess[];
   // Player only
   currentHint?: string | null;
   revealedAnswer?: string;
+  myGuessCount?: number;
+  myGuesses?: string[];
+}
+
+export interface GtcWinner {
+  winnerId: number;
+  winnerName: string;
 }
 
 interface SocketState {
@@ -70,6 +85,7 @@ interface SocketState {
   readyPlayerIds: number[];
   characterState: CharacterState | null;
   charadesState: CharadesState | null;
+  gtcWinner: GtcWinner | null;
   error: string | null;
 }
 
@@ -83,6 +99,7 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     readyPlayerIds: [],
     characterState: null,
     charadesState: null,
+    gtcWinner: null,
     error: null,
   });
 
@@ -133,6 +150,9 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
             break;
           case 'gtcState':
             setState(s => ({ ...s, characterState: msg.payload as CharacterState }));
+            break;
+          case 'gtcWinner':
+            setState(s => ({ ...s, gtcWinner: msg.payload as GtcWinner }));
             break;
           case 'charadesState':
             setState(s => ({ ...s, charadesState: msg.payload as CharadesState }));
@@ -248,6 +268,14 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     sendMessage('gtcBackToLobby', { roomCode });
   }, [roomCode, sendMessage]);
 
+  const gtcSubmitGuess = useCallback((guess: string) => {
+    sendMessage('gtcSubmitGuess', { roomCode, guess });
+  }, [roomCode, sendMessage]);
+
+  const gtcCrownWinner = useCallback((targetPlayerId: number) => {
+    sendMessage('gtcCrownWinner', { roomCode, playerId: targetPlayerId });
+  }, [roomCode, sendMessage]);
+
   // ── Charades game actions ─────────────────────────────────────────────────
   const charadesStart = useCallback(() => {
     sendMessage('charadesStart', { roomCode });
@@ -283,6 +311,8 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     gtcTransferAdmin,
     gtcEndGame,
     gtcBackToLobby,
+    gtcSubmitGuess,
+    gtcCrownWinner,
     charadesStart,
     charadesNext,
     charadesEndGame,

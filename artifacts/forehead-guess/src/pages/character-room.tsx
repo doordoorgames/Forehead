@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Copy, Check, Users, ChevronRight, Eye, RotateCcw, ArrowRight, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Copy, Check, Users, ChevronRight, Eye, RotateCcw, ArrowRight, Loader2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLang } from '@/context/LanguageContext';
 import { RoomState, CharacterState } from '@/hooks/useGameSocket';
@@ -18,6 +18,8 @@ interface CharacterRoomProps {
     gtcTransferAdmin: (id: number) => void;
     gtcEndGame: () => void;
     gtcBackToLobby: () => void;
+    gtcSubmitGuess: (guess: string) => void;
+    gtcCrownWinner: (playerId: number) => void;
   };
   onGoHome: () => void;
 }
@@ -147,6 +149,8 @@ export default function CharacterRoom({ code, playerId, roomState, socket, onGoH
           onNextCharacter={socket.gtcNextCharacter}
           onTransferAdmin={socket.gtcTransferAdmin}
           onBackToLobby={socket.gtcBackToLobby}
+          onSubmitGuess={socket.gtcSubmitGuess}
+          onCrownWinner={socket.gtcCrownWinner}
           fontStyle={fontStyle}
           t={t}
         />
@@ -293,6 +297,7 @@ function CharacterLobbyView({
 function CharacterGameView({
   playerId, roomState, characterState,
   onNextHint, onRevealAnswer, onNextCharacter, onTransferAdmin, onBackToLobby,
+  onSubmitGuess, onCrownWinner,
   fontStyle, t,
 }: {
   playerId: number;
@@ -303,6 +308,8 @@ function CharacterGameView({
   onNextCharacter: () => void;
   onTransferAdmin: (id: number) => void;
   onBackToLobby: () => void;
+  onSubmitGuess: (guess: string) => void;
+  onCrownWinner: (playerId: number) => void;
   fontStyle: object;
   t: any;
 }) {
@@ -336,6 +343,7 @@ function CharacterGameView({
         onNextCharacter={onNextCharacter}
         onTransferAdmin={(id) => { onTransferAdmin(id); setShowTransfer(false); }}
         onBackToLobby={onBackToLobby}
+        onCrownWinner={onCrownWinner}
         fontStyle={fontStyle}
         t={t}
       />
@@ -346,6 +354,7 @@ function CharacterGameView({
     <PlayerGameView
       characterState={characterState}
       adminPlayer={adminPlayer}
+      onSubmitGuess={onSubmitGuess}
       fontStyle={fontStyle}
       t={t}
     />
@@ -358,6 +367,7 @@ function AdminGameView({
   characterState, players, connectedOtherPlayers, adminPlayer,
   showTransfer, setShowTransfer,
   onNextHint, onRevealAnswer, onNextCharacter, onTransferAdmin, onBackToLobby,
+  onCrownWinner,
   fontStyle, t,
 }: {
   characterState: CharacterState;
@@ -371,12 +381,49 @@ function AdminGameView({
   onNextCharacter: () => void;
   onTransferAdmin: (id: number) => void;
   onBackToLobby: () => void;
+  onCrownWinner: (playerId: number) => void;
   fontStyle: object;
   t: any;
 }) {
   const hints = characterState.hints ?? [];
   const currentIdx = characterState.currentHintIndex;
   const allHintsShown = currentIdx >= hints.length - 1;
+  const guesses = characterState.playerGuesses ?? [];
+
+  // ── Scroll indicator ──────────────────────────────────────────────────────
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+  const seenCountRef = useRef(0);
+  const [crowned, setCrowned] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (guesses.length > seenCountRef.current) {
+      const isAtBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 100;
+      if (!isAtBottom) setShowScrollIndicator(true);
+    }
+  }, [guesses.length]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const isAtBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 100;
+      if (isAtBottom) {
+        setShowScrollIndicator(false);
+        seenCountRef.current = guesses.length;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [guesses.length]);
+
+  const scrollToBottom = () => {
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    setShowScrollIndicator(false);
+    seenCountRef.current = guesses.length;
+  };
+
+  const handleCrown = (playerId: number) => {
+    setCrowned(playerId);
+    onCrownWinner(playerId);
+  };
 
   const cardStyle: React.CSSProperties = {
     background: 'rgba(0,0,0,0.72)',
@@ -567,6 +614,94 @@ function AdminGameView({
       >
         {t.backToLobby}
       </Button>
+
+      {/* ── Player guesses section ─────────────────────────────────────── */}
+      {guesses.length > 0 && (
+        <div className="space-y-3 pb-4">
+          {/* Navy header */}
+          <div
+            className="px-4 py-3 flex items-center gap-2"
+            style={{ background: '#0f2a5c', border: '2px solid rgba(57,213,255,0.35)' }}
+          >
+            <span className="text-white font-black text-sm tracking-widest uppercase" style={fontStyle}>
+              📝 {t.answersSubmitted}
+            </span>
+            <span className="ml-auto text-[#39d5ff] text-xs font-bold" style={fontStyle}>
+              {guesses.length}
+            </span>
+          </div>
+
+          {/* Each guess card */}
+          {guesses.map((g, i) => (
+            <div key={i} className="relative pt-6">
+              {/* Checkbox above — click to crown */}
+              <button
+                onClick={() => handleCrown(g.playerId)}
+                disabled={crowned !== null}
+                className="absolute top-0 left-0 w-5 h-5 border-2 border-white flex items-center justify-center transition-all hover:border-[#ff4fa3] disabled:cursor-default"
+                style={{
+                  background: crowned === g.playerId ? '#ff4fa3' : 'transparent',
+                }}
+                title={t.crownWinner}
+              >
+                {crowned === g.playerId && (
+                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                )}
+              </button>
+
+              <div
+                className="px-4 py-3"
+                style={{
+                  background: crowned === g.playerId
+                    ? 'rgba(255,79,163,0.12)'
+                    : 'rgba(0,0,0,0.55)',
+                  border: crowned === g.playerId
+                    ? '2px solid rgba(255,79,163,0.6)'
+                    : '2px solid rgba(255,255,255,0.10)',
+                }}
+              >
+                {/* Player name in pink neon */}
+                <p
+                  className="font-black text-lg leading-tight"
+                  style={{
+                    color: '#ff4fa3',
+                    textShadow: '0 0 14px rgba(255,79,163,0.8)',
+                    ...fontStyle,
+                  }}
+                >
+                  {g.playerName}
+                  <span className="text-xs font-normal text-white/50 ml-2">
+                    ({g.guessNumber}/3)
+                  </span>
+                </p>
+                {/* Guess text */}
+                <p className="text-white font-medium text-base mt-1" style={fontStyle}>
+                  {g.guess}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Scroll indicator (fixed bottom-right) ─────────────────────── */}
+      {showScrollIndicator && (
+        <div className="fixed bottom-6 right-4 flex flex-col items-end gap-2" style={{ zIndex: 50 }}>
+          <div
+            className="px-3 py-1.5"
+            style={{ background: '#0f2a5c', border: '2px solid rgba(57,213,255,0.5)' }}
+          >
+            <p className="text-white text-xs font-bold" style={fontStyle}>{t.answersSubmitted}</p>
+          </div>
+          <button
+            onClick={scrollToBottom}
+            className="w-10 h-10 bg-white flex items-center justify-center hover:bg-white/90 transition-colors"
+            style={{ boxShadow: '0 0 16px rgba(255,255,255,0.3)' }}
+          >
+            <ChevronDown className="w-6 h-6 text-[#0f2a5c]" strokeWidth={3} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -574,19 +709,32 @@ function AdminGameView({
 // ─── PLAYER VIEW ───────────────────────────────────────────────────────────────
 
 function PlayerGameView({
-  characterState, adminPlayer, fontStyle, t,
+  characterState, adminPlayer, onSubmitGuess, fontStyle, t,
 }: {
   characterState: CharacterState;
   adminPlayer: RoomState['players'][0] | undefined;
+  onSubmitGuess: (guess: string) => void;
   fontStyle: object;
   t: any;
 }) {
   const currentHint = (characterState as any).currentHint as string | null | undefined;
   const revealedAnswer = (characterState as any).revealedAnswer as string | undefined;
+  const myGuessCount = characterState.myGuessCount ?? 0;
+  const myGuesses = characterState.myGuesses ?? [];
+  const canGuess = myGuessCount < 3 && !characterState.answerRevealed && characterState.currentHintIndex >= 0;
+
+  const [guessInput, setGuessInput] = useState('');
+
+  const handleSubmit = () => {
+    const trimmed = guessInput.trim();
+    if (!trimmed || !canGuess) return;
+    onSubmitGuess(trimmed);
+    setGuessInput('');
+  };
 
   return (
     <div
-      className="relative flex-1 flex flex-col items-center justify-center p-6 gap-8 max-w-lg mx-auto w-full text-center"
+      className="relative flex-1 flex flex-col items-center justify-center p-6 gap-6 max-w-lg mx-auto w-full text-center"
       style={{ zIndex: 10 }}
     >
       {/* Mode badge */}
@@ -661,6 +809,65 @@ function PlayerGameView({
         <p className="text-sm text-white/50" style={fontStyle}>
           {t.hintLabel} #{characterState.currentHintIndex + 1}
         </p>
+      )}
+
+      {/* ── Guess input ──────────────────────────────────────────────────── */}
+      {!characterState.answerRevealed && characterState.currentHintIndex >= 0 && (
+        <div className="w-full space-y-2">
+          {/* Previous guesses */}
+          {myGuesses.map((g, i) => (
+            <div
+              key={i}
+              className="px-4 py-2 text-left"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
+            >
+              <p className="text-sm text-white/60" style={fontStyle}>
+                {i + 1}. {g}
+              </p>
+            </div>
+          ))}
+
+          {/* Count label */}
+          <p className="text-xs font-bold uppercase tracking-widest text-white/50 text-left" style={fontStyle}>
+            {t.yourGuessLabel}: {myGuessCount}/3
+          </p>
+
+          {canGuess ? (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={guessInput}
+                onChange={e => setGuessInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                placeholder={t.guessPlaceholder}
+                maxLength={100}
+                className="flex-1 h-12 px-4 text-white font-medium outline-none"
+                style={{
+                  background: 'rgba(0,0,0,0.6)',
+                  border: '2px solid rgba(57,213,255,0.5)',
+                  borderRadius: 0,
+                  ...fontStyle,
+                }}
+              />
+              <button
+                onClick={handleSubmit}
+                disabled={!guessInput.trim()}
+                className="h-12 px-5 font-black text-black transition-opacity disabled:opacity-40"
+                style={{
+                  background: '#39d5ff',
+                  borderRadius: 0,
+                  ...fontStyle,
+                }}
+              >
+                {t.submitGuess}
+              </button>
+            </div>
+          ) : (
+            <p className="text-center text-white/40 text-sm font-medium py-3 border border-white/10" style={fontStyle}>
+              {t.outOfGuesses}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

@@ -36,6 +36,13 @@ interface RoundState {
 
 // ── CHARACTER GAME STATE ──────────────────────────────────────────────────────
 
+interface PlayerGuess {
+  playerId: number;
+  playerName: string;
+  guess: string;
+  guessNumber: number;
+}
+
 interface CharacterRoundState {
   adminId: number;
   answer: string;
@@ -44,6 +51,8 @@ interface CharacterRoundState {
   answerRevealed: boolean;
   usedPoolIndices: number[]; // stores character IDs (DB ids)
   lang: string;
+  playerGuesses: PlayerGuess[];
+  guessCountByPlayer: Record<number, number>;
 }
 
 // ── CHARADES GAME STATE ───────────────────────────────────────────────────────
@@ -155,10 +164,15 @@ async function broadcastCharacterState(roomCode: string) {
           answerRevealed: cs.answerRevealed,
           adminId: cs.adminId,
           totalHints: cs.hints.length,
+          playerGuesses: cs.playerGuesses,
         },
       });
     } else {
       const currentHint = cs.currentHintIndex >= 0 ? cs.hints[cs.currentHintIndex] : null;
+      const myGuessCount = cs.guessCountByPlayer[c.playerId] ?? 0;
+      const myGuesses = cs.playerGuesses
+        .filter((g) => g.playerId === c.playerId)
+        .map((g) => g.guess);
       sendTo(ws2, {
         type: "gtcState",
         payload: {
@@ -168,6 +182,8 @@ async function broadcastCharacterState(roomCode: string) {
           answerRevealed: cs.answerRevealed,
           revealedAnswer: cs.answerRevealed ? cs.answer : undefined,
           adminId: cs.adminId,
+          myGuessCount,
+          myGuesses,
         },
       });
     }
@@ -670,6 +686,8 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
       answerRevealed: false,
       usedPoolIndices: [picked.entry.id],
       lang,
+      playerGuesses: [],
+      guessCountByPlayer: {},
     };
     roomCharacterState.set(roomCode, cs);
 
@@ -726,9 +744,56 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
       answerRevealed: false,
       usedPoolIndices: updatedUsed,
       lang: cs.lang,
+      playerGuesses: [],
+      guessCountByPlayer: {},
     };
     roomCharacterState.set(roomCode, newCs);
     await broadcastCharacterState(roomCode);
+    return;
+  }
+
+  // ── CHARACTER: SUBMIT GUESS ───────────────────────────────────────────────
+  if (type === "gtcSubmitGuess") {
+    const { roomCode, guess } = payload as { roomCode: string; guess: string };
+    const cs = roomCharacterState.get(roomCode);
+    if (!cs || !client.playerId) return;
+    if (cs.adminId === client.playerId) return; // admin cannot guess
+
+    const currentCount = cs.guessCountByPlayer[client.playerId] ?? 0;
+    if (currentCount >= 3) return; // max 3 guesses
+
+    const trimmedGuess = String(guess).trim().slice(0, 100);
+    if (!trimmedGuess) return;
+
+    const guessNumber = currentCount + 1;
+    cs.guessCountByPlayer[client.playerId] = guessNumber;
+    cs.playerGuesses.push({
+      playerId: client.playerId,
+      playerName: client.playerName ?? "Unknown",
+      guess: trimmedGuess,
+      guessNumber,
+    });
+
+    await broadcastCharacterState(roomCode);
+    return;
+  }
+
+  // ── CHARACTER: CROWN WINNER ───────────────────────────────────────────────
+  if (type === "gtcCrownWinner") {
+    const { roomCode, playerId: winnerId } = payload as { roomCode: string; playerId: number };
+    const cs = roomCharacterState.get(roomCode);
+    if (!cs || cs.adminId !== client.playerId) return;
+
+    const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+    if (!room) return;
+    const winner = await db.query.playersTable.findFirst({
+      where: and(eq(playersTable.roomId, room.id), eq(playersTable.id, Number(winnerId))),
+    });
+    if (!winner) return;
+
+    await db.update(playersTable).set({ score: winner.score + 1 }).where(eq(playersTable.id, winner.id));
+    broadcast(roomCode, { type: "gtcWinner", payload: { winnerId: winner.id, winnerName: winner.name } });
+    broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
     return;
   }
 

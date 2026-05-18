@@ -472,8 +472,8 @@ function AdminGameView({
           size="lg"
           className="h-14 font-black rounded-none"
           style={{
-            background: '#ff4fa3', color: '#fff',
-            boxShadow: '0 0 16px rgba(255,79,163,0.45)',
+            background: '#c219a6', color: '#fff',
+            boxShadow: '0 0 16px rgba(194,25,166,0.45)',
             ...fontStyle,
           }}
           onClick={onRevealAnswer}
@@ -638,9 +638,9 @@ function AdminGameView({
               <button
                 onClick={() => handleCrown(g.playerId)}
                 disabled={crowned !== null}
-                className="absolute top-0 left-0 w-5 h-5 border-2 border-white flex items-center justify-center transition-all hover:border-[#ff4fa3] disabled:cursor-default"
+                className="absolute top-0 left-0 w-5 h-5 border-2 border-white flex items-center justify-center transition-all hover:border-[#c219a6] disabled:cursor-default"
                 style={{
-                  background: crowned === g.playerId ? '#ff4fa3' : 'transparent',
+                  background: crowned === g.playerId ? '#c219a6' : 'transparent',
                 }}
                 title={t.crownWinner}
               >
@@ -653,10 +653,10 @@ function AdminGameView({
                 className="px-4 py-3"
                 style={{
                   background: crowned === g.playerId
-                    ? 'rgba(255,79,163,0.12)'
+                    ? 'rgba(194,25,166,0.12)'
                     : 'rgba(0,0,0,0.55)',
                   border: crowned === g.playerId
-                    ? '2px solid rgba(255,79,163,0.6)'
+                    ? '2px solid rgba(194,25,166,0.6)'
                     : '2px solid rgba(255,255,255,0.10)',
                 }}
               >
@@ -664,8 +664,8 @@ function AdminGameView({
                 <p
                   className="font-black text-lg leading-tight"
                   style={{
-                    color: '#ff4fa3',
-                    textShadow: '0 0 14px rgba(255,79,163,0.8)',
+                    color: '#c219a6',
+                    textShadow: '0 0 14px rgba(194,25,166,0.8)',
                     ...fontStyle,
                   }}
                 >

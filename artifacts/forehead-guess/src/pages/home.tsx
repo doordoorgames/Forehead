@@ -107,7 +107,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
       )}
 
       <div className="max-w-md w-full relative z-10">
-        <div className="text-center mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center mb-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {mode === 'forehead' && (
             <h1
               className="neon-word mb-4 rotate-[-2deg] leading-none"
@@ -117,7 +117,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
               }}
             >
               <span className="block">{t.appTitle1}</span>
-              <span className="block rotate-[4deg] mt-1" style={{ color: '#ff4fa3' }}>{t.appTitle2}</span>
+              <span className="block rotate-[4deg] mt-1" style={{ color: '#c219a6' }}>{t.appTitle2}</span>
             </h1>
           )}
           {mode === 'character' && (
@@ -126,12 +126,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 src="/character-neon-logo-nobg.png"
                 alt="خمّن"
                 style={{
-                  width: 'clamp(200px, 58vw, 360px)',
+                  width: 'clamp(320px, 90vw, 720px)',
                   display: 'block',
                   filter: [
-                    'drop-shadow(0 0 6px #ff4fa3)',
-                    'drop-shadow(0 0 14px #ff4fa3)',
-                    'drop-shadow(0 0 28px rgba(255,79,163,0.7))',
+                    'drop-shadow(0 0 6px #c219a6)',
+                    'drop-shadow(0 0 16px #c219a6)',
+                    'drop-shadow(0 0 32px rgba(194,25,166,0.75))',
                   ].join(' '),
                 }}
               />
@@ -139,8 +139,8 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 className="font-black leading-tight"
                 style={{
                   fontSize: 'clamp(24px, 6.5vw, 46px)',
-                  color: '#ff4fa3',
-                  textShadow: '0 0 6px #ff4fa3, 0 0 16px #ff4fa3, 0 0 32px rgba(255,79,163,0.7)',
+                  color: '#c219a6',
+                  textShadow: '0 1px 0 rgba(255,255,255,0.7), 0 2px 10px rgba(255,255,255,0.35)',
                   fontFamily: "'Changa', sans-serif",
                   direction: 'rtl',
                 }}
@@ -152,7 +152,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 style={{
                   fontSize: 'clamp(15px, 4vw, 26px)',
                   color: '#0f2a5c',
-                  textShadow: '0 0 6px #ff4fa3, 0 0 14px #ff4fa3, 0 0 28px rgba(255,79,163,0.8)',
+                  textShadow: '0 1px 0 rgba(255,255,255,0.8), 0 2px 10px rgba(255,255,255,0.4)',
                 }}
               >
                 Guess the Character
@@ -171,7 +171,6 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
               {t.charadesMode}
             </h1>
           )}
-          <p className="text-xl font-medium text-muted-foreground mt-4">{t.tagline}</p>
         </div>
 
         {view === 'main' && (
@@ -182,11 +181,11 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                   className="w-full text-xl h-16 font-black text-white tracking-wide transition-transform active:scale-95"
                   style={{
                     background: 'transparent',
-                    border: '2px solid #ff4fa3',
+                    border: '2px solid #c219a6',
                     borderRadius: 0,
-                    color: '#ff4fa3',
-                    textShadow: '0 0 8px #ff4fa3',
-                    boxShadow: '0 0 12px rgba(255,79,163,0.6), inset 0 0 12px rgba(255,79,163,0.08)',
+                    color: '#c219a6',
+                    textShadow: '0 0 8px #c219a6',
+                    boxShadow: '0 0 12px rgba(194,25,166,0.6), inset 0 0 12px rgba(194,25,166,0.08)',
                     ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
                   }}
                   onClick={() => setView('create')}
@@ -315,10 +314,10 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                       style={mode === 'character' ? {
                         borderRadius: 0,
                         background: 'transparent',
-                        border: '2px solid #ff4fa3',
-                        color: '#ff4fa3',
-                        textShadow: '0 0 8px #ff4fa3',
-                        boxShadow: '0 0 14px rgba(255,79,163,0.5)',
+                        border: '2px solid #c219a6',
+                        color: '#c219a6',
+                        textShadow: '0 0 8px #c219a6',
+                        boxShadow: '0 0 14px rgba(194,25,166,0.5)',
                       } : undefined}
                       disabled={createRoomMutation.isPending}
                     >

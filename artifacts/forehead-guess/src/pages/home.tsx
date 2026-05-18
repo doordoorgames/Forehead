@@ -149,23 +149,56 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
 
         {view === 'main' && (
           <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300">
-            <Button
-              size="lg"
-              className="w-full text-xl h-16 rounded-full shadow-[0_6px_0_0_hsl(var(--primary-border))]"
-              style={isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}}
-              onClick={() => setView('create')}
-            >
-              {t.createRoom}
-            </Button>
-            <Button
-              size="lg"
-              variant="secondary"
-              className="w-full text-xl h-16 rounded-full shadow-[0_6px_0_0_hsl(var(--secondary-border))]"
-              style={isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}}
-              onClick={() => setView('join')}
-            >
-              {t.joinRoom}
-            </Button>
+            {mode === 'character' ? (
+              <>
+                <button
+                  className="w-full text-xl h-16 font-black text-white tracking-wide transition-transform active:scale-95"
+                  style={{
+                    background: '#ff4fa3',
+                    boxShadow: '0 5px 0 #9c1057, 0 0 28px rgba(255,79,163,0.45)',
+                    borderRadius: 0,
+                    border: 'none',
+                    ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
+                  }}
+                  onClick={() => setView('create')}
+                >
+                  {t.createRoom}
+                </button>
+                <button
+                  className="w-full text-xl h-16 font-black text-white tracking-wide transition-transform active:scale-95"
+                  style={{
+                    background: '#0f2a5c',
+                    boxShadow: '0 5px 0 #071428, 0 0 20px rgba(15,42,92,0.6)',
+                    border: '2px solid rgba(57,213,255,0.4)',
+                    borderRadius: 0,
+                    ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
+                  }}
+                  onClick={() => setView('join')}
+                >
+                  {t.joinRoom}
+                </button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="lg"
+                  className="w-full text-xl h-16 rounded-full shadow-[0_6px_0_0_hsl(var(--primary-border))]"
+                  style={isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}}
+                  onClick={() => setView('create')}
+                >
+                  {t.createRoom}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="w-full text-xl h-16 rounded-full shadow-[0_6px_0_0_hsl(var(--secondary-border))]"
+                  style={isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}}
+                  onClick={() => setView('join')}
+                >
+                  {t.joinRoom}
+                </Button>
+              </>
+            )}
 
             <Button variant="ghost" size="sm" className="mt-2 text-muted-foreground" onClick={() => setLocation('/mode')}>
               ← {t.back}

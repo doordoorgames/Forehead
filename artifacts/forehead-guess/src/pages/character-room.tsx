@@ -419,6 +419,39 @@ function AdminGameView({
         </p>
       </div>
 
+      {/* Reveal Answer + Next Character — between answer and hint box */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button
+          size="lg"
+          className="h-14 font-black rounded-none"
+          style={{
+            background: '#ff4fa3', color: '#fff',
+            boxShadow: '0 0 16px rgba(255,79,163,0.45)',
+            ...fontStyle,
+          }}
+          onClick={onRevealAnswer}
+          disabled={characterState.answerRevealed}
+        >
+          <Eye className="w-5 h-5 mr-1" />
+          {t.revealAnswer}
+        </Button>
+
+        <Button
+          size="lg"
+          className="h-14 font-black rounded-none"
+          style={{
+            background: '#0f2a5c', color: '#fff',
+            border: '2px solid rgba(57,213,255,0.5)',
+            boxShadow: '0 0 16px rgba(57,213,255,0.2)',
+            ...fontStyle,
+          }}
+          onClick={onNextCharacter}
+        >
+          <ArrowRight className="w-5 h-5 mr-1" />
+          {t.nextCharacter}
+        </Button>
+      </div>
+
       {/* Hint progress */}
       <div className="p-4" style={cardStyle}>
         <div className="flex items-center justify-between mb-3">
@@ -468,52 +501,21 @@ function AdminGameView({
         )}
       </div>
 
-      {/* Controls */}
-      <div className="grid grid-cols-2 gap-3">
-        <Button
-          size="lg"
-          className="h-14 font-black rounded-none col-span-2"
-          style={{
-            background: '#39d5ff', color: '#000',
-            boxShadow: '0 0 16px rgba(57,213,255,0.4)',
-            ...fontStyle,
-          }}
-          onClick={onNextHint}
-          disabled={allHintsShown}
-        >
-          <ChevronRight className="w-5 h-5 mr-1" />
-          {allHintsShown ? t.allHintsRevealed : t.nextHint}
-        </Button>
-
-        <Button
-          size="lg"
-          className="h-14 font-black rounded-none"
-          style={{
-            background: '#ffd000', color: '#000',
-            boxShadow: '0 0 16px rgba(255,208,0,0.35)',
-            ...fontStyle,
-          }}
-          onClick={onRevealAnswer}
-          disabled={characterState.answerRevealed}
-        >
-          <Eye className="w-5 h-5 mr-1" />
-          {t.revealAnswer}
-        </Button>
-
-        <Button
-          size="lg"
-          className="h-14 font-black rounded-none"
-          style={{
-            background: '#ff4fa3', color: '#fff',
-            boxShadow: '0 0 16px rgba(255,79,163,0.35)',
-            ...fontStyle,
-          }}
-          onClick={onNextCharacter}
-        >
-          <ArrowRight className="w-5 h-5 mr-1" />
-          {t.nextCharacter}
-        </Button>
-      </div>
+      {/* Next Hint — full width, below hint box */}
+      <Button
+        size="lg"
+        className="h-14 font-black rounded-none w-full"
+        style={{
+          background: '#39d5ff', color: '#000',
+          boxShadow: '0 0 16px rgba(57,213,255,0.4)',
+          ...fontStyle,
+        }}
+        onClick={onNextHint}
+        disabled={allHintsShown}
+      >
+        <ChevronRight className="w-5 h-5 mr-1" />
+        {allHintsShown ? t.allHintsRevealed : currentIdx < 0 ? t.firstHint : t.nextHint}
+      </Button>
 
       {/* Transfer admin */}
       {!showTransfer ? (

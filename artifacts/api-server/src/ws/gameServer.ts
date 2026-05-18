@@ -53,6 +53,7 @@ interface CharacterRoundState {
   lang: string;
   playerGuesses: PlayerGuess[];
   guessCountByPlayer: Record<number, number>;
+  lastGuessByPlayer: Record<number, number>; // playerId → hintIndex when they last guessed
 }
 
 // ── CHARADES GAME STATE ───────────────────────────────────────────────────────
@@ -173,6 +174,9 @@ async function broadcastCharacterState(roomCode: string) {
       const myGuesses = cs.playerGuesses
         .filter((g) => g.playerId === c.playerId)
         .map((g) => g.guess);
+      const isPenalized =
+        cs.currentHintIndex >= 0 &&
+        (cs.lastGuessByPlayer[c.playerId] ?? -99) === cs.currentHintIndex;
       sendTo(ws2, {
         type: "gtcState",
         payload: {
@@ -184,6 +188,7 @@ async function broadcastCharacterState(roomCode: string) {
           adminId: cs.adminId,
           myGuessCount,
           myGuesses,
+          isPenalized,
         },
       });
     }
@@ -688,6 +693,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
       lang,
       playerGuesses: [],
       guessCountByPlayer: {},
+      lastGuessByPlayer: {},
     };
     roomCharacterState.set(roomCode, cs);
 
@@ -746,6 +752,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
       lang: cs.lang,
       playerGuesses: [],
       guessCountByPlayer: {},
+      lastGuessByPlayer: {},
     };
     roomCharacterState.set(roomCode, newCs);
     await broadcastCharacterState(roomCode);
@@ -762,11 +769,16 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     const currentCount = cs.guessCountByPlayer[client.playerId] ?? 0;
     if (currentCount >= 3) return; // max 3 guesses
 
+    // Penalty: player already guessed on this hint — must wait for next
+    const lastHint = cs.lastGuessByPlayer[client.playerId] ?? -99;
+    if (lastHint === cs.currentHintIndex) return;
+
     const trimmedGuess = String(guess).trim().slice(0, 100);
     if (!trimmedGuess) return;
 
     const guessNumber = currentCount + 1;
     cs.guessCountByPlayer[client.playerId] = guessNumber;
+    cs.lastGuessByPlayer[client.playerId] = cs.currentHintIndex;
     cs.playerGuesses.push({
       playerId: client.playerId,
       playerName: client.playerName ?? "Unknown",

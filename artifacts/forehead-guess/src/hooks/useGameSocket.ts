@@ -69,6 +69,7 @@ export interface CharacterState {
   revealedAnswer?: string;
   myGuessCount?: number;
   myGuesses?: string[];
+  isPenalized?: boolean;
 }
 
 export interface GtcWinner {

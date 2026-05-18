@@ -721,7 +721,8 @@ function PlayerGameView({
   const revealedAnswer = (characterState as any).revealedAnswer as string | undefined;
   const myGuessCount = characterState.myGuessCount ?? 0;
   const myGuesses = characterState.myGuesses ?? [];
-  const canGuess = myGuessCount < 3 && !characterState.answerRevealed && characterState.currentHintIndex >= 0;
+  const isPenalized = characterState.isPenalized ?? false;
+  const canGuess = myGuessCount < 3 && !characterState.answerRevealed && characterState.currentHintIndex >= 0 && !isPenalized;
 
   const [guessInput, setGuessInput] = useState('');
 
@@ -832,7 +833,59 @@ function PlayerGameView({
             {t.yourGuessLabel}: {myGuessCount}/3
           </p>
 
-          {canGuess ? (
+          {isPenalized ? (
+            /* ── Penalty state ── */
+            <div className="relative">
+              {/* Dimmed / locked input behind */}
+              <div
+                className="flex gap-2 opacity-30 pointer-events-none select-none"
+                aria-hidden
+              >
+                <div
+                  className="flex-1 h-12"
+                  style={{
+                    background: 'rgba(0,0,0,0.6)',
+                    border: '2px solid rgba(57,213,255,0.5)',
+                  }}
+                />
+                <div
+                  className="h-12 px-5"
+                  style={{ background: '#39d5ff', width: 80 }}
+                />
+              </div>
+              {/* Pink X + message overlay */}
+              <div
+                className="absolute inset-0 flex items-center gap-3 px-4"
+                style={{
+                  border: '2px solid #c219a6',
+                  background: 'rgba(194,25,166,0.10)',
+                  boxShadow: '0 0 16px rgba(194,25,166,0.35)',
+                }}
+              >
+                {/* X icon */}
+                <span
+                  className="font-black text-2xl leading-none flex-shrink-0"
+                  style={{
+                    color: '#c219a6',
+                    textShadow: '0 0 8px #c219a6',
+                    ...fontStyle,
+                  }}
+                >
+                  ✕
+                </span>
+                <p
+                  className="font-bold text-sm leading-tight"
+                  style={{
+                    color: '#c219a6',
+                    textShadow: '0 0 6px rgba(194,25,166,0.7)',
+                    ...fontStyle,
+                  }}
+                >
+                  {t.waitNextHint}
+                </p>
+              </div>
+            </div>
+          ) : canGuess ? (
             <div className="flex gap-2">
               <input
                 type="text"

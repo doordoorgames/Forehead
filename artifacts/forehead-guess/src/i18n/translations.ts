@@ -111,6 +111,7 @@ export const translations = {
     submitGuess: 'Submit',
     guessPlaceholder: 'Type your guess...',
     outOfGuesses: 'No more guesses remaining',
+    waitNextHint: 'You must wait till next hint!',
 
     // Character game — admin guesses panel
     answersSubmitted: 'Answers Submitted',
@@ -250,6 +251,7 @@ export const translations = {
     submitGuess: 'أرسل',
     guessPlaceholder: 'اكتب تخمينك...',
     outOfGuesses: 'لا تخمينات متبقية',
+    waitNextHint: 'انتظر حتى التلميح التالي!',
     answersSubmitted: 'تم إرسال الإجابات',
     newAnswersBelow: 'إجابات جديدة ↓',
     crownWinner: 'تتويج كفائز',

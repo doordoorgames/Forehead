@@ -121,16 +121,40 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
             </h1>
           )}
           {mode === 'character' && (
-            <h1
-              className="neon-word mb-4 leading-tight"
-              style={{
-                fontSize: 'clamp(36px, 10vw, 80px)',
-                color: '#39d5ff',
-                fontFamily: isAr ? "'Changa', sans-serif" : undefined,
-              }}
-            >
-              {t.guessTheCharacter}
-            </h1>
+            <div className="mb-4 flex flex-col items-center gap-1">
+              <img
+                src="/character-neon-logo.jpeg"
+                alt="خمّن"
+                style={{
+                  width: 'clamp(220px, 60vw, 380px)',
+                  mixBlendMode: 'screen',
+                  display: 'block',
+                }}
+              />
+              <p
+                className="font-black leading-tight"
+                style={{
+                  fontSize: 'clamp(22px, 6vw, 42px)',
+                  color: '#ff4fa3',
+                  textShadow: '0 0 18px rgba(255,79,163,0.85)',
+                  fontFamily: "'Changa', sans-serif",
+                  direction: 'rtl',
+                }}
+              >
+                خمّن الشخصية
+              </p>
+              <p
+                className="font-black leading-tight"
+                style={{
+                  fontSize: 'clamp(16px, 4vw, 28px)',
+                  color: '#ff4fa3',
+                  textShadow: '0 0 12px rgba(255,79,163,0.6)',
+                  opacity: 0.85,
+                }}
+              >
+                Guess the Character
+              </p>
+            </div>
           )}
           {mode === 'charades' && (
             <h1

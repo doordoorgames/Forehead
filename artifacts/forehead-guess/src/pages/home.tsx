@@ -122,25 +122,33 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           )}
           {mode === 'character' && (
             <div className="mb-4 flex flex-col items-center gap-2">
-              <img
-                src="/character-neon-logo-nobg.png"
-                alt="خمّن"
-                style={{
-                  width: 'clamp(320px, 90vw, 720px)',
-                  display: 'block',
-                  filter: [
-                    'drop-shadow(0 0 6px #c219a6)',
-                    'drop-shadow(0 0 16px #c219a6)',
-                    'drop-shadow(0 0 32px rgba(194,25,166,0.75))',
-                  ].join(' '),
-                }}
-              />
+              <div style={{
+                width: 'clamp(320px, 90vw, 720px)',
+                height: 'clamp(160px, 45vw, 360px)',
+                overflow: 'hidden',
+                flexShrink: 0,
+              }}>
+                <img
+                  src="/character-neon-logo-nobg.png"
+                  alt="خمّن"
+                  style={{
+                    width: '100%',
+                    display: 'block',
+                    marginTop: '-25%',
+                    filter: [
+                      'drop-shadow(0 0 6px #c219a6)',
+                      'drop-shadow(0 0 16px #c219a6)',
+                      'drop-shadow(0 0 32px rgba(194,25,166,0.75))',
+                    ].join(' '),
+                  }}
+                />
+              </div>
               <p
                 className="font-black leading-tight"
                 style={{
                   fontSize: 'clamp(24px, 6.5vw, 46px)',
                   color: '#c219a6',
-                  textShadow: '0 1px 0 rgba(255,255,255,0.7), 0 2px 10px rgba(255,255,255,0.35)',
+                  textShadow: '0 0 5px white',
                   fontFamily: "'Changa', sans-serif",
                   direction: 'rtl',
                 }}
@@ -148,11 +156,13 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 خمّن الشخصية
               </p>
               <p
-                className="font-black leading-tight"
+                className="font-black leading-tight tracking-widest"
                 style={{
-                  fontSize: 'clamp(15px, 4vw, 26px)',
-                  color: '#0f2a5c',
-                  textShadow: '0 1px 0 rgba(255,255,255,0.8), 0 2px 10px rgba(255,255,255,0.4)',
+                  fontSize: 'clamp(13px, 3.5vw, 22px)',
+                  color: 'white',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.12em',
+                  textShadow: '0 1px 0 rgba(255,255,255,0.5)',
                 }}
               >
                 Guess the Character

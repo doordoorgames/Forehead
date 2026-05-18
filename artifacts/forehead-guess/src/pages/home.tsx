@@ -121,22 +121,26 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
             </h1>
           )}
           {mode === 'character' && (
-            <div className="mb-4 flex flex-col items-center gap-1">
+            <div className="mb-4 flex flex-col items-center gap-2">
               <img
-                src="/character-neon-logo.jpeg"
+                src="/character-neon-logo-nobg.png"
                 alt="خمّن"
                 style={{
-                  width: 'clamp(220px, 60vw, 380px)',
-                  mixBlendMode: 'screen',
+                  width: 'clamp(200px, 58vw, 360px)',
                   display: 'block',
+                  filter: [
+                    'drop-shadow(0 0 6px #ff4fa3)',
+                    'drop-shadow(0 0 14px #ff4fa3)',
+                    'drop-shadow(0 0 28px rgba(255,79,163,0.7))',
+                  ].join(' '),
                 }}
               />
               <p
                 className="font-black leading-tight"
                 style={{
-                  fontSize: 'clamp(22px, 6vw, 42px)',
+                  fontSize: 'clamp(24px, 6.5vw, 46px)',
                   color: '#ff4fa3',
-                  textShadow: '0 0 18px rgba(255,79,163,0.85)',
+                  textShadow: '0 0 6px #ff4fa3, 0 0 16px #ff4fa3, 0 0 32px rgba(255,79,163,0.7)',
                   fontFamily: "'Changa', sans-serif",
                   direction: 'rtl',
                 }}
@@ -146,10 +150,9 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
               <p
                 className="font-black leading-tight"
                 style={{
-                  fontSize: 'clamp(16px, 4vw, 28px)',
-                  color: '#ff4fa3',
-                  textShadow: '0 0 12px rgba(255,79,163,0.6)',
-                  opacity: 0.85,
+                  fontSize: 'clamp(15px, 4vw, 26px)',
+                  color: '#0f2a5c',
+                  textShadow: '0 0 6px #ff4fa3, 0 0 14px #ff4fa3, 0 0 28px rgba(255,79,163,0.8)',
                 }}
               >
                 Guess the Character
@@ -178,10 +181,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 <button
                   className="w-full text-xl h-16 font-black text-white tracking-wide transition-transform active:scale-95"
                   style={{
-                    background: '#ff4fa3',
-                    boxShadow: '0 5px 0 #9c1057, 0 0 28px rgba(255,79,163,0.45)',
+                    background: 'transparent',
+                    border: '2px solid #ff4fa3',
                     borderRadius: 0,
-                    border: 'none',
+                    color: '#ff4fa3',
+                    textShadow: '0 0 8px #ff4fa3',
+                    boxShadow: '0 0 12px rgba(255,79,163,0.6), inset 0 0 12px rgba(255,79,163,0.08)',
                     ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
                   }}
                   onClick={() => setView('create')}
@@ -189,12 +194,14 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                   {t.createRoom}
                 </button>
                 <button
-                  className="w-full text-xl h-16 font-black text-white tracking-wide transition-transform active:scale-95"
+                  className="w-full text-xl h-16 font-black tracking-wide transition-transform active:scale-95"
                   style={{
-                    background: '#0f2a5c',
-                    boxShadow: '0 5px 0 #071428, 0 0 20px rgba(15,42,92,0.6)',
-                    border: '2px solid rgba(57,213,255,0.4)',
+                    background: 'transparent',
+                    border: '2px solid #39d5ff',
                     borderRadius: 0,
+                    color: '#39d5ff',
+                    textShadow: '0 0 8px #39d5ff',
+                    boxShadow: '0 0 12px rgba(57,213,255,0.6), inset 0 0 12px rgba(57,213,255,0.08)',
                     ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
                   }}
                   onClick={() => setView('join')}
@@ -234,10 +241,26 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
         )}
 
         {view === 'create' && (
-          <Card className="border-4 border-foreground shadow-[8px_8px_0_0_hsl(var(--foreground))] rounded-3xl animate-in slide-in-from-right-8 duration-300">
+          <Card
+            className="animate-in slide-in-from-right-8 duration-300"
+            style={mode === 'character' ? {
+              borderRadius: 0,
+              border: '2px solid rgba(57,213,255,0.65)',
+              background: 'rgba(0,4,18,0.88)',
+              backdropFilter: 'blur(14px)',
+              boxShadow: '0 0 28px rgba(57,213,255,0.2)',
+            } : undefined}
+          >
             <CardHeader>
-              <CardTitle className="text-2xl">{t.createRoomTitle}</CardTitle>
-              <CardDescription>{t.createRoomDesc}</CardDescription>
+              <CardTitle
+                className="text-2xl"
+                style={mode === 'character' ? { color: '#39d5ff', textShadow: '0 0 10px rgba(57,213,255,0.7)' } : undefined}
+              >
+                {t.createRoomTitle}
+              </CardTitle>
+              <CardDescription style={mode === 'character' ? { color: 'rgba(255,255,255,0.55)' } : undefined}>
+                {t.createRoomDesc}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...createForm}>
@@ -247,19 +270,58 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                     name="hostName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-lg font-bold">{t.yourName}</FormLabel>
+                        <FormLabel
+                          className="text-lg font-bold"
+                          style={mode === 'character' ? { color: 'rgba(255,255,255,0.85)' } : undefined}
+                        >
+                          {t.yourName}
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder={t.namePlaceholder} className="text-xl h-14 rounded-2xl border-2" {...field} />
+                          <Input
+                            placeholder={t.namePlaceholder}
+                            className="text-xl h-14 border-2"
+                            style={mode === 'character' ? {
+                              borderRadius: 0,
+                              border: '2px solid rgba(57,213,255,0.5)',
+                              background: 'rgba(0,0,0,0.55)',
+                              color: 'white',
+                              boxShadow: '0 0 8px rgba(57,213,255,0.15)',
+                            } : undefined}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <div className="flex gap-3">
-                    <Button type="button" variant="outline" className="h-14 rounded-2xl px-6" onClick={() => setView('main')}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-14 px-6"
+                      style={mode === 'character' ? {
+                        borderRadius: 0,
+                        border: '2px solid rgba(255,255,255,0.25)',
+                        background: 'transparent',
+                        color: 'rgba(255,255,255,0.7)',
+                      } : { borderRadius: '1rem' }}
+                      onClick={() => setView('main')}
+                    >
                       {t.back}
                     </Button>
-                    <Button type="submit" className="h-14 rounded-2xl flex-1 text-lg shadow-[0_4px_0_0_hsl(var(--primary-border))]" disabled={createRoomMutation.isPending}>
+                    <Button
+                      type="submit"
+                      className="h-14 flex-1 text-lg"
+                      style={mode === 'character' ? {
+                        borderRadius: 0,
+                        background: 'transparent',
+                        border: '2px solid #ff4fa3',
+                        color: '#ff4fa3',
+                        textShadow: '0 0 8px #ff4fa3',
+                        boxShadow: '0 0 14px rgba(255,79,163,0.5)',
+                      } : undefined}
+                      disabled={createRoomMutation.isPending}
+                    >
                       {createRoomMutation.isPending ? t.creating : t.letsGo}
                     </Button>
                   </div>
@@ -270,10 +332,26 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
         )}
 
         {view === 'join' && (
-          <Card className="border-4 border-foreground shadow-[8px_8px_0_0_hsl(var(--foreground))] rounded-3xl animate-in slide-in-from-left-8 duration-300">
+          <Card
+            className="animate-in slide-in-from-left-8 duration-300"
+            style={mode === 'character' ? {
+              borderRadius: 0,
+              border: '2px solid rgba(57,213,255,0.65)',
+              background: 'rgba(0,4,18,0.88)',
+              backdropFilter: 'blur(14px)',
+              boxShadow: '0 0 28px rgba(57,213,255,0.2)',
+            } : undefined}
+          >
             <CardHeader>
-              <CardTitle className="text-2xl">{t.joinRoomTitle}</CardTitle>
-              <CardDescription>{t.joinRoomDesc}</CardDescription>
+              <CardTitle
+                className="text-2xl"
+                style={mode === 'character' ? { color: '#39d5ff', textShadow: '0 0 10px rgba(57,213,255,0.7)' } : undefined}
+              >
+                {t.joinRoomTitle}
+              </CardTitle>
+              <CardDescription style={mode === 'character' ? { color: 'rgba(255,255,255,0.55)' } : undefined}>
+                {t.joinRoomDesc}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...joinForm}>
@@ -283,9 +361,27 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                     name="roomCode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-lg font-bold">{t.roomCode}</FormLabel>
+                        <FormLabel
+                          className="text-lg font-bold"
+                          style={mode === 'character' ? { color: 'rgba(255,255,255,0.85)' } : undefined}
+                        >
+                          {t.roomCode}
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder="ABCDE" className="text-2xl h-14 rounded-2xl border-2 font-mono text-center uppercase tracking-widest" maxLength={5} {...field} />
+                          <Input
+                            placeholder="ABCDE"
+                            className="text-2xl h-14 border-2 font-mono text-center uppercase tracking-widest"
+                            style={mode === 'character' ? {
+                              borderRadius: 0,
+                              border: '2px solid rgba(57,213,255,0.5)',
+                              background: 'rgba(0,0,0,0.55)',
+                              color: '#39d5ff',
+                              letterSpacing: '0.25em',
+                              boxShadow: '0 0 8px rgba(57,213,255,0.15)',
+                            } : undefined}
+                            maxLength={5}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -296,19 +392,59 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                     name="playerName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-lg font-bold">{t.yourName}</FormLabel>
+                        <FormLabel
+                          className="text-lg font-bold"
+                          style={mode === 'character' ? { color: 'rgba(255,255,255,0.85)' } : undefined}
+                        >
+                          {t.yourName}
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder={t.joinNamePlaceholder} className="text-xl h-14 rounded-2xl border-2" {...field} />
+                          <Input
+                            placeholder={t.joinNamePlaceholder}
+                            className="text-xl h-14 border-2"
+                            style={mode === 'character' ? {
+                              borderRadius: 0,
+                              border: '2px solid rgba(57,213,255,0.5)',
+                              background: 'rgba(0,0,0,0.55)',
+                              color: 'white',
+                              boxShadow: '0 0 8px rgba(57,213,255,0.15)',
+                            } : undefined}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <div className="flex gap-3">
-                    <Button type="button" variant="outline" className="h-14 rounded-2xl px-6" onClick={() => setView('main')}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-14 px-6"
+                      style={mode === 'character' ? {
+                        borderRadius: 0,
+                        border: '2px solid rgba(255,255,255,0.25)',
+                        background: 'transparent',
+                        color: 'rgba(255,255,255,0.7)',
+                      } : { borderRadius: '1rem' }}
+                      onClick={() => setView('main')}
+                    >
                       {t.back}
                     </Button>
-                    <Button type="submit" variant="secondary" className="h-14 rounded-2xl flex-1 text-lg shadow-[0_4px_0_0_hsl(var(--secondary-border))]" disabled={joinRoomMutation.isPending}>
+                    <Button
+                      type="submit"
+                      variant="secondary"
+                      className="h-14 flex-1 text-lg"
+                      style={mode === 'character' ? {
+                        borderRadius: 0,
+                        background: 'transparent',
+                        border: '2px solid #39d5ff',
+                        color: '#39d5ff',
+                        textShadow: '0 0 8px #39d5ff',
+                        boxShadow: '0 0 14px rgba(57,213,255,0.5)',
+                      } : undefined}
+                      disabled={joinRoomMutation.isPending}
+                    >
                       {joinRoomMutation.isPending ? t.joining : t.joinGame}
                     </Button>
                   </div>

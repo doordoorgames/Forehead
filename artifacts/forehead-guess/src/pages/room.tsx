@@ -52,7 +52,7 @@ export default function Room() {
   const roomState = socket.roomState || (initialRoom ? {
     code: initialRoom.code,
     status: initialRoom.status as RoomState['status'],
-    mode: ((initialRoom as any).mode ?? 'forehead') as RoomState['mode'],
+    mode: (initialRoom.mode ?? 'forehead') as RoomState['mode'],
     categoryId: initialRoom.categoryId ?? null,
     categoryName: null,
     players: initialRoom.players,

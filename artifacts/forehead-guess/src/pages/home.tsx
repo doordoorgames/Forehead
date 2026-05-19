@@ -48,7 +48,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
 
   const onCreateSubmit = (values: z.infer<typeof createRoomSchema>) => {
     createRoomMutation.mutate(
-      { data: { hostName: values.hostName, mode, lang } as any },
+      { data: { hostName: values.hostName, mode, lang } },
       {
         onSuccess: (data) => {
           const host = data.players.find(p => p.isHost);

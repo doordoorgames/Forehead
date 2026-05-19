@@ -13,4 +13,7 @@ export const RoomWithPlayersStatus = {
   waiting: "waiting",
   playing: "playing",
   finished: "finished",
+  character_playing: "character_playing",
+  charades_playing: "charades_playing",
+  dykm_playing: "dykm_playing",
 } as const;

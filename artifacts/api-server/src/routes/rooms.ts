@@ -62,9 +62,8 @@ router.post("/rooms", async (req, res) => {
     existing = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, code) });
   }
 
-  const rawMode = req.body.mode as string;
-  const mode = rawMode === 'character' ? 'character' : rawMode === 'charades' ? 'charades' : rawMode === 'dykm' ? 'dykm' : 'forehead';
-  const lang = (req.body.lang as string) === 'ar' ? 'ar' : 'en';
+  const mode = body.data.mode ?? 'forehead';
+  const lang = body.data.lang ?? 'en';
   const [room] = await db.insert(roomsTable).values({
     code,
     mode,

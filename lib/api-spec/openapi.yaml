@@ -442,6 +442,14 @@ components:
       properties:
         hostName:
           type: string
+        mode:
+          type: string
+          enum: [forehead, character, charades, dykm]
+          nullable: true
+        lang:
+          type: string
+          enum: [en, ar]
+          nullable: true
         categoryId:
           type: integer
           nullable: true
@@ -491,7 +499,13 @@ components:
           type: string
         status:
           type: string
-          enum: [waiting, playing, finished]
+          enum: [waiting, playing, finished, character_playing, charades_playing, dykm_playing]
+        mode:
+          type: string
+          enum: [forehead, character, charades, dykm]
+        lang:
+          type: string
+          enum: [en, ar]
         categoryId:
           type: integer
           nullable: true
@@ -512,6 +526,8 @@ components:
         - id
         - code
         - status
+        - mode
+        - lang
         - turnDuration
         - roundCount
         - players

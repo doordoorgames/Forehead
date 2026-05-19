@@ -6,12 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Player } from "./player";
+import type { RoomWithPlayersLang } from "./roomWithPlayersLang";
+import type { RoomWithPlayersMode } from "./roomWithPlayersMode";
 import type { RoomWithPlayersStatus } from "./roomWithPlayersStatus";
 
 export interface RoomWithPlayers {
   id: number;
   code: string;
   status: RoomWithPlayersStatus;
+  mode: RoomWithPlayersMode;
+  lang: RoomWithPlayersLang;
   categoryId?: number | null;
   categoryName?: string | null;
   turnDuration: number;

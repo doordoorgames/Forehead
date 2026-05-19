@@ -5,9 +5,13 @@
  * Forehead Guess Game API
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateRoomBodyLang } from "./createRoomBodyLang";
+import type { CreateRoomBodyMode } from "./createRoomBodyMode";
 
 export interface CreateRoomBody {
   hostName: string;
+  mode?: CreateRoomBodyMode;
+  lang?: CreateRoomBodyLang;
   categoryId?: number | null;
   turnDuration?: number | null;
   roundCount?: number | null;

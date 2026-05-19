@@ -330,8 +330,8 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const { data: categories, isLoading: catsLoading, refetch } = useAdminListCategories({
     request: { headers: { 'x-admin-password': password } }
   });
-  const updateCategory = useAdminUpdateCategory();
-  const deleteCategory = useAdminDeleteCategory();
+  const updateCategory = useAdminUpdateCategory({ request: { headers: { 'x-admin-password': password } } });
+  const deleteCategory = useAdminDeleteCategory({ request: { headers: { 'x-admin-password': password } } });
 
   // ── Forehead upload ──────────────────────────────────────────────
   const handleForeheadUpload = async (file: File, lang: 'en' | 'ar') => {
@@ -482,7 +482,6 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   // ── Category helpers ─────────────────────────────────────────────
   const toggleCategory = (id: number, enabled: boolean) => {
     updateCategory.mutate({ id, data: { enabled } }, {
-      request: { headers: { 'x-admin-password': password } },
       onSuccess: () => refetch(),
       onError: () => toast({ title: 'Failed to update category', variant: 'destructive' })
     });
@@ -491,7 +490,6 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const handleDeleteCategory = (id: number, name: string) => {
     if (!confirm(`Delete category "${name}" and all its words?`)) return;
     deleteCategory.mutate({ id }, {
-      request: { headers: { 'x-admin-password': password } },
       onSuccess: () => { toast({ title: `"${name}" deleted` }); refetch(); },
       onError: () => toast({ title: 'Failed to delete', variant: 'destructive' })
     });
@@ -595,8 +593,8 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const enDykmCats = dykmCats.filter(c => c.lang === 'en');
   const arDykmCats = dykmCats.filter(c => c.lang === 'ar');
 
-  const enCategories = categories?.filter(c => c.type === 'en') ?? [];
-  const arCategories = categories?.filter(c => c.type === 'ar') ?? [];
+  const enCategories = categories?.filter((c: any) => (c as any).lang === 'en') ?? [];
+  const arCategories = categories?.filter((c: any) => (c as any).lang === 'ar') ?? [];
   const enChars = characters.filter(c => c.lang === 'en');
   const arChars = characters.filter(c => c.lang === 'ar');
   const enCharades = charades.filter(c => c.lang === 'en');

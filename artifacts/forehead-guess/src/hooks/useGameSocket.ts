@@ -149,7 +149,7 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
         const msg = JSON.parse(event.data);
         switch (msg.type) {
           case 'roomUpdate':
-            setState(s => ({ ...s, roomState: { mode: 'forehead', ...msg.payload } }));
+            setState(s => ({ ...s, roomState: msg.payload as RoomState }));
             break;
           case 'countdownTick':
             setState(s => ({ ...s, countdownSeconds: msg.payload.secondsLeft }));

@@ -79,8 +79,30 @@ export interface AdminVerifyResult {
   valid: boolean;
 }
 
+export type CreateRoomBodyMode =
+  | (typeof CreateRoomBodyMode)[keyof typeof CreateRoomBodyMode]
+  | null;
+
+export const CreateRoomBodyMode = {
+  forehead: "forehead",
+  character: "character",
+  charades: "charades",
+  dykm: "dykm",
+} as const;
+
+export type CreateRoomBodyLang =
+  | (typeof CreateRoomBodyLang)[keyof typeof CreateRoomBodyLang]
+  | null;
+
+export const CreateRoomBodyLang = {
+  en: "en",
+  ar: "ar",
+} as const;
+
 export interface CreateRoomBody {
   hostName: string;
+  mode?: CreateRoomBodyMode;
+  lang?: CreateRoomBodyLang;
   categoryId?: number | null;
   turnDuration?: number | null;
   roundCount?: number | null;
@@ -105,12 +127,35 @@ export const RoomWithPlayersStatus = {
   waiting: "waiting",
   playing: "playing",
   finished: "finished",
+  character_playing: "character_playing",
+  charades_playing: "charades_playing",
+  dykm_playing: "dykm_playing",
+} as const;
+
+export type RoomWithPlayersMode =
+  (typeof RoomWithPlayersMode)[keyof typeof RoomWithPlayersMode];
+
+export const RoomWithPlayersMode = {
+  forehead: "forehead",
+  character: "character",
+  charades: "charades",
+  dykm: "dykm",
+} as const;
+
+export type RoomWithPlayersLang =
+  (typeof RoomWithPlayersLang)[keyof typeof RoomWithPlayersLang];
+
+export const RoomWithPlayersLang = {
+  en: "en",
+  ar: "ar",
 } as const;
 
 export interface RoomWithPlayers {
   id: number;
   code: string;
   status: RoomWithPlayersStatus;
+  mode: RoomWithPlayersMode;
+  lang: RoomWithPlayersLang;
   categoryId?: number | null;
   categoryName?: string | null;
   turnDuration: number;

@@ -21,7 +21,7 @@ export const ListCategoriesResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
   description: zod.string().nullish(),
-  type: zod.string(),
+  type: zod.enum(["text", "image"]),
   enabled: zod.boolean(),
   itemCount: zod.number(),
   createdAt: zod.string(),
@@ -39,7 +39,7 @@ export const AdminListCategoriesResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
   description: zod.string().nullish(),
-  type: zod.string(),
+  type: zod.enum(["text", "image"]),
   enabled: zod.boolean(),
   itemCount: zod.number(),
   createdAt: zod.string(),
@@ -58,7 +58,7 @@ export const AdminCreateCategoryHeader = zod.object({
 export const AdminCreateCategoryBody = zod.object({
   name: zod.string(),
   description: zod.string().nullish(),
-  type: zod.string(),
+  type: zod.enum(["text", "image"]),
   enabled: zod.boolean().optional(),
 });
 
@@ -76,7 +76,7 @@ export const AdminUpdateCategoryHeader = zod.object({
 export const AdminUpdateCategoryBody = zod.object({
   name: zod.string().optional(),
   description: zod.string().nullish(),
-  type: zod.string().optional(),
+  type: zod.enum(["text", "image"]).optional(),
   enabled: zod.boolean().optional(),
 });
 
@@ -84,7 +84,7 @@ export const AdminUpdateCategoryResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
   description: zod.string().nullish(),
-  type: zod.string(),
+  type: zod.enum(["text", "image"]),
   enabled: zod.boolean(),
   itemCount: zod.number(),
   createdAt: zod.string(),
@@ -163,6 +163,8 @@ export const AdminVerifyResponse = zod.object({
  */
 export const CreateRoomBody = zod.object({
   hostName: zod.string(),
+  mode: zod.enum(["forehead", "character", "charades", "dykm"]).nullish(),
+  lang: zod.enum(["en", "ar"]).nullish(),
   categoryId: zod.number().nullish(),
   turnDuration: zod.number().nullish(),
   roundCount: zod.number().nullish(),
@@ -178,7 +180,16 @@ export const GetRoomParams = zod.object({
 export const GetRoomResponse = zod.object({
   id: zod.number(),
   code: zod.string(),
-  status: zod.enum(["waiting", "playing", "finished"]),
+  status: zod.enum([
+    "waiting",
+    "playing",
+    "finished",
+    "character_playing",
+    "charades_playing",
+    "dykm_playing",
+  ]),
+  mode: zod.enum(["forehead", "character", "charades", "dykm"]),
+  lang: zod.enum(["en", "ar"]),
   categoryId: zod.number().nullish(),
   categoryName: zod.string().nullish(),
   turnDuration: zod.number(),
@@ -210,7 +221,16 @@ export const JoinRoomResponse = zod.object({
   room: zod.object({
     id: zod.number(),
     code: zod.string(),
-    status: zod.enum(["waiting", "playing", "finished"]),
+    status: zod.enum([
+      "waiting",
+      "playing",
+      "finished",
+      "character_playing",
+      "charades_playing",
+      "dykm_playing",
+    ]),
+    mode: zod.enum(["forehead", "character", "charades", "dykm"]),
+    lang: zod.enum(["en", "ar"]),
     categoryId: zod.number().nullish(),
     categoryName: zod.string().nullish(),
     turnDuration: zod.number(),

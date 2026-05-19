@@ -68,7 +68,7 @@ function ScoreBar({ score, target }: { score: number; target: number }) {
 }
 
 // Newsreel / ticket-tape question strip
-function QuestionNewsreel({ questions, lang }: { questions: DykmQuestion[]; lang: string }) {
+function QuestionNewsreel({ questions, lang, error }: { questions: DykmQuestion[]; lang: string; error?: string | null }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState(0);
   const isAr = lang === 'ar';
@@ -91,12 +91,15 @@ function QuestionNewsreel({ questions, lang }: { questions: DykmQuestion[]; lang
       background: CREAM,
       border: `2px solid ${MAROON}`,
       padding: '20px 24px',
-      fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+      fontFamily: FONT_MONO,
       color: MAROON,
       textAlign: 'center',
-      fontSize: 16,
+      fontSize: 13,
+      wordBreak: 'break-word',
     }}>
-      No questions loaded. Please upload questions in the admin panel.
+      {error
+        ? <><span style={{ color: ROSE, letterSpacing: '0.1em' }}>⚠ LOAD ERROR</span><br /><span style={{ fontSize: 11, opacity: 0.8 }}>{error}</span></>
+        : (isAr ? 'جاري تحميل الأسئلة…' : 'Loading questions…')}
     </div>
   );
 
@@ -244,6 +247,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
   } = socket;
 
   const [allQuestions, setAllQuestions] = useState<DykmQuestion[]>([]);
+  const [questionsError, setQuestionsError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedScore, setSelectedScore] = useState<3 | 10>(3);
   const [selectedAskerId, setSelectedAskerId] = useState<number>(playerId);
@@ -253,7 +257,10 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
 
   // Load questions from Supabase once
   useEffect(() => {
-    fetchDykmQuestionsFromSupabase().then(setAllQuestions);
+    fetchDykmQuestionsFromSupabase().then(({ questions, error }) => {
+      setAllQuestions(questions);
+      setQuestionsError(error);
+    });
   }, []);
 
   const categories = getDykmCategories(allQuestions);
@@ -586,7 +593,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
         <div style={{ flex: 1, padding: '12px 14px 24px', maxWidth: 520, margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           {/* Question newsreel — visible to everyone */}
-          <QuestionNewsreel questions={questions} lang={roomLang} />
+          <QuestionNewsreel questions={questions} lang={roomLang} error={questionsError} />
 
           {/* Asker label */}
           {amAsker && (

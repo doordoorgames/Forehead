@@ -1,10 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
 import type { DykmQuestion } from '@/hooks/useGameSocket';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_DYKM_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_DYKM_ANON_KEY as string;
+const SUPABASE_URL = 'https://qvzxjtyvbfexuhmmqbzl.supabase.co';
+const SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2enhqdHl2YmZleHVobW1xYnpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NDg1MDAsImV4cCI6MjA5NDUyNDUwMH0.NLFRSK77OV83ZUJ4lK_q0kMXD0a5BGiXrEsrQgQJBmg';
 
-export const supabaseDykm = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const REST_URL = `${SUPABASE_URL}/rest/v1/do_you_know_me_questions`;
 
 interface SupabaseRow {
   id: number;
@@ -15,23 +15,47 @@ interface SupabaseRow {
   created_at: string;
 }
 
-export async function fetchDykmQuestionsFromSupabase(): Promise<DykmQuestion[]> {
-  const { data, error } = await supabaseDykm
-    .from('do_you_know_me_questions')
-    .select('id, category, question, intensity, active, created_at')
-    .eq('active', true);
+export interface DykmFetchResult {
+  questions: DykmQuestion[];
+  error: string | null;
+}
 
-  if (error) {
-    console.error('[DYKM] Supabase fetch error:', error.message);
-    return [];
+export async function fetchDykmQuestionsFromSupabase(): Promise<DykmFetchResult> {
+  console.log('Fetching Do You Know Me questions from Supabase…');
+
+  try {
+    const url = `${REST_URL}?active=eq.true&select=id,category,question,intensity,active,created_at`;
+    const res = await fetch(url, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      const msg = `Supabase error: HTTP ${res.status} — ${body}`;
+      console.error(msg);
+      return { questions: [], error: msg };
+    }
+
+    const rows: SupabaseRow[] = await res.json();
+    console.log(`Loaded ${rows.length} Do You Know Me questions`);
+
+    const questions: DykmQuestion[] = rows.map(row => ({
+      id: row.id,
+      question: row.question,
+      categoryId: 0,
+      categoryName: row.category ?? 'General',
+    }));
+
+    return { questions, error: null };
+  } catch (err) {
+    const msg = `Supabase error: ${err instanceof Error ? err.message : String(err)}`;
+    console.error(msg);
+    return { questions: [], error: msg };
   }
-
-  return (data as SupabaseRow[]).map(row => ({
-    id: row.id,
-    question: row.question,
-    categoryId: 0,
-    categoryName: row.category,
-  }));
 }
 
 export function getDykmCategories(questions: DykmQuestion[]): string[] {

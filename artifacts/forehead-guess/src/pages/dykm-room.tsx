@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useGameSocket, type RoomState, type DykmState, type DykmQuestion } from '@/hooks/useGameSocket';
 import { useLang } from '@/context/LanguageContext';
+import { fetchDykmQuestionsFromSupabase, getDykmCategories } from '@/lib/supabase-dykm';
 
 // ── palette ──────────────────────────────────────────────────────────────────
 const CREAM   = '#f5ede0';
@@ -11,16 +12,6 @@ const LAVENDER = '#b09ec0';
 const PARCHMENT = '#ede0ce';
 
 const FONT_MONO = "'Courier New', Courier, monospace";
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
-
-async function fetchDykmQuestions(lang: string): Promise<DykmQuestion[]> {
-  const res = await fetch(`${BASE}/api/dykm-questions?lang=${lang}`);
-  if (!res.ok) return [];
-  return res.json();
-}
 
 // ── sub-components ────────────────────────────────────────────────────────────
 
@@ -252,17 +243,23 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
     dykmBackToLobby,
   } = socket;
 
-  const [questions, setQuestions] = useState<DykmQuestion[]>([]);
+  const [allQuestions, setAllQuestions] = useState<DykmQuestion[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedScore, setSelectedScore] = useState<3 | 10>(3);
   const [selectedAskerId, setSelectedAskerId] = useState<number>(playerId);
 
   const isHost = roomState.players.find(p => p.id === playerId)?.isHost ?? false;
   const roomLang = (roomState as any).lang ?? lang;
 
-  // Load questions once
+  // Load questions from Supabase once
   useEffect(() => {
-    fetchDykmQuestions(roomLang).then(setQuestions);
-  }, [roomLang]);
+    fetchDykmQuestionsFromSupabase().then(setAllQuestions);
+  }, []);
+
+  const categories = getDykmCategories(allQuestions);
+  const questions = selectedCategory
+    ? allQuestions.filter(q => q.categoryName === selectedCategory)
+    : allQuestions;
 
   // Default asker = first player
   useEffect(() => {
@@ -327,6 +324,53 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
               ))}
             </div>
           </div>
+
+          {/* Category picker — client-side filter, visible to all */}
+          {categories.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <p style={{ fontFamily: FONT_MONO, fontSize: 10, color: TEAL, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 10 }}>
+                {isAr ? 'الفئة' : 'CATEGORY'}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  style={{
+                    padding: '7px 14px',
+                    background: selectedCategory === null ? MAROON : 'transparent',
+                    color: selectedCategory === null ? CREAM : MAROON,
+                    border: `1.5px solid ${MAROON}`,
+                    fontFamily: FONT_MONO,
+                    fontSize: 11,
+                    letterSpacing: '0.15em',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isAr ? 'الكل' : 'ALL'}
+                </button>
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    style={{
+                      padding: '7px 14px',
+                      background: selectedCategory === cat ? MAROON : 'transparent',
+                      color: selectedCategory === cat ? CREAM : MAROON,
+                      border: `1.5px solid ${selectedCategory === cat ? MAROON : ROSE}`,
+                      fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                      fontSize: 11,
+                      letterSpacing: '0.1em',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <p style={{ fontFamily: FONT_MONO, fontSize: 10, color: ROSE, letterSpacing: '0.1em', marginTop: 6 }}>
+                {questions.length} {isAr ? 'سؤال' : 'questions'}
+              </p>
+            </div>
+          )}
 
           {isHost && (
             <>

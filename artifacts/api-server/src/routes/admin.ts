@@ -1,8 +1,8 @@
 import { Router } from "express";
 import multer from "multer";
 import { db } from "@workspace/db";
-import { categoriesTable, categoryItemsTable } from "@workspace/db";
-import { eq, count } from "drizzle-orm";
+import { categoriesTable, categoryItemsTable, dykmCategoriesTable, dykmQuestionsTable } from "@workspace/db";
+import { eq, count as drizzleCount } from "drizzle-orm";
 import { insertCharacters, listAllCharacters, deleteCharacter } from "../lib/characterPool";
 import { insertCharades, listAllCharades, deleteCharade, deleteAllCharades } from "../lib/charadesPool";
 import {
@@ -65,7 +65,7 @@ router.get("/admin/categories", async (req, res) => {
   const categories = await db.select().from(categoriesTable);
   const result = await Promise.all(
     categories.map(async (cat) => {
-      const [{ value }] = await db.select({ value: count() }).from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, cat.id));
+      const [{ value }] = await db.select({ value: drizzleCount() }).from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, cat.id));
       return buildCategoryResponse(cat, Number(value));
     })
   );
@@ -121,7 +121,7 @@ router.put("/admin/categories/:id", async (req, res) => {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  const [{ value }] = await db.select({ value: count() }).from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, cat.id));
+  const [{ value }] = await db.select({ value: drizzleCount() }).from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, cat.id));
   res.json(buildCategoryResponse(cat, Number(value)));
 });
 
@@ -606,6 +606,156 @@ router.delete("/admin/charades/:id", async (req, res) => {
   }
   await deleteCharade(id);
   res.json({ ok: true });
+});
+
+// ── DYKM ROUTES ───────────────────────────────────────────────────────────────
+
+// POST /api/admin/dykm-upload
+// CSV: Col A = category name, Col B = question
+router.post("/admin/dykm-upload", upload.single("file"), async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  const file = req.file;
+  if (!file) { res.status(400).json({ error: "No file uploaded" }); return; }
+
+  const lang = ((req.body.lang as string) || "en") === "ar" ? "ar" : "en";
+  const rows: Array<{ category: string; question: string }> = [];
+  const errors: string[] = [];
+
+  try {
+    const ext = file.originalname.toLowerCase().split(".").pop();
+    if (ext === "csv") {
+      const text = file.buffer.toString("utf-8");
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      for (let i = 0; i < lines.length; i++) {
+        const parts = lines[i].split(",");
+        const category = (parts[0] || "").replace(/^"(.*)"$/, "$1").trim();
+        const question = (parts.slice(1).join(",") || "").replace(/^"(.*)"$/, "$1").trim();
+        if (!category || !question) { errors.push(`Row ${i + 1}: missing category or question`); continue; }
+        rows.push({ category, question });
+      }
+    } else if (ext === "xlsx" || ext === "xls") {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.read(file.buffer, { type: "buffer" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: "" }) as string[][];
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        const category = (String(row[0] || "")).trim();
+        const question = (String(row[1] || "")).trim();
+        if (!category || !question) { errors.push(`Row ${i + 1}: missing category or question`); continue; }
+        rows.push({ category, question });
+      }
+    } else {
+      res.status(400).json({ error: "Only CSV and XLSX files are supported" }); return;
+    }
+  } catch (err) {
+    req.log.error({ err }, "Error parsing DYKM upload");
+    res.status(400).json({ error: "Failed to parse file" }); return;
+  }
+
+  if (rows.length === 0) { res.status(400).json({ error: "No valid rows found.", errors }); return; }
+
+  // Upsert categories and insert questions
+  const categoryCache = new Map<string, number>();
+  let imported = 0;
+  for (const row of rows) {
+    let catId = categoryCache.get(row.category);
+    if (catId === undefined) {
+      const existingRows = await db.select().from(dykmCategoriesTable).where(
+        eq(dykmCategoriesTable.name, row.category)
+      );
+      const existing = existingRows.find(c => c.lang === lang);
+      if (existing) {
+        catId = existing.id;
+      } else {
+        const [newCat] = await db.insert(dykmCategoriesTable).values({ name: row.category, lang, enabled: true }).returning();
+        catId = newCat.id;
+      }
+      categoryCache.set(row.category, catId);
+    }
+    await db.insert(dykmQuestionsTable).values({ categoryId: catId, question: row.question });
+    imported++;
+  }
+
+  res.json({ imported, skipped: errors.length, errors, lang });
+});
+
+// GET /api/admin/dykm-categories?lang=en|ar
+router.get("/admin/dykm-categories", async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const lang = req.query.lang as string | undefined;
+  const cats = lang
+    ? await db.select().from(dykmCategoriesTable).where(eq(dykmCategoriesTable.lang, lang))
+    : await db.select().from(dykmCategoriesTable);
+  const result = await Promise.all(cats.map(async (cat) => {
+    const [{ value }] = await db.select({ value: drizzleCount() }).from(dykmQuestionsTable).where(eq(dykmQuestionsTable.categoryId, cat.id));
+    return { id: cat.id, name: cat.name, lang: cat.lang, enabled: cat.enabled, questionCount: Number(value) };
+  }));
+  res.json(result);
+});
+
+// PUT /api/admin/dykm-categories/:id
+router.put("/admin/dykm-categories/:id", async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const id = Number(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const { name, enabled } = req.body as { name?: string; enabled?: boolean };
+  const updates: Record<string, unknown> = {};
+  if (name !== undefined) updates.name = name;
+  if (enabled !== undefined) updates.enabled = enabled;
+  const [cat] = await db.update(dykmCategoriesTable).set(updates).where(eq(dykmCategoriesTable.id, id)).returning();
+  if (!cat) { res.status(404).json({ error: "Not found" }); return; }
+  res.json({ id: cat.id, name: cat.name, lang: cat.lang, enabled: cat.enabled });
+});
+
+// DELETE /api/admin/dykm-categories/:id
+router.delete("/admin/dykm-categories/:id", async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const id = Number(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const [cat] = await db.delete(dykmCategoriesTable).where(eq(dykmCategoriesTable.id, id)).returning();
+  if (!cat) { res.status(404).json({ error: "Not found" }); return; }
+  res.json({ ok: true });
+});
+
+// GET /api/admin/dykm-questions?categoryId=X
+router.get("/admin/dykm-questions", async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+  const questions = categoryId
+    ? await db.select().from(dykmQuestionsTable).where(eq(dykmQuestionsTable.categoryId, categoryId))
+    : await db.select().from(dykmQuestionsTable);
+  res.json(questions.map(q => ({ id: q.id, categoryId: q.categoryId, question: q.question })));
+});
+
+// DELETE /api/admin/dykm-questions/:id
+router.delete("/admin/dykm-questions/:id", async (req, res) => {
+  const password = req.headers["x-admin-password"] as string | undefined;
+  if (!checkAdminPassword(password)) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const id = Number(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const [q] = await db.delete(dykmQuestionsTable).where(eq(dykmQuestionsTable.id, id)).returning();
+  if (!q) { res.status(404).json({ error: "Not found" }); return; }
+  res.json({ ok: true });
+});
+
+// GET /api/dykm-questions?lang=en|ar — public endpoint
+router.get("/dykm-questions", async (req, res) => {
+  const lang = ((req.query.lang as string) || "en") === "ar" ? "ar" : "en";
+  const enabledCats = await db.select().from(dykmCategoriesTable).where(eq(dykmCategoriesTable.lang, lang));
+  const enabled = enabledCats.filter(c => c.enabled);
+  if (enabled.length === 0) { res.json([]); return; }
+  const allQuestions = await Promise.all(enabled.map(async (cat) => {
+    const qs = await db.select().from(dykmQuestionsTable).where(eq(dykmQuestionsTable.categoryId, cat.id));
+    return qs.map(q => ({ id: q.id, question: q.question, categoryId: cat.id, categoryName: cat.name }));
+  }));
+  res.json(allQuestions.flat());
 });
 
 export default router;

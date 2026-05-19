@@ -8,6 +8,7 @@ import { Loader2, Copy, Check, Users, CheckCircle2 } from 'lucide-react';
 import { useLang } from '@/context/LanguageContext';
 import CharacterRoom from './character-room';
 import CharadesRoom from './charades-room';
+import DykmRoom from './dykm-room';
 
 export default function Room() {
   const params = useParams<{ code: string }>();
@@ -82,6 +83,20 @@ export default function Room() {
         roomState={roomState}
         socket={socket}
         onGoHome={() => setLocation('/home')}
+      />
+    );
+  }
+
+  // DYKM mode: render dedicated component
+  if (mode === 'dykm') {
+    if (!roomState) return null;
+    return (
+      <DykmRoom
+        code={code}
+        playerId={playerId}
+        roomState={roomState}
+        socket={socket}
+        onGoHome={() => setLocation('/mode')}
       />
     );
   }

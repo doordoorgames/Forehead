@@ -63,7 +63,7 @@ router.post("/rooms", async (req, res) => {
   }
 
   const rawMode = req.body.mode as string;
-  const mode = rawMode === 'character' ? 'character' : rawMode === 'charades' ? 'charades' : 'forehead';
+  const mode = rawMode === 'character' ? 'character' : rawMode === 'charades' ? 'charades' : rawMode === 'dykm' ? 'dykm' : 'forehead';
   const lang = (req.body.lang as string) === 'ar' ? 'ar' : 'en';
   const [room] = await db.insert(roomsTable).values({
     code,

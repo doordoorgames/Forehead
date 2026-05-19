@@ -70,11 +70,27 @@ interface CharadesRoundState {
   lang: string;
 }
 
+// ── DYKM GAME STATE ──────────────────────────────────────────────────────────
+
+interface DykmGameState {
+  hostId: number;
+  askerId: number;
+  askerName: string;
+  targetScore: number;
+  scores: Record<number, number>; // playerId -> score
+  lastPointTo?: number;
+  status: 'playing' | 'finished';
+  winnerId?: number;
+  winnerName?: string;
+  lang: string;
+}
+
 const clients = new Map<WebSocket, WsClient>();
 const roomTimers = new Map<string, ReturnType<typeof setInterval>>();
 const roomRoundState = new Map<string, RoundState>();
 const roomCharacterState = new Map<string, CharacterRoundState>();
 const roomCharadesState = new Map<string, CharadesRoundState>();
+const roomDykmState = new Map<string, DykmGameState>();
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
@@ -192,6 +208,33 @@ async function broadcastCharacterState(roomCode: string) {
         },
       });
     }
+  }
+}
+
+// ── DYKM GAME HELPERS ────────────────────────────────────────────────────────
+
+async function broadcastDykmState(roomCode: string) {
+  const ds = roomDykmState.get(roomCode);
+  if (!ds) return;
+  const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+  if (!room) return;
+  const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
+  for (const [ws2, c2] of clients.entries()) {
+    if (c2.roomCode !== roomCode || ws2.readyState !== WebSocket.OPEN) continue;
+    sendTo(ws2, {
+      type: "dykmState",
+      payload: {
+        askerId: ds.askerId,
+        askerName: ds.askerName,
+        targetScore: ds.targetScore,
+        scores: ds.scores,
+        lastPointTo: ds.lastPointTo,
+        status: ds.status,
+        winnerId: ds.winnerId,
+        winnerName: ds.winnerName,
+        players: players.map(p => ({ id: p.id, name: p.name, isHost: p.isHost, connected: p.connected })),
+      },
+    });
   }
 }
 
@@ -962,6 +1005,111 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     if (cs?.hostId !== client.playerId && host?.id !== client.playerId) return;
 
     roomCharadesState.delete(roomCode);
+    await db.update(roomsTable).set({ status: "waiting" }).where(eq(roomsTable.code, roomCode));
+    broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
+    return;
+  }
+
+  // ── DYKM: START GAME ──────────────────────────────────────────────────────
+  if (type === "dykmStart") {
+    const { roomCode, targetScore, askerId } = payload as { roomCode: string; targetScore: number; askerId: number };
+    const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+    if (!room || room.mode !== "dykm" || room.status !== "waiting") return;
+    const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
+    const host = players.find(p => p.id === client.playerId && p.isHost);
+    if (!host) return;
+    const ts = Number(targetScore) === 10 ? 10 : 3;
+    const asker = players.find(p => p.id === Number(askerId)) || host;
+    const scores: Record<number, number> = {};
+    for (const p of players) scores[p.id] = 0;
+    const ds: DykmGameState = { hostId: client.playerId!, askerId: asker.id, askerName: asker.name, targetScore: ts, scores, status: 'playing', lang: room.lang };
+    roomDykmState.set(roomCode, ds);
+    await db.update(roomsTable).set({ status: "dykm_playing" }).where(eq(roomsTable.code, roomCode));
+    broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
+    await broadcastDykmState(roomCode);
+    return;
+  }
+
+  // ── DYKM: SET ASKER ───────────────────────────────────────────────────────
+  if (type === "dykmSetAsker") {
+    const { roomCode, askerId } = payload as { roomCode: string; askerId: number };
+    const ds = roomDykmState.get(roomCode);
+    if (!ds) return;
+    const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+    if (!room) return;
+    const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
+    const asker = players.find(p => p.id === Number(askerId));
+    if (!asker) return;
+    ds.askerId = asker.id;
+    ds.askerName = asker.name;
+    await broadcastDykmState(roomCode);
+    return;
+  }
+
+  // ── DYKM: AWARD POINT ─────────────────────────────────────────────────────
+  if (type === "dykmAwardPoint") {
+    const { roomCode, toPlayerId } = payload as { roomCode: string; toPlayerId: number };
+    const ds = roomDykmState.get(roomCode);
+    if (!ds || ds.status === 'finished') return;
+    if (ds.askerId !== client.playerId) return;
+    const pid = Number(toPlayerId);
+    if (!(pid in ds.scores)) return;
+    ds.scores[pid] = (ds.scores[pid] ?? 0) + 1;
+    ds.lastPointTo = pid;
+    if (ds.scores[pid] >= ds.targetScore) {
+      ds.status = 'finished';
+      const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+      if (room) {
+        const winner = await db.query.playersTable.findFirst({ where: and(eq(playersTable.roomId, room.id), eq(playersTable.id, pid)) });
+        if (winner) { ds.winnerId = winner.id; ds.winnerName = winner.name; }
+        await db.update(roomsTable).set({ status: "finished" }).where(eq(roomsTable.code, roomCode));
+        broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
+      }
+    }
+    await broadcastDykmState(roomCode);
+    return;
+  }
+
+  // ── DYKM: UNDO POINT ──────────────────────────────────────────────────────
+  if (type === "dykmUndoPoint") {
+    const { roomCode, toPlayerId } = payload as { roomCode: string; toPlayerId: number };
+    const ds = roomDykmState.get(roomCode);
+    if (!ds || ds.askerId !== client.playerId) return;
+    const pid = Number(toPlayerId);
+    if (!(pid in ds.scores)) return;
+    ds.scores[pid] = Math.max(0, (ds.scores[pid] ?? 0) - 1);
+    ds.lastPointTo = undefined;
+    if (ds.status === 'finished') {
+      ds.status = 'playing'; ds.winnerId = undefined; ds.winnerName = undefined;
+      await db.update(roomsTable).set({ status: "dykm_playing" }).where(eq(roomsTable.code, roomCode));
+      broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
+    }
+    await broadcastDykmState(roomCode);
+    return;
+  }
+
+  // ── DYKM: END GAME ────────────────────────────────────────────────────────
+  if (type === "dykmEndGame") {
+    const { roomCode } = payload as { roomCode: string };
+    const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+    if (!room) return;
+    const host = await db.query.playersTable.findFirst({ where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)) });
+    if (host?.id !== client.playerId) return;
+    roomDykmState.delete(roomCode);
+    await db.update(roomsTable).set({ status: "finished" }).where(eq(roomsTable.code, roomCode));
+    broadcast(roomCode, { type: "gameEnd", payload: {} });
+    broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
+    return;
+  }
+
+  // ── DYKM: BACK TO LOBBY ───────────────────────────────────────────────────
+  if (type === "dykmBackToLobby") {
+    const { roomCode } = payload as { roomCode: string };
+    const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+    if (!room) return;
+    const host = await db.query.playersTable.findFirst({ where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)) });
+    if (host?.id !== client.playerId) return;
+    roomDykmState.delete(roomCode);
     await db.update(roomsTable).set({ status: "waiting" }).where(eq(roomsTable.code, roomCode));
     broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
     return;

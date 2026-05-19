@@ -77,6 +77,24 @@ export default function ModeSelect() {
               </div>
             </div>
           </button>
+
+          {/* Do You Know Me? */}
+          <button
+            onClick={() => setLocation('/dykm')}
+            className="group relative w-full overflow-hidden rounded-3xl border-4 border-[#c4827a] bg-black/60 backdrop-blur-sm p-6 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-[#c4827a]/10 active:scale-[0.98] shadow-[0_0_24px_#c4827a40]"
+          >
+            <div className="flex items-center gap-4">
+              <span className="text-5xl">📼</span>
+              <div>
+                <p className="text-2xl font-black text-[#c4827a]" style={fontStyle}>
+                  {t.dykmMode}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1" style={fontStyle}>
+                  {t.dykmModeDesc}
+                </p>
+              </div>
+            </div>
+          </button>
         </div>
 
         <button

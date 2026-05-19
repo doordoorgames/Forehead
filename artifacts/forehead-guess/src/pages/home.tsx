@@ -24,9 +24,10 @@ const modeBackPath: Record<string, string> = {
   forehead: '/forehead',
   character: '/character',
   charades: '/charades',
+  dykm: '/dykm',
 };
 
-export default function Home({ mode }: { mode: 'forehead' | 'character' | 'charades' }) {
+export default function Home({ mode }: { mode: 'forehead' | 'character' | 'charades' | 'dykm' }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { t, lang } = useLang();
@@ -99,7 +100,20 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.52)' }} />
         </>
       )}
-      {mode !== 'character' && (
+      {/* DYKM mode: warm retro background */}
+      {mode === 'dykm' && (
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(160deg, #f5ede0 0%, #e8d5c4 50%, #d4bfb0 100%)' }}>
+          {/* VHS scanlines */}
+          <div className="absolute inset-0 pointer-events-none" style={{
+            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)',
+          }} />
+          {/* Warm noise overlay */}
+          <div className="absolute inset-0 opacity-20" style={{
+            backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(92,32,48,0.15) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(107,158,159,0.2) 0%, transparent 60%)',
+          }} />
+        </div>
+      )}
+      {mode !== 'character' && mode !== 'dykm' && (
         <>
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-3xl" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary/20 blur-3xl" />
@@ -181,11 +195,83 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
               {t.charadesMode}
             </h1>
           )}
+          {mode === 'dykm' && (
+            <div className="mb-4 flex flex-col items-center gap-1">
+              <div style={{
+                fontFamily: "'Courier New', Courier, monospace",
+                fontSize: 'clamp(11px, 2.5vw, 14px)',
+                color: '#6b9e9f',
+                letterSpacing: '0.35em',
+                textTransform: 'uppercase',
+                marginBottom: 4,
+              }}>
+                ▶ REC • MEMORY ARCHIVE
+              </div>
+              <h1 style={{
+                fontFamily: isAr ? "'Changa', sans-serif" : "'Courier New', Courier, monospace",
+                fontSize: isAr ? 'clamp(36px, 10vw, 72px)' : 'clamp(26px, 7vw, 52px)',
+                fontWeight: 900,
+                color: '#5c2030',
+                letterSpacing: isAr ? undefined : '0.04em',
+                lineHeight: 1.1,
+                textShadow: '2px 2px 0 rgba(196,130,122,0.4)',
+                direction: isAr ? 'rtl' : undefined,
+              }}>
+                {t.dykmMode}
+              </h1>
+              <p style={{
+                fontFamily: "'Courier New', Courier, monospace",
+                fontSize: 'clamp(10px, 2.2vw, 13px)',
+                color: '#9e7060',
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+              }}>
+                DO YOU KNOW ME ?
+              </p>
+            </div>
+          )}
         </div>
 
         {view === 'main' && (
           <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300">
-            {mode === 'character' ? (
+            {mode === 'dykm' ? (
+              <>
+                <button
+                  className="w-full text-xl h-16 font-black tracking-wide transition-transform active:scale-95"
+                  style={{
+                    background: 'transparent',
+                    border: '2px solid #5c2030',
+                    borderRadius: 0,
+                    color: '#5c2030',
+                    textShadow: '1px 1px 0 rgba(196,130,122,0.5)',
+                    boxShadow: '3px 3px 0 #5c2030',
+                    fontFamily: "'Courier New', Courier, monospace",
+                    letterSpacing: '0.05em',
+                    ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
+                  }}
+                  onClick={() => setView('create')}
+                >
+                  {t.createRoom}
+                </button>
+                <button
+                  className="w-full text-xl h-16 font-black tracking-wide transition-transform active:scale-95"
+                  style={{
+                    background: 'transparent',
+                    border: '2px solid #6b9e9f',
+                    borderRadius: 0,
+                    color: '#6b9e9f',
+                    textShadow: '1px 1px 0 rgba(107,158,159,0.4)',
+                    boxShadow: '3px 3px 0 #6b9e9f',
+                    fontFamily: "'Courier New', Courier, monospace",
+                    letterSpacing: '0.05em',
+                    ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
+                  }}
+                  onClick={() => setView('join')}
+                >
+                  {t.joinRoom}
+                </button>
+              </>
+            ) : mode === 'character' ? (
               <>
                 <button
                   className="w-full text-xl h-16 font-black text-white tracking-wide transition-transform active:scale-95"

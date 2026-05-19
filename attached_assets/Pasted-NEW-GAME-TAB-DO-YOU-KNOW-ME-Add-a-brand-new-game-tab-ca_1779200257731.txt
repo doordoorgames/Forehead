@@ -1,0 +1,242 @@
+NEW GAME TAB: “DO YOU KNOW ME?”
+
+Add a brand-new game tab called “Do You Know Me?” into the Dordor Games platform.
+
+CORE CONCEPT:
+This is a fast-paced social party game about testing how well friends know the current “Asker.”
+
+The game is played entirely verbally in real life. Phones are ONLY used for:
+- joining the room
+- browsing questions
+- selecting categories
+- tallying points
+- rotating rounds
+
+No typing answers.
+
+ROOM SYSTEM:
+- Same existing multiplayer room system.
+- Players join using a 5-digit room code.
+- Lobby supports nicknames/avatars.
+- Host/Admin can start the game once everyone joins.
+
+GAME LENGTH:
+Before starting:
+Admin selects:
+- QUICK GAME = first to 3 points
+OR
+- LONG GAME = first to 10 points
+
+ROUND STRUCTURE:
+Each round has ONE “Asker.”
+
+The Asker is the person answering the questions indirectly while others try to prove they know them.
+
+Example:
+Question:
+“What bone did I break?”
+
+Other players verbally yell answers.
+
+The Asker manually decides who answered correctly first.
+
+Then the Asker taps that player’s name to award them +1 point.
+
+After the round:
+Admin can manually choose the next Asker.
+
+Do NOT auto-rotate.
+
+PLAYER SCORING UI:
+The Asker sees all player nicknames in large clickable glowing cards.
+
+Example:
+AHMED [2]
+LAILA [1]
+YOUSEF [0]
+SARA [2]
+
+Tapping a player:
++1 point
+
+Tiny undo button beside each player card.
+
+When a player reaches:
+- 3 points in Quick Mode
+OR
+- 10 points in Long Mode
+they win.
+
+QUESTION SYSTEM:
+This is the HEART of the experience.
+
+Questions are uploaded through Excel/CSV admin upload.
+
+Each question belongs to a category.
+
+Example categories:
+- Love
+- School
+- Health
+- Childhood
+- Habits
+- Secrets
+- Favorites
+- Family
+- Chaos
+- Embarrassing
+- Relationships
+
+TOP THIRD OF SCREEN:
+This should feel like:
+Reuters terminal meets Pokédex meets anime database scanner.
+
+The top third contains:
+A horizontally scrolling QUESTION NEWSREEL.
+
+Questions move left ↔ right like a ticker/news terminal.
+
+The Asker can swipe horizontally through questions smoothly.
+
+Examples:
+- “Which city did I secretly hate?”
+- “What bone did I break?”
+- “What age did I fail my driving test?”
+- “What food makes me sick?”
+- “Which year did I travel to Turkey?”
+- “What was my worst haircut?”
+
+Below that:
+A THINNER CATEGORY NEWSREEL.
+
+Also horizontal.
+
+Categories scroll left ↔ right.
+
+When tapping a category:
+Filter questions instantly.
+
+The searching/browsing mechanic must feel FUN and addictive.
+
+This is NOT boring dropdown menus.
+
+It should feel:
+- tactile
+- swipe-heavy
+- stylish
+- playful
+- like browsing classified anime files
+
+VISUAL DIRECTION:
+DO NOT use the current cyberpunk neon palette from the other games.
+
+This game needs a NEW identity.
+
+INSPIRED BY:
+- 80s anime terminals
+- vintage Japanese electronics
+- secret diary aesthetics
+- Pokédex interfaces
+- Reuters terminals
+- retro anime apartments
+- faded magazines
+- VHS romance anime
+- muted retro technology
+
+COLOR PALETTE:
+Use:
+- warm beige
+- dusty pink
+- maroon
+- faded teal
+- cream
+- muted lavender
+- soft peach
+- desaturated navy
+- warm gray
+
+Avoid:
+- hyper neon blue
+- Tron aesthetic
+- overly dark black/red gamer look
+
+The atmosphere should feel:
+nostalgic + emotional + stylish + social.
+
+VISUAL FX:
+- VHS scanlines
+- tiny CRT flicker
+- soft film grain
+- smooth ticker movement
+- subtle glow
+- old anime UI transitions
+- floating particles
+- analog terminal feeling
+
+NO aggressive modern gaming UI.
+
+This should feel like:
+“friends browsing each other’s memories in an old anime operating system.”
+
+LAYOUT:
+IMPORTANT:
+Keep ALL gameplay elements inside a centered invisible safe-zone.
+
+Nothing should touch screen edges.
+
+Portrait-first mobile design.
+
+Avoid TikTok comment overlay zones near bottom.
+
+SCORE MOMENTS:
+When points are awarded:
+Flash subtle stylish animations like:
++1 MEMORY
+DATA FOUND
+MATCH CONFIRMED
+
+Keep animations classy and retro.
+
+NOT loud casino effects.
+
+SOUNDS:
+- soft retro UI beeps
+- cassette-click sounds
+- subtle terminal sounds
+- analog swipe sounds
+- satisfying score chimes
+
+NO EDM.
+NO aggressive arcade music.
+
+ADMIN FEATURES:
+Admin panel must allow:
+- CSV/Excel upload
+- category assignment
+- adding/removing questions
+- enabling/disabling categories
+
+CSV STRUCTURE:
+COLUMN A = CATEGORY
+COLUMN B = QUESTION
+
+Example:
+Health | What bone did I break?
+Love | Who was my first crush?
+School | What subject did I almost fail?
+
+FINAL GOAL:
+This game should feel like:
+an anime memory scanner party game from another timeline.
+
+It must feel:
+- social
+- stylish
+- chaotic
+- nostalgic
+- emotional
+- funny
+- deeply interactive
+
+Phones support the social interaction.
+Phones do NOT replace the social interaction.

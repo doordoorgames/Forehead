@@ -106,6 +106,14 @@ interface CharadeEntry {
   lang: string;
 }
 
+interface DykmCatEntry {
+  id: number;
+  name: string;
+  lang: string;
+  enabled: boolean;
+  questionCount: number;
+}
+
 function UploadButtonPurple({
   label,
   sublabel,
@@ -305,6 +313,20 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const [charades, setCharades] = useState<CharadeEntry[]>([]);
   const [crdLoading, setCrdLoading] = useState(false);
 
+  // DYKM upload refs + state
+  const dykmEnRef = useRef<HTMLInputElement>(null);
+  const dykmArRef = useRef<HTMLInputElement>(null);
+  const [dykmEnUploading, setDykmEnUploading] = useState(false);
+  const [dykmArUploading, setDykmArUploading] = useState(false);
+  const [dykmEnResult, setDykmEnResult] = useState<CharUploadResult | null>(null);
+  const [dykmArResult, setDykmArResult] = useState<CharUploadResult | null>(null);
+  const [dykmEnError, setDykmEnError] = useState<string | null>(null);
+  const [dykmArError, setDykmArError] = useState<string | null>(null);
+
+  // DYKM categories list
+  const [dykmCats, setDykmCats] = useState<DykmCatEntry[]>([]);
+  const [dykmCatsLoading, setDykmCatsLoading] = useState(false);
+
   const { data: categories, isLoading: catsLoading, refetch } = useAdminListCategories({
     request: { headers: { 'x-admin-password': password } }
   });
@@ -499,6 +521,79 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
       setDeletingAllLang(null);
     }
   };
+
+  // ── DYKM upload ──────────────────────────────────────────────────
+  const handleDykmUpload = async (file: File, lang: 'en' | 'ar') => {
+    const setUploading = lang === 'en' ? setDykmEnUploading : setDykmArUploading;
+    const setResult   = lang === 'en' ? setDykmEnResult   : setDykmArResult;
+    const setError    = lang === 'en' ? setDykmEnError    : setDykmArError;
+    const ref         = lang === 'en' ? dykmEnRef         : dykmArRef;
+
+    setUploading(true); setResult(null); setError(null);
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('lang', lang);
+    try {
+      const res = await fetch('/api/admin/dykm-upload', {
+        method: 'POST',
+        headers: { 'x-admin-password': password },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Upload failed');
+      } else {
+        setResult(data as CharUploadResult);
+        toast({ title: `DYKM questions uploaded!`, description: `${data.imported} questions added.` });
+        fetchDykmCats();
+      }
+    } catch {
+      setError('Network error — could not upload file.');
+    } finally {
+      setUploading(false);
+      if (ref.current) ref.current.value = '';
+    }
+  };
+
+  const fetchDykmCats = useCallback(async () => {
+    setDykmCatsLoading(true);
+    try {
+      const res = await fetch('/api/admin/dykm-categories', { headers: { 'x-admin-password': password } });
+      if (res.ok) setDykmCats(await res.json());
+    } catch { /* ignore */ }
+    finally { setDykmCatsLoading(false); }
+  }, [password]);
+
+  useEffect(() => { fetchDykmCats(); }, [fetchDykmCats]);
+
+  const handleDeleteDykmCat = async (id: number, name: string) => {
+    if (!confirm(`Delete DYKM category "${name}" and all its questions?`)) return;
+    try {
+      const res = await fetch(`/api/admin/dykm-categories/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-password': password }
+      });
+      if (res.ok) { toast({ title: `"${name}" deleted` }); fetchDykmCats(); }
+    } catch {
+      toast({ title: 'Failed to delete', variant: 'destructive' });
+    }
+  };
+
+  const handleToggleDykmCat = async (id: number, enabled: boolean) => {
+    try {
+      const res = await fetch(`/api/admin/dykm-categories/${id}`, {
+        method: 'PUT',
+        headers: { 'x-admin-password': password, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      });
+      if (res.ok) fetchDykmCats();
+    } catch {
+      toast({ title: 'Failed to update', variant: 'destructive' });
+    }
+  };
+
+  const enDykmCats = dykmCats.filter(c => c.lang === 'en');
+  const arDykmCats = dykmCats.filter(c => c.lang === 'ar');
 
   const enCategories = categories?.filter(c => c.type === 'en') ?? [];
   const arCategories = categories?.filter(c => c.type === 'ar') ?? [];
@@ -855,6 +950,166 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
                         variant="ghost" size="icon"
                         className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2 h-7 w-7"
                         onClick={() => handleDeleteCharade(c.id, c.answer)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ══════════════════════════════════════════════════════
+            SECTION 6 — DO YOU KNOW ME? UPLOADS & CATEGORIES
+        ══════════════════════════════════════════════════════ */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl">📼</span>
+            <div>
+              <h2 className="text-xl font-black">Do You Know Me? Questions</h2>
+              <p className="text-sm text-muted-foreground">
+                CSV/Excel with 2 columns: <strong>Category</strong> (col A) and <strong>Question</strong> (col B). One row per question.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <div className="rounded-2xl border-2 p-5 space-y-3" style={{ borderColor: 'rgba(92,32,48,0.4)', background: 'rgba(245,237,224,0.4)' }}>
+              <div>
+                <p className="font-bold text-base" style={{ color: '#5c2030' }}>🇬🇧 English Questions</p>
+                <p className="text-xs text-muted-foreground mt-0.5">CSV or Excel — Category, Question columns</p>
+              </div>
+              <input
+                ref={dykmEnRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleDykmUpload(f, 'en'); }}
+              />
+              <Button
+                size="sm"
+                className="gap-2 w-full"
+                style={{ background: '#5c2030', color: '#f5ede0' }}
+                disabled={dykmEnUploading}
+                onClick={() => dykmEnRef.current?.click()}
+              >
+                <Upload className="w-4 h-4" />
+                {dykmEnUploading ? 'Uploading…' : 'Choose File'}
+              </Button>
+              {dykmEnError && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-xs">
+                  <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  {dykmEnError}
+                </div>
+              )}
+              {dykmEnResult && (
+                <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-sm">
+                  <div className="flex items-center gap-2 font-bold text-green-800">
+                    <CheckCircle className="w-4 h-4" />
+                    {dykmEnResult.imported} questions imported
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border-2 p-5 space-y-3" style={{ borderColor: 'rgba(92,32,48,0.4)', background: 'rgba(245,237,224,0.4)' }}>
+              <div>
+                <p className="font-bold text-base" style={{ color: '#5c2030' }}>🇸🇦 Arabic Questions — أسئلة عربية</p>
+                <p className="text-xs text-muted-foreground mt-0.5">CSV أو Excel — عمود الفئة، عمود السؤال</p>
+              </div>
+              <input
+                ref={dykmArRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleDykmUpload(f, 'ar'); }}
+              />
+              <Button
+                size="sm"
+                className="gap-2 w-full"
+                style={{ background: '#5c2030', color: '#f5ede0' }}
+                disabled={dykmArUploading}
+                onClick={() => dykmArRef.current?.click()}
+              >
+                <Upload className="w-4 h-4" />
+                {dykmArUploading ? 'Uploading…' : 'Choose File'}
+              </Button>
+              {dykmArError && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-xs">
+                  <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  {dykmArError}
+                </div>
+              )}
+              {dykmArResult && (
+                <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-sm">
+                  <div className="flex items-center gap-2 font-bold text-green-800">
+                    <CheckCircle className="w-4 h-4" />
+                    {dykmArResult.imported} questions imported
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {dykmCatsLoading ? (
+            <p className="text-muted-foreground text-sm">Loading…</p>
+          ) : (enDykmCats.length === 0 && arDykmCats.length === 0) ? (
+            <p className="text-muted-foreground text-sm">No DYKM questions yet. Upload a CSV above.</p>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#5c2030' }}>
+                  🇬🇧 English Categories ({enDykmCats.length})
+                </p>
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                  {enDykmCats.map(cat => (
+                    <div key={cat.id} className="flex items-center justify-between p-3 border rounded-xl bg-card">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Switch
+                          checked={cat.enabled}
+                          onCheckedChange={v => handleToggleDykmCat(cat.id, v)}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate text-sm">{cat.name}</p>
+                          <p className="text-xs text-muted-foreground">{cat.questionCount} questions</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2 h-7 w-7"
+                        onClick={() => handleDeleteDykmCat(cat.id, cat.name)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#5c2030' }}>
+                  🇸🇦 Arabic Categories ({arDykmCats.length})
+                </p>
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                  {arDykmCats.map(cat => (
+                    <div key={cat.id} className="flex items-center justify-between p-3 border rounded-xl bg-card">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Switch
+                          checked={cat.enabled}
+                          onCheckedChange={v => handleToggleDykmCat(cat.id, v)}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate text-sm" dir="rtl">{cat.name}</p>
+                          <p className="text-xs text-muted-foreground">{cat.questionCount} questions</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2 h-7 w-7"
+                        onClick={() => handleDeleteDykmCat(cat.id, cat.name)}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>

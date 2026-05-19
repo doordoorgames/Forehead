@@ -12,10 +12,29 @@ export interface CharadesState {
   word?: string;
 }
 
+export interface DykmQuestion {
+  id: number;
+  question: string;
+  categoryId: number;
+  categoryName: string;
+}
+
+export interface DykmState {
+  askerId: number;
+  askerName: string;
+  targetScore: number;
+  scores: Record<number, number>;
+  lastPointTo?: number;
+  status: 'playing' | 'finished';
+  winnerId?: number;
+  winnerName?: string;
+  players: Array<{ id: number; name: string; isHost: boolean; connected: boolean }>;
+}
+
 export interface RoomState {
   code: string;
-  status: 'waiting' | 'countdown' | 'word_display' | 'reveal' | 'finished' | 'character_playing' | 'charades_playing';
-  mode: 'forehead' | 'character' | 'charades';
+  status: 'waiting' | 'countdown' | 'word_display' | 'reveal' | 'finished' | 'character_playing' | 'charades_playing' | 'dykm_playing';
+  mode: 'forehead' | 'character' | 'charades' | 'dykm';
   categoryId: number | null;
   categoryName: string | null;
   players: Array<{
@@ -87,6 +106,7 @@ interface SocketState {
   characterState: CharacterState | null;
   charadesState: CharadesState | null;
   gtcWinner: GtcWinner | null;
+  dykmState: DykmState | null;
   error: string | null;
 }
 
@@ -101,6 +121,7 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     characterState: null,
     charadesState: null,
     gtcWinner: null,
+    dykmState: null,
     error: null,
   });
 
@@ -157,6 +178,9 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
             break;
           case 'charadesState':
             setState(s => ({ ...s, charadesState: msg.payload as CharadesState }));
+            break;
+          case 'dykmState':
+            setState(s => ({ ...s, dykmState: msg.payload as DykmState }));
             break;
           case 'error':
             setState(s => ({ ...s, error: msg.payload.message }));
@@ -294,6 +318,31 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     sendMessage('charadesBackToLobby', { roomCode });
   }, [roomCode, sendMessage]);
 
+  // ── DYKM game actions ─────────────────────────────────────────────────────
+  const dykmStart = useCallback((targetScore: number, askerId: number) => {
+    sendMessage('dykmStart', { roomCode, targetScore, askerId });
+  }, [roomCode, sendMessage]);
+
+  const dykmSetAsker = useCallback((askerId: number) => {
+    sendMessage('dykmSetAsker', { roomCode, askerId });
+  }, [roomCode, sendMessage]);
+
+  const dykmAwardPoint = useCallback((toPlayerId: number) => {
+    sendMessage('dykmAwardPoint', { roomCode, toPlayerId });
+  }, [roomCode, sendMessage]);
+
+  const dykmUndoPoint = useCallback((toPlayerId: number) => {
+    sendMessage('dykmUndoPoint', { roomCode, toPlayerId });
+  }, [roomCode, sendMessage]);
+
+  const dykmEndGame = useCallback(() => {
+    sendMessage('dykmEndGame', { roomCode });
+  }, [roomCode, sendMessage]);
+
+  const dykmBackToLobby = useCallback(() => {
+    sendMessage('dykmBackToLobby', { roomCode });
+  }, [roomCode, sendMessage]);
+
   return {
     ...state,
     setCategory,
@@ -318,5 +367,11 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     charadesNext,
     charadesEndGame,
     charadesBackToLobby,
+    dykmStart,
+    dykmSetAsker,
+    dykmAwardPoint,
+    dykmUndoPoint,
+    dykmEndGame,
+    dykmBackToLobby,
   };
 }

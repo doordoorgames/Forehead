@@ -378,9 +378,52 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                   </button>
                 ))}
               </div>
-              <p style={{ fontFamily: FONT_MONO, fontSize: 10, color: ROSE, letterSpacing: '0.1em', marginTop: 6 }}>
-                {questions.length} {isAr ? 'سؤال' : 'questions'}
-              </p>
+              {/* Question list — shown after category selection */}
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {questionsLoading ? (
+                  <p style={{ fontFamily: FONT_MONO, fontSize: 11, color: TEAL, letterSpacing: '0.1em' }}>
+                    {isAr ? 'جاري التحميل…' : 'Loading…'}
+                  </p>
+                ) : questions.length === 0 ? (
+                  <p style={{ fontFamily: FONT_MONO, fontSize: 11, color: ROSE, letterSpacing: '0.1em' }}>
+                    {isAr ? 'لا توجد أسئلة لهذه الفئة' : 'No questions found for this category'}
+                  </p>
+                ) : (
+                  <>
+                    {questions.slice(0, 10).map((q, i) => (
+                      <div
+                        key={q.id}
+                        style={{
+                          background: PARCHMENT,
+                          border: `1.5px solid ${ROSE}`,
+                          padding: '8px 12px',
+                          display: 'flex',
+                          gap: 10,
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: TEAL, flexShrink: 0, marginTop: 2 }}>
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <span style={{
+                          fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                          fontSize: 13,
+                          color: MAROON,
+                          direction: isAr ? 'rtl' : 'ltr',
+                          lineHeight: 1.4,
+                        }}>
+                          {q.question}
+                        </span>
+                      </div>
+                    ))}
+                    {questions.length > 10 && (
+                      <p style={{ fontFamily: FONT_MONO, fontSize: 10, color: TEAL, letterSpacing: '0.1em', textAlign: 'center' }}>
+                        +{questions.length - 10} {isAr ? 'أسئلة أخرى' : 'more questions in play'}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           )}
 

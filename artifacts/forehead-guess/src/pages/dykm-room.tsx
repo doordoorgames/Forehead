@@ -282,7 +282,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
   // ── LOBBY ──────────────────────────────────────────────────────────────────
   if (roomState.status === 'waiting') {
     return (
-      <div style={{ minHeight: '100dvh', background: CREAM, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+      <div style={{ position: 'relative', minHeight: '100dvh', background: CREAM, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
         <CrtScanlines />
 
         {/* Header */}
@@ -499,6 +499,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
 
     return (
       <div style={{
+        position: 'relative',
         minHeight: '100dvh',
         background: CREAM,
         display: 'flex',
@@ -761,6 +762,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
 
     return (
       <div style={{
+        position: 'relative',
         minHeight: '100dvh',
         background: CREAM,
         display: 'flex',
@@ -904,7 +906,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
 
   // ── FALLBACK ───────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100dvh', background: CREAM, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ position: 'relative', minHeight: '100dvh', background: CREAM, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ fontFamily: FONT_MONO, color: MAROON, fontSize: 14, letterSpacing: '0.1em' }}>
         Loading…
       </div>

@@ -68,7 +68,7 @@ function ScoreBar({ score, target }: { score: number; target: number }) {
 }
 
 // Newsreel / ticket-tape question strip
-function QuestionNewsreel({ questions, lang, error }: { questions: DykmQuestion[]; lang: string; error?: string | null }) {
+function QuestionNewsreel({ questions, lang, error, loading }: { questions: DykmQuestion[]; lang: string; error?: string | null; loading?: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState(0);
   const isAr = lang === 'ar';
@@ -99,7 +99,9 @@ function QuestionNewsreel({ questions, lang, error }: { questions: DykmQuestion[
     }}>
       {error
         ? <><span style={{ color: ROSE, letterSpacing: '0.1em' }}>⚠ LOAD ERROR</span><br /><span style={{ fontSize: 11, opacity: 0.8 }}>{error}</span></>
-        : (isAr ? 'جاري تحميل الأسئلة…' : 'Loading questions…')}
+        : loading
+          ? (isAr ? 'جاري تحميل الأسئلة…' : 'Loading questions…')
+          : (isAr ? 'لا توجد أسئلة في قاعدة البيانات بعد' : 'No questions in database yet')}
     </div>
   );
 
@@ -248,6 +250,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
 
   const [allQuestions, setAllQuestions] = useState<DykmQuestion[]>([]);
   const [questionsError, setQuestionsError] = useState<string | null>(null);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedScore, setSelectedScore] = useState<3 | 10>(3);
   const [selectedAskerId, setSelectedAskerId] = useState<number>(playerId);
@@ -257,9 +260,11 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
 
   // Load questions from Supabase once
   useEffect(() => {
+    setQuestionsLoading(true);
     fetchDykmQuestionsFromSupabase().then(({ questions, error }) => {
       setAllQuestions(questions);
       setQuestionsError(error);
+      setQuestionsLoading(false);
     });
   }, []);
 
@@ -593,7 +598,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
         <div style={{ flex: 1, padding: '12px 14px 24px', maxWidth: 520, margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           {/* Question newsreel — visible to everyone */}
-          <QuestionNewsreel questions={questions} lang={roomLang} error={questionsError} />
+          <QuestionNewsreel questions={questions} lang={roomLang} error={questionsError} loading={questionsLoading} />
 
           {/* Asker label */}
           {amAsker && (

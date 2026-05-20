@@ -30,7 +30,7 @@ const modeBackPath: Record<string, string> = {
 export default function Home({ mode }: { mode: 'forehead' | 'character' | 'charades' | 'dykm' }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { t, lang } = useLang();
+  const { t, lang, setLang } = useLang();
   const [view, setView] = useState<'main' | 'create' | 'join'>('main');
 
   const createRoomMutation = useCreateRoom();
@@ -323,6 +323,20 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 >
                   {t.joinRoom}
                 </Button>
+                <button
+                  type="button"
+                  onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+                  className="w-full h-12 font-bold tracking-wide transition-all active:scale-95 border-2 rounded-full"
+                  style={{
+                    fontFamily: "'Changa', sans-serif",
+                    fontSize: '1.1rem',
+                    color: '#a855f7',
+                    borderColor: 'rgba(168,85,247,0.5)',
+                    background: 'rgba(168,85,247,0.08)',
+                  }}
+                >
+                  {lang === 'ar' ? 'English' : 'عربية'}
+                </button>
               </>
             )}
 

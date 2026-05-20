@@ -228,8 +228,8 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
   }, []);
 
   // ── Forehead game actions ─────────────────────────────────────────────────
-  const setCategory = useCallback((categoryId: number) => {
-    sendMessage('setCategory', { roomCode, categoryId });
+  const setCategory = useCallback((categoryName: string, supabaseTable: string) => {
+    sendMessage('setCategory', { roomCode, categoryId: 0, supabaseCategory: categoryName, supabaseTable });
   }, [roomCode, sendMessage]);
 
   const startGame = useCallback(() => {

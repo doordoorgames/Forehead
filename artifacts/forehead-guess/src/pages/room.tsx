@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'wouter';
-import { useGetRoom, useListCategories } from '@workspace/api-client-react';
+import { useGetRoom } from '@workspace/api-client-react';
+import { fetchForeheadCategories, ForeheadCategory } from '@/lib/supabase-forehead';
 import { useGameSocket, RoomState, RoundInfo, RevealInfo } from '@/hooks/useGameSocket';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -161,21 +162,26 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
   roomCode: string;
   playerId: number;
   roomState: RoomState;
-  setCategory: (id: number) => void;
+  setCategory: (name: string, table: string) => void;
   startGame: () => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const { data: allCategories } = useListCategories();
+  const [categories, setCategories] = useState<ForeheadCategory[]>([]);
+  const [catError, setCatError] = useState<string | null>(null);
   const { t, lang } = useLang();
-  const categories = allCategories?.filter((c: any) => {
-    if (c.type === 'en') return lang === 'en';
-    if (c.type === 'ar') return lang === 'ar';
-    return true;
-  });
+
+  useEffect(() => {
+    setCatError(null);
+    fetchForeheadCategories(lang as 'en' | 'ar').then(({ categories: cats, error }) => {
+      if (error) setCatError(error);
+      setCategories(cats);
+    });
+  }, [lang]);
+
   const players = roomState.players;
   const isHost = players.find(p => p.id === playerId)?.isHost ?? false;
-  const currentCategoryId = roomState.categoryId;
-  const canStart = players.filter(p => p.connected).length >= 2 && !!currentCategoryId;
+  const selectedCategoryName = roomState.categoryName;
+  const canStart = players.filter(p => p.connected).length >= 2 && !!selectedCategoryName;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(roomCode);
@@ -221,17 +227,19 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
         <div className="space-y-3">
           <div>
             <p className="font-bold mb-1.5">{t.selectCategory}</p>
-            {(!categories || categories.length === 0) ? (
+            {catError ? (
+              <p className="text-sm text-red-400 text-center py-2">{catError}</p>
+            ) : categories.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-2">{t.chooseCategory}</p>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                {categories.map((c: any) => {
-                  const selected = currentCategoryId === c.id;
+                {categories.map((c) => {
+                  const selected = selectedCategoryName === c.name;
                   return (
                     <button
-                      key={c.id}
+                      key={c.name}
                       type="button"
-                      onClick={() => setCategory(c.id)}
+                      onClick={() => setCategory(c.name, c.table)}
                       className="relative flex flex-col items-center justify-center text-center px-3 py-4 font-bold text-white transition-all active:scale-95"
                       style={{
                         background: selected ? '#5b21b6' : '#3b0764',
@@ -241,7 +249,7 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
                       }}
                     >
                       <span className="text-sm font-black leading-tight">{c.name}</span>
-                      <span className="text-xs font-medium mt-1 opacity-70">{c.itemCount} {t.words}</span>
+                      <span className="text-xs font-medium mt-1 opacity-70">{c.wordCount} {t.words}</span>
                       {selected && (
                         <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-purple-300" />
                       )}

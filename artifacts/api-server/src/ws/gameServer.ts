@@ -11,6 +11,7 @@ import { eq, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { getCharacterPool, CharacterEntry } from "../lib/characterPool";
 import { getCharadesPool } from "../lib/charadesPool";
+import { fetchForeheadWordsFromSupabase } from "../lib/supabase-forehead";
 
 // ── CLIENT REGISTRY ──────────────────────────────────────────────────────────
 
@@ -91,6 +92,8 @@ const roomRoundState = new Map<string, RoundState>();
 const roomCharacterState = new Map<string, CharacterRoundState>();
 const roomCharadesState = new Map<string, CharadesRoundState>();
 const roomDykmState = new Map<string, DykmGameState>();
+// roomCode → Supabase category info for forehead mode
+const roomSupabaseCategory = new Map<string, { table: string; category: string }>();
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
@@ -122,7 +125,10 @@ async function getRoomState(code: string) {
   if (!room) return null;
   const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
   let categoryName: string | null = null;
-  if (room.categoryId) {
+  const supabaseCat = roomSupabaseCategory.get(code);
+  if (supabaseCat) {
+    categoryName = supabaseCat.category;
+  } else if (room.categoryId) {
     const cat = await db.query.categoriesTable.findFirst({ where: eq(categoriesTable.id, room.categoryId) });
     categoryName = cat?.name ?? null;
   }
@@ -131,7 +137,7 @@ async function getRoomState(code: string) {
     status: room.status,
     mode: room.mode,
     lang: room.lang ?? "en",
-    categoryId: room.categoryId ?? null,
+    categoryId: supabaseCat ? null : (room.categoryId ?? null),
     categoryName,
     players: players.map((p) => ({
       id: p.id,
@@ -300,15 +306,32 @@ async function startCountdown(roomCode: string) {
 
 async function beginWordDisplay(roomCode: string) {
   const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
-  if (!room || !room.categoryId) return;
+  const supabaseCat = roomSupabaseCategory.get(roomCode);
+  if (!room || (!room.categoryId && !supabaseCat)) return;
 
   const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
   const connected = players.filter((p) => p.connected);
   if (connected.length < 2) return;
 
-  const items = await db.select().from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, room.categoryId));
+  let wordPool: string[];
+  let categoryName: string;
 
-  if (items.length < connected.length) {
+  if (supabaseCat) {
+    const result = await fetchForeheadWordsFromSupabase(supabaseCat.table, supabaseCat.category);
+    if (result.error || result.words.length === 0) {
+      broadcast(roomCode, { type: "error", payload: { message: result.error ?? `No words in "${supabaseCat.category}"` } });
+      return;
+    }
+    wordPool = result.words;
+    categoryName = supabaseCat.category;
+  } else {
+    const items = await db.select().from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, room.categoryId!));
+    wordPool = items.map((i) => i.itemText);
+    const cat = await db.query.categoriesTable.findFirst({ where: eq(categoriesTable.id, room.categoryId!) });
+    categoryName = cat?.name ?? "Unknown";
+  }
+
+  if (wordPool.length < connected.length) {
     broadcast(roomCode, {
       type: "error",
       payload: { message: `Need at least ${connected.length} words in this category for ${connected.length} players. Add more words or switch category.` },
@@ -316,20 +339,18 @@ async function beginWordDisplay(roomCode: string) {
     return;
   }
 
-  const cat = await db.query.categoriesTable.findFirst({ where: eq(categoriesTable.id, room.categoryId) });
-
-  const shuffledItems = [...items].sort(() => Math.random() - 0.5).slice(0, connected.length);
+  const shuffledWords = [...wordPool].sort(() => Math.random() - 0.5).slice(0, connected.length);
   const shuffledPlayers = [...connected].sort(() => Math.random() - 0.5);
   const imposterPlayer = shuffledPlayers[0];
   const normalPlayers = shuffledPlayers.slice(1);
 
   const playerWords: Record<number, string> = {};
-  playerWords[imposterPlayer.id] = shuffledItems[0].itemText;
+  playerWords[imposterPlayer.id] = shuffledWords[0];
   normalPlayers.forEach((p, i) => {
-    playerWords[p.id] = shuffledItems[i + 1].itemText;
+    playerWords[p.id] = shuffledWords[i + 1];
   });
 
-  const normalWord = normalPlayers.length > 0 ? playerWords[normalPlayers[0].id] : shuffledItems[1]?.itemText ?? "";
+  const normalWord = normalPlayers.length > 0 ? playerWords[normalPlayers[0].id] : shuffledWords[1] ?? "";
   const imposterWord = playerWords[imposterPlayer.id];
 
   const existingRound = roomRoundState.get(roomCode);
@@ -341,7 +362,7 @@ async function beginWordDisplay(roomCode: string) {
     imposterName: imposterPlayer.name,
     normalWord,
     imposterWord,
-    categoryName: cat?.name ?? "Unknown",
+    categoryName,
     readyPlayerIds: [],
     playerWords,
   };
@@ -364,7 +385,7 @@ async function beginWordDisplay(roomCode: string) {
           roundNumber,
           myWord,
           isImposter,
-          categoryName: cat?.name ?? "Unknown",
+          categoryName,
           allPlayerWords,
         },
       });
@@ -494,14 +515,22 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
 
   // ── FOREHEAD: SET CATEGORY ────────────────────────────────────────────────
   if (type === "setCategory") {
-    const { roomCode, categoryId } = payload as { roomCode: string; categoryId: number };
+    const { roomCode, categoryId, supabaseCategory, supabaseTable } = payload as {
+      roomCode: string; categoryId: number; supabaseCategory?: string; supabaseTable?: string;
+    };
     const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
     if (!room) return;
     const host = await db.query.playersTable.findFirst({
       where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)),
     });
     if (host?.id !== client.playerId) return;
-    await db.update(roomsTable).set({ categoryId: Number(categoryId) }).where(eq(roomsTable.code, roomCode));
+    if (supabaseCategory && supabaseTable) {
+      roomSupabaseCategory.set(roomCode, { table: supabaseTable, category: supabaseCategory });
+      await db.update(roomsTable).set({ categoryId: null }).where(eq(roomsTable.code, roomCode));
+    } else {
+      roomSupabaseCategory.delete(roomCode);
+      await db.update(roomsTable).set({ categoryId: Number(categoryId) }).where(eq(roomsTable.code, roomCode));
+    }
     broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
     return;
   }
@@ -515,7 +544,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
       where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)),
     });
     if (host?.id !== client.playerId) return;
-    if (!room.categoryId) {
+    if (!room.categoryId && !roomSupabaseCategory.has(roomCode)) {
       sendTo(ws, { type: "error", payload: { message: "Please select a category first" } });
       return;
     }
@@ -569,7 +598,8 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
   if (type === "regenPlayerWord") {
     const { roomCode, targetPlayerId } = payload as { roomCode: string; targetPlayerId: number };
     const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
-    if (!room || room.status !== "word_display" || !room.categoryId) return;
+    const supabaseCat = roomSupabaseCategory.get(roomCode);
+    if (!room || room.status !== "word_display" || (!room.categoryId && !supabaseCat)) return;
     const host = await db.query.playersTable.findFirst({
       where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)),
     });
@@ -578,17 +608,23 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     const rs = roomRoundState.get(roomCode);
     if (!rs) return;
 
-    const items = await db.select().from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, room.categoryId));
-    // Exclude words currently held by other players
     const usedWords = new Set(
       Object.entries(rs.playerWords)
         .filter(([id]) => Number(id) !== targetPlayerId)
         .map(([, word]) => word)
     );
-    const available = items.filter((item) => !usedWords.has(item.itemText));
+    let available: string[];
+    if (supabaseCat) {
+      const result = await fetchForeheadWordsFromSupabase(supabaseCat.table, supabaseCat.category);
+      if (result.error || result.words.length === 0) return;
+      available = result.words.filter((w) => !usedWords.has(w));
+    } else {
+      const items = await db.select().from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, room.categoryId!));
+      available = items.filter((item) => !usedWords.has(item.itemText)).map((i) => i.itemText);
+    }
     if (available.length === 0) return;
 
-    const newWord = available[Math.floor(Math.random() * available.length)].itemText;
+    const newWord = available[Math.floor(Math.random() * available.length)];
     rs.playerWords[targetPlayerId] = newWord;
 
     // Keep normalWord / imposterWord in sync
@@ -601,7 +637,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
       if (normalWords.length > 0) rs.normalWord = normalWords[0];
     }
 
-    const cat = await db.query.categoriesTable.findFirst({ where: eq(categoriesTable.id, room.categoryId) });
+    const regenCatName = supabaseCat?.category ?? rs.categoryName;
     const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
     const connected = players.filter((p) => p.connected);
 
@@ -618,7 +654,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
           roundNumber: rs.roundNumber,
           myWord: rs.playerWords[c.playerId] ?? "???",
           isImposter: c.playerId === rs.imposterId,
-          categoryName: cat?.name ?? rs.categoryName,
+          categoryName: regenCatName,
           allPlayerWords,
         },
       });

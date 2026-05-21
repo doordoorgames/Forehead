@@ -47,35 +47,51 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
   });
 
   const onCreateSubmit = (values: z.infer<typeof createRoomSchema>) => {
+    console.log('[CreateRoom] submitting', { hostName: values.hostName, mode, lang });
     createRoomMutation.mutate(
       { data: { hostName: values.hostName, mode, lang } },
       {
         onSuccess: (data) => {
+          console.log('[CreateRoom] success', data);
           const host = data.players.find(p => p.isHost);
-          if (host) {
-            sessionStorage.setItem(`fg_playerId_${data.code}`, String(host.id));
-            sessionStorage.setItem(`fg_playerName_${data.code}`, host.name);
+          try {
+            if (host) {
+              sessionStorage.setItem(`fg_playerId_${data.code}`, String(host.id));
+              sessionStorage.setItem(`fg_playerName_${data.code}`, host.name);
+            }
+          } catch (storageErr) {
+            console.warn('[CreateRoom] sessionStorage failed (non-fatal):', storageErr);
           }
           setLocation(`/room/${data.code}`);
         },
-        onError: () => {
-          toast({ title: t.errorTitle, description: t.errorCreate, variant: 'destructive' });
+        onError: (err) => {
+          console.error('[CreateRoom] error', err);
+          const msg = err instanceof Error ? err.message : String(err);
+          toast({ title: t.errorTitle, description: msg || t.errorCreate, variant: 'destructive' });
         }
       }
     );
   };
 
   const onJoinSubmit = (values: z.infer<typeof joinRoomSchema>) => {
+    console.log('[JoinRoom] submitting', { roomCode: values.roomCode, playerName: values.playerName });
     joinRoomMutation.mutate(
       { code: values.roomCode, data: { playerName: values.playerName } },
       {
         onSuccess: (data) => {
-          sessionStorage.setItem(`fg_playerId_${data.room.code}`, String(data.playerId));
-          sessionStorage.setItem(`fg_playerName_${data.room.code}`, data.playerName);
+          console.log('[JoinRoom] success', data);
+          try {
+            sessionStorage.setItem(`fg_playerId_${data.room.code}`, String(data.playerId));
+            sessionStorage.setItem(`fg_playerName_${data.room.code}`, data.playerName);
+          } catch (storageErr) {
+            console.warn('[JoinRoom] sessionStorage failed (non-fatal):', storageErr);
+          }
           setLocation(`/room/${data.room.code}`);
         },
-        onError: () => {
-          toast({ title: t.errorTitle, description: t.errorJoin, variant: 'destructive' });
+        onError: (err) => {
+          console.error('[JoinRoom] error', err);
+          const msg = err instanceof Error ? err.message : String(err);
+          toast({ title: t.errorTitle, description: msg || t.errorJoin, variant: 'destructive' });
         }
       }
     );

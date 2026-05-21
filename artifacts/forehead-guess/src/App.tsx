@@ -15,7 +15,7 @@ const queryClient = new QueryClient();
 
 function Router() {
   const [location] = useLocation();
-  const showCyberpunk = !location.startsWith('/character') && !location.startsWith('/dykm');
+  const showCyberpunk = !location.startsWith('/character') && !location.startsWith('/dykm') && !location.startsWith('/doyouknowme');
 
   return (
     <>
@@ -27,6 +27,7 @@ function Router() {
         <Route path="/character">{() => <Home mode="character" />}</Route>
         <Route path="/charades">{() => <Home mode="charades" />}</Route>
         <Route path="/dykm">{() => <Home mode="dykm" />}</Route>
+        <Route path="/doyouknowme">{() => <Home mode="dykm" />}</Route>
         <Route path="/home">{() => <Redirect to="/mode" />}</Route>
         <Route path="/admin" component={Admin} />
         <Route path="/room/:code" component={Room} />

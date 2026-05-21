@@ -84,6 +84,7 @@ interface DykmGameState {
   winnerId?: number;
   winnerName?: string;
   lang: string;
+  selectedQuestion?: { id: number; question: string; categoryName: string };
 }
 
 const clients = new Map<WebSocket, WsClient>();
@@ -238,6 +239,7 @@ async function broadcastDykmState(roomCode: string) {
         status: ds.status,
         winnerId: ds.winnerId,
         winnerName: ds.winnerName,
+        selectedQuestion: ds.selectedQuestion,
         players: players.map(p => ({ id: p.id, name: p.name, isHost: p.isHost, connected: p.connected })),
       },
     });
@@ -1078,7 +1080,19 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     if (!asker) return;
     ds.askerId = asker.id;
     ds.askerName = asker.name;
+    ds.selectedQuestion = undefined;
     await broadcastDykmState(roomCode);
+    return;
+  }
+
+  // ── DYKM: SELECT QUESTION ─────────────────────────────────────────────────
+  if (type === "dykmSelectQuestion") {
+    const { roomCode: rc, question } = payload as { roomCode: string; question: { id: number; question: string; categoryName: string } };
+    const ds = roomDykmState.get(rc);
+    if (!ds) return;
+    if (ds.askerId !== client.playerId) return;
+    ds.selectedQuestion = question;
+    await broadcastDykmState(rc);
     return;
   }
 

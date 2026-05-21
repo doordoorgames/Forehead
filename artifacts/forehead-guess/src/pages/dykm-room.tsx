@@ -246,6 +246,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
     dykmUndoPoint,
     dykmEndGame,
     dykmBackToLobby,
+    dykmSelectQuestion,
   } = socket;
 
   const [allQuestions, setAllQuestions] = useState<DykmQuestion[]>([]);
@@ -306,12 +307,28 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
           <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: PARCHMENT, letterSpacing: '0.3em' }}>
             {isAr ? 'هل تعرفني؟' : 'DO YOU KNOW ME?'}
           </span>
-          <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: ROSE, letterSpacing: '0.2em' }}>
-            {code}
-          </span>
+          <span style={{ width: 40 }} />
         </div>
 
         <div style={{ flex: 1, padding: '24px 16px', maxWidth: 480, margin: '0 auto', width: '100%' }}>
+          {/* Room code — large and centered */}
+          <div style={{
+            textAlign: 'center',
+            marginBottom: 28,
+            padding: '20px 0 24px',
+            borderBottom: `1px solid rgba(92,32,48,0.15)`,
+          }}>
+            <p style={{ fontFamily: FONT_MONO, fontSize: 9, color: TEAL, letterSpacing: '0.45em', textTransform: 'uppercase', marginBottom: 8 }}>
+              {isAr ? 'رمز الغرفة' : 'ROOM CODE'}
+            </p>
+            <p style={{ fontFamily: FONT_MONO, fontSize: 'clamp(40px, 11vw, 58px)', fontWeight: 900, color: MAROON, letterSpacing: '0.3em', lineHeight: 1 }}>
+              {code}
+            </p>
+            <p style={{ fontFamily: FONT_MONO, fontSize: 9, color: ROSE, letterSpacing: '0.2em', marginTop: 8 }}>
+              {isAr ? 'شارك هذا الرمز مع أصدقائك' : 'SHARE WITH FRIENDS'}
+            </p>
+          </div>
+
           {/* Players */}
           <div style={{ marginBottom: 24 }}>
             <p style={{ fontFamily: FONT_MONO, fontSize: 10, color: TEAL, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 8 }}>
@@ -336,96 +353,6 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
               ))}
             </div>
           </div>
-
-          {/* Category picker — client-side filter, visible to all */}
-          {categories.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <p style={{ fontFamily: FONT_MONO, fontSize: 10, color: TEAL, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 10 }}>
-                {isAr ? 'الفئة' : 'CATEGORY'}
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                <button
-                  onClick={() => setSelectedCategory(null)}
-                  style={{
-                    padding: '7px 14px',
-                    background: selectedCategory === null ? MAROON : 'transparent',
-                    color: selectedCategory === null ? CREAM : MAROON,
-                    border: `1.5px solid ${MAROON}`,
-                    fontFamily: FONT_MONO,
-                    fontSize: 11,
-                    letterSpacing: '0.15em',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {isAr ? 'الكل' : 'ALL'}
-                </button>
-                {categories.map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    style={{
-                      padding: '7px 14px',
-                      background: selectedCategory === cat ? MAROON : 'transparent',
-                      color: selectedCategory === cat ? CREAM : MAROON,
-                      border: `1.5px solid ${selectedCategory === cat ? MAROON : ROSE}`,
-                      fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
-                      fontSize: 11,
-                      letterSpacing: '0.1em',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-              {/* Question list — shown after category selection */}
-              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {questionsLoading ? (
-                  <p style={{ fontFamily: FONT_MONO, fontSize: 11, color: TEAL, letterSpacing: '0.1em' }}>
-                    {isAr ? 'جاري التحميل…' : 'Loading…'}
-                  </p>
-                ) : questions.length === 0 ? (
-                  <p style={{ fontFamily: FONT_MONO, fontSize: 11, color: ROSE, letterSpacing: '0.1em' }}>
-                    {isAr ? 'لا توجد أسئلة لهذه الفئة' : 'No questions found for this category'}
-                  </p>
-                ) : (
-                  <>
-                    {questions.slice(0, 10).map((q, i) => (
-                      <div
-                        key={q.id}
-                        style={{
-                          background: PARCHMENT,
-                          border: `1.5px solid ${ROSE}`,
-                          padding: '8px 12px',
-                          display: 'flex',
-                          gap: 10,
-                          alignItems: 'flex-start',
-                        }}
-                      >
-                        <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: TEAL, flexShrink: 0, marginTop: 2 }}>
-                          {String(i + 1).padStart(2, '0')}
-                        </span>
-                        <span style={{
-                          fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
-                          fontSize: 13,
-                          color: MAROON,
-                          direction: isAr ? 'rtl' : 'ltr',
-                          lineHeight: 1.4,
-                        }}>
-                          {q.question}
-                        </span>
-                      </div>
-                    ))}
-                    {questions.length > 10 && (
-                      <p style={{ fontFamily: FONT_MONO, fontSize: 10, color: TEAL, letterSpacing: '0.1em', textAlign: 'center' }}>
-                        +{questions.length - 10} {isAr ? 'أسئلة أخرى' : 'more questions in play'}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
 
           {isHost && (
             <>
@@ -640,8 +567,158 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
 
         <div style={{ flex: 1, padding: '12px 14px 24px', maxWidth: 520, margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* Question newsreel — visible to everyone */}
-          <QuestionNewsreel questions={questions} lang={roomLang} error={questionsError} loading={questionsLoading} />
+          {/* Question section — asker picks, everyone sees the same */}
+          {amAsker ? (
+            <div>
+              {/* Show currently selected question */}
+              {ds.selectedQuestion && (
+                <div style={{ marginBottom: 12 }}>
+                  <p style={{ fontFamily: FONT_MONO, fontSize: 9, color: TEAL, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 6 }}>
+                    {isAr ? 'السؤال الحالي' : 'CURRENT QUESTION'}
+                  </p>
+                  <div style={{ background: MAROON, border: `2px solid ${ROSE}`, padding: '12px 16px' }}>
+                    <p style={{
+                      fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                      fontSize: isAr ? 16 : 14,
+                      color: CREAM,
+                      textAlign: 'center',
+                      direction: isAr ? 'rtl' : 'ltr',
+                      lineHeight: 1.4,
+                    }}>
+                      {ds.selectedQuestion.question}
+                    </p>
+                    <p style={{ fontFamily: FONT_MONO, fontSize: 9, color: ROSE, textAlign: 'center', marginTop: 4, letterSpacing: '0.2em' }}>
+                      [{ds.selectedQuestion.categoryName}]
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Category filter */}
+              <p style={{ fontFamily: FONT_MONO, fontSize: 9, color: TEAL, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 8 }}>
+                {isAr ? 'اختر سؤالاً' : 'PICK A QUESTION'}
+              </p>
+              {categories.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    style={{
+                      padding: '5px 12px',
+                      background: selectedCategory === null ? MAROON : 'transparent',
+                      color: selectedCategory === null ? CREAM : MAROON,
+                      border: `1.5px solid ${MAROON}`,
+                      fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.15em', cursor: 'pointer',
+                    }}
+                  >
+                    {isAr ? 'الكل' : 'ALL'}
+                  </button>
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      style={{
+                        padding: '5px 12px',
+                        background: selectedCategory === cat ? MAROON : 'transparent',
+                        color: selectedCategory === cat ? CREAM : MAROON,
+                        border: `1.5px solid ${selectedCategory === cat ? MAROON : ROSE}`,
+                        fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                        fontSize: 10, letterSpacing: '0.1em', cursor: 'pointer',
+                      }}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Scrollable question list */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 240, overflowY: 'auto' }}>
+                {questionsLoading ? (
+                  <p style={{ fontFamily: FONT_MONO, fontSize: 11, color: TEAL }}>
+                    {isAr ? 'جاري التحميل…' : 'Loading…'}
+                  </p>
+                ) : questions.length === 0 ? (
+                  <p style={{ fontFamily: FONT_MONO, fontSize: 11, color: ROSE }}>
+                    {isAr ? 'لا توجد أسئلة' : 'No questions found'}
+                  </p>
+                ) : questions.map(q => (
+                  <button
+                    key={q.id}
+                    onClick={() => dykmSelectQuestion({ id: q.id, question: q.question, categoryName: q.categoryName })}
+                    style={{
+                      background: ds.selectedQuestion?.id === q.id ? MAROON : PARCHMENT,
+                      color: ds.selectedQuestion?.id === q.id ? CREAM : MAROON,
+                      border: `1.5px solid ${ds.selectedQuestion?.id === q.id ? MAROON : ROSE}`,
+                      padding: '9px 12px',
+                      textAlign: isAr ? 'right' : 'left',
+                      direction: isAr ? 'rtl' : 'ltr',
+                      fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                      fontSize: 13,
+                      cursor: 'pointer',
+                      lineHeight: 1.4,
+                      display: 'block',
+                      width: '100%',
+                    }}
+                  >
+                    {q.question}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div>
+              {ds.selectedQuestion ? (
+                <>
+                  <p style={{ fontFamily: FONT_MONO, fontSize: 9, color: TEAL, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 6 }}>
+                    {isAr ? 'السؤال' : 'QUESTION'}
+                  </p>
+                  <div style={{ height: 8, background: `repeating-linear-gradient(90deg, ${MAROON} 0px, ${MAROON} 12px, ${PARCHMENT} 12px, ${PARCHMENT} 14px)`, marginBottom: 2 }} />
+                  <div style={{
+                    background: CREAM,
+                    border: `2px solid ${MAROON}`,
+                    padding: '20px 24px',
+                    minHeight: 80,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <p style={{
+                      fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                      fontSize: isAr ? 'clamp(15px, 4.5vw, 22px)' : 'clamp(13px, 3.5vw, 18px)',
+                      fontWeight: 700,
+                      color: MAROON,
+                      textAlign: 'center',
+                      direction: isAr ? 'rtl' : 'ltr',
+                      lineHeight: 1.4,
+                    }}>
+                      {ds.selectedQuestion.question}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '4px 0', marginTop: 2 }}>
+                    <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: TEAL, letterSpacing: '0.2em' }}>
+                      [{ds.selectedQuestion.categoryName}]
+                    </span>
+                  </div>
+                  <div style={{ height: 8, background: `repeating-linear-gradient(90deg, ${MAROON} 0px, ${MAROON} 12px, ${PARCHMENT} 12px, ${PARCHMENT} 14px)`, marginTop: 2 }} />
+                </>
+              ) : (
+                <div style={{
+                  background: PARCHMENT,
+                  border: `1.5px dashed ${ROSE}`,
+                  padding: '20px 24px',
+                  textAlign: 'center',
+                  fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                  color: MAROON,
+                  fontSize: 13,
+                  opacity: 0.7,
+                  direction: isAr ? 'rtl' : 'ltr',
+                }}>
+                  {isAr ? `${ds.askerName} يختار سؤالاً…` : `Waiting for ${ds.askerName} to pick a question…`}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Asker label */}
           {amAsker && (

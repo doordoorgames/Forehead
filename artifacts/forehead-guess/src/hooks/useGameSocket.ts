@@ -29,6 +29,7 @@ export interface DykmState {
   winnerId?: number;
   winnerName?: string;
   players: Array<{ id: number; name: string; isHost: boolean; connected: boolean }>;
+  selectedQuestion?: { id: number; question: string; categoryName: string };
 }
 
 export interface RoomState {
@@ -343,6 +344,10 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     sendMessage('dykmBackToLobby', { roomCode });
   }, [roomCode, sendMessage]);
 
+  const dykmSelectQuestion = useCallback((question: { id: number; question: string; categoryName: string }) => {
+    sendMessage('dykmSelectQuestion', { roomCode, question });
+  }, [roomCode, sendMessage]);
+
   return {
     ...state,
     setCategory,
@@ -373,5 +378,6 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     dykmUndoPoint,
     dykmEndGame,
     dykmBackToLobby,
+    dykmSelectQuestion,
   };
 }

@@ -3,6 +3,7 @@ import { Copy, Check, Users, ChevronRight, Eye, RotateCcw, ArrowRight, Loader2, 
 import { Button } from '@/components/ui/button';
 import { useLang } from '@/context/LanguageContext';
 import { RoomState, CharacterState } from '@/hooks/useGameSocket';
+import RoomJoinQR from '@/components/RoomJoinQR';
 
 interface CharacterRoomProps {
   code: string;
@@ -222,6 +223,8 @@ function CharacterLobbyView({
           </button>
         </div>
       </div>
+
+      <RoomJoinQR roomCode={roomCode} mode="character" />
 
       {/* Players */}
       <div

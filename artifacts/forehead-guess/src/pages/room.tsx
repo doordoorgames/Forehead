@@ -10,6 +10,7 @@ import { useLang } from '@/context/LanguageContext';
 import CharacterRoom from './character-room';
 import CharadesRoom from './charades-room';
 import DykmRoom from './dykm-room';
+import RoomJoinQR from '@/components/RoomJoinQR';
 
 export default function Room() {
   const params = useParams<{ code: string }>();
@@ -201,6 +202,8 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
           </button>
         </div>
       </div>
+
+      <RoomJoinQR roomCode={roomCode} mode="forehead" />
 
       <div className="bg-card border-2 border-border overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-2 border-b-2 border-border bg-muted/50">

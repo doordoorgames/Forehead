@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useGameSocket, type RoomState, type DykmState, type DykmQuestion } from '@/hooks/useGameSocket';
 import { useLang } from '@/context/LanguageContext';
 import { fetchDykmQuestionsFromSupabase, getDykmCategories } from '@/lib/supabase-dykm';
+import RoomJoinQR from '@/components/RoomJoinQR';
 
 // ── palette ──────────────────────────────────────────────────────────────────
 const CREAM   = '#f5ede0';
@@ -314,9 +315,8 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
           {/* Room code — large and centered */}
           <div style={{
             textAlign: 'center',
-            marginBottom: 28,
-            padding: '20px 0 24px',
-            borderBottom: `1px solid rgba(92,32,48,0.15)`,
+            marginBottom: 16,
+            padding: '20px 0 16px',
           }}>
             <p style={{ fontFamily: FONT_MONO, fontSize: 9, color: TEAL, letterSpacing: '0.45em', textTransform: 'uppercase', marginBottom: 8 }}>
               {isAr ? 'رمز الغرفة' : 'ROOM CODE'}
@@ -324,10 +324,11 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
             <p style={{ fontFamily: FONT_MONO, fontSize: 'clamp(40px, 11vw, 58px)', fontWeight: 900, color: MAROON, letterSpacing: '0.3em', lineHeight: 1 }}>
               {code}
             </p>
-            <p style={{ fontFamily: FONT_MONO, fontSize: 9, color: ROSE, letterSpacing: '0.2em', marginTop: 8 }}>
-              {isAr ? 'شارك هذا الرمز مع أصدقائك' : 'SHARE WITH FRIENDS'}
-            </p>
           </div>
+
+          <RoomJoinQR roomCode={code} mode="dykm" />
+
+          <div style={{ height: 1, background: 'rgba(92,32,48,0.15)', margin: '16px 0 12px' }} />
 
           {/* Players */}
           <div style={{ marginBottom: 24 }}>

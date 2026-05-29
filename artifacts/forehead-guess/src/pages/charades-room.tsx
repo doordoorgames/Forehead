@@ -4,6 +4,7 @@ import { Loader2, Copy, Check, Users } from 'lucide-react';
 import { useLang } from '@/context/LanguageContext';
 import CharadesBackground from '@/components/CharadesBackground';
 import type { RoomState } from '@/hooks/useGameSocket';
+import RoomJoinQR from '@/components/RoomJoinQR';
 
 // ─── PURPLE/GOLD THEME ────────────────────────────────────────────────────────
 const PURPLE = '#a855f7';
@@ -232,6 +233,8 @@ function CharadesLobbyView({
           </button>
         </div>
       </div>
+
+      <RoomJoinQR roomCode={roomCode} mode="charades" />
 
       <div
         className="w-full rounded-2xl border-2 overflow-hidden"

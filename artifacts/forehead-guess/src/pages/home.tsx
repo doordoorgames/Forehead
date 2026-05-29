@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -45,6 +45,15 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     resolver: zodResolver(joinRoomSchema),
     defaultValues: { roomCode: '', playerName: '' },
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const preCode = params.get('room');
+    if (preCode) {
+      joinForm.setValue('roomCode', preCode.toUpperCase().slice(0, 5));
+      setView('join');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onCreateSubmit = (values: z.infer<typeof createRoomSchema>) => {
     console.log('[CreateRoom] submitting', { hostName: values.hostName, mode, lang });

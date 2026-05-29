@@ -75,6 +75,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.106.0"
+    "@supabase/supabase-js": "^2.106.0",
+    "react-qr-code": "^2.0.21"
   }
 }

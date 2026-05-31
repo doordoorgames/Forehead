@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
+import PetalSwoop from '@/components/PetalSwoop';
+import grassBg from '@assets/6E21F754-65A0-4119-A739-67DD40CAA6B4_1780250343871.png';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -125,18 +127,19 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.52)' }} />
         </>
       )}
-      {/* DYKM mode: warm retro background */}
+      {/* DYKM mode: grass garden background */}
       {mode === 'dykm' && (
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(160deg, #f5ede0 0%, #e8d5c4 50%, #d4bfb0 100%)' }}>
-          {/* VHS scanlines */}
-          <div className="absolute inset-0 pointer-events-none" style={{
-            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)',
-          }} />
-          {/* Warm noise overlay */}
-          <div className="absolute inset-0 opacity-20" style={{
-            backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(92,32,48,0.15) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(107,158,159,0.2) 0%, transparent 60%)',
-          }} />
-        </div>
+        <>
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `linear-gradient(rgba(10,28,10,0.22), rgba(10,28,10,0.22)), url(${grassBg})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+          <PetalSwoop />
+        </>
       )}
       {mode !== 'character' && mode !== 'dykm' && (
         <>
@@ -221,7 +224,14 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
             </h1>
           )}
           {mode === 'dykm' && (
-            <div className="mb-4 flex flex-col items-center gap-1">
+            <div className="mb-4 flex flex-col items-center gap-1" style={{
+              background: 'rgba(245,237,224,0.82)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+              padding: '18px 28px 14px',
+              borderRadius: 2,
+              border: '1.5px solid rgba(92,32,48,0.25)',
+            }}>
               <div style={{
                 fontFamily: "'Courier New', Courier, monospace",
                 fontSize: 'clamp(11px, 2.5vw, 14px)',
@@ -239,7 +249,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 color: '#5c2030',
                 letterSpacing: isAr ? undefined : '0.04em',
                 lineHeight: 1.1,
-                textShadow: '2px 2px 0 rgba(196,130,122,0.4)',
+                textShadow: '2px 2px 0 rgba(196,130,122,0.5)',
                 direction: isAr ? 'rtl' : undefined,
               }}>
                 {t.dykmMode}
@@ -264,11 +274,11 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 <button
                   className="w-full text-xl h-16 font-black tracking-wide transition-transform active:scale-95"
                   style={{
-                    background: 'transparent',
+                    background: 'rgba(245,237,224,0.88)',
                     border: '2px solid #5c2030',
                     borderRadius: 0,
                     color: '#5c2030',
-                    textShadow: '1px 1px 0 rgba(196,130,122,0.5)',
+                    textShadow: '1px 1px 0 rgba(196,130,122,0.4)',
                     boxShadow: '3px 3px 0 #5c2030',
                     fontFamily: "'Courier New', Courier, monospace",
                     letterSpacing: '0.05em',
@@ -281,11 +291,11 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 <button
                   className="w-full text-xl h-16 font-black tracking-wide transition-transform active:scale-95"
                   style={{
-                    background: 'transparent',
+                    background: 'rgba(245,237,224,0.88)',
                     border: '2px solid #6b9e9f',
                     borderRadius: 0,
                     color: '#6b9e9f',
-                    textShadow: '1px 1px 0 rgba(107,158,159,0.4)',
+                    textShadow: '1px 1px 0 rgba(107,158,159,0.3)',
                     boxShadow: '3px 3px 0 #6b9e9f',
                     fontFamily: "'Courier New', Courier, monospace",
                     letterSpacing: '0.05em',

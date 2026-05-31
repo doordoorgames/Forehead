@@ -3,6 +3,8 @@ import { useGameSocket, type RoomState, type DykmState, type DykmQuestion } from
 import { useLang } from '@/context/LanguageContext';
 import { fetchDykmQuestionsFromSupabase, getDykmCategories } from '@/lib/supabase-dykm';
 import RoomJoinQR from '@/components/RoomJoinQR';
+import PetalSwoop from '@/components/PetalSwoop';
+import grassBg from '@assets/6E21F754-65A0-4119-A739-67DD40CAA6B4_1780250343871.png';
 
 // ── palette ──────────────────────────────────────────────────────────────────
 const CREAM   = '#f5ede0';
@@ -293,8 +295,9 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
   // ── LOBBY ──────────────────────────────────────────────────────────────────
   if (roomState.status === 'waiting') {
     return (
-      <div style={{ position: 'relative', minHeight: '100dvh', background: CREAM, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+      <div style={{ position: 'relative', minHeight: '100dvh', background: `linear-gradient(rgba(10,28,10,0.22), rgba(10,28,10,0.22)), url(${grassBg}) center/cover no-repeat`, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
         <CrtScanlines />
+        <PetalSwoop />
 
         {/* Header */}
         <div style={{
@@ -528,12 +531,13 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
       <div style={{
         position: 'relative',
         minHeight: '100dvh',
-        background: CREAM,
+        background: `linear-gradient(rgba(10,28,10,0.22), rgba(10,28,10,0.22)), url(${grassBg}) center/cover no-repeat`,
         display: 'flex',
         flexDirection: 'column',
         overflowY: 'auto',
       }}>
         <CrtScanlines />
+        <PetalSwoop />
 
         {/* Header bar */}
         <div style={{
@@ -941,7 +945,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
       <div style={{
         position: 'relative',
         minHeight: '100dvh',
-        background: CREAM,
+        background: `linear-gradient(rgba(10,28,10,0.22), rgba(10,28,10,0.22)), url(${grassBg}) center/cover no-repeat`,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -950,6 +954,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
         overflowY: 'auto',
       }}>
         <CrtScanlines />
+        <PetalSwoop />
 
         {/* Winner announcement */}
         {ds.winnerName && (
@@ -1083,7 +1088,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
 
   // ── FALLBACK ───────────────────────────────────────────────────────────────
   return (
-    <div style={{ position: 'relative', minHeight: '100dvh', background: CREAM, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ position: 'relative', minHeight: '100dvh', background: `linear-gradient(rgba(10,28,10,0.22), rgba(10,28,10,0.22)), url(${grassBg}) center/cover no-repeat`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ fontFamily: FONT_MONO, color: MAROON, fontSize: 14, letterSpacing: '0.1em' }}>
         Loading…
       </div>

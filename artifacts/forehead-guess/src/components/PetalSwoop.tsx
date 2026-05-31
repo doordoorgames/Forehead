@@ -58,7 +58,7 @@ function spawnPetal(holder: HTMLDivElement) {
   setTimeout(() => el.remove(), cleanupMs);
 }
 
-export default function PetalSwoop() {
+export default function PetalSwoop({ immediate = false }: { immediate?: boolean }) {
   const holderRef = useRef<HTMLDivElement>(null);
   const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -76,18 +76,18 @@ export default function PetalSwoop() {
     if (!holder) return;
 
     function swoop() {
-      const count = Math.floor(rand(3, 13));
+      const count = Math.floor(rand(immediate ? 8 : 3, immediate ? 20 : 13));
       for (let i = 0; i < count; i++) spawnPetal(holder!);
-      timerRef.current = setTimeout(swoop, rand(10_000, 15_000));
+      timerRef.current = setTimeout(swoop, rand(immediate ? 1_200 : 10_000, immediate ? 2_500 : 15_000));
     }
 
-    timerRef.current = setTimeout(swoop, rand(2_000, 5_000));
+    timerRef.current = setTimeout(swoop, immediate ? 80 : rand(2_000, 5_000));
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       if (holder) holder.innerHTML = '';
     };
-  }, []);
+  }, [immediate]);
 
   return (
     <div

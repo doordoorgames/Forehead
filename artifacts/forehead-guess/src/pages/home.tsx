@@ -69,6 +69,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
             if (host) {
               sessionStorage.setItem(`fg_playerId_${data.code}`, String(host.id));
               sessionStorage.setItem(`fg_playerName_${data.code}`, host.name);
+              sessionStorage.setItem(`fg_roomMode_${data.code}`, mode);
             }
           } catch (storageErr) {
             console.warn('[CreateRoom] sessionStorage failed (non-fatal):', storageErr);
@@ -94,6 +95,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           try {
             sessionStorage.setItem(`fg_playerId_${data.room.code}`, String(data.playerId));
             sessionStorage.setItem(`fg_playerName_${data.room.code}`, data.playerName);
+            sessionStorage.setItem(`fg_roomMode_${data.room.code}`, mode);
           } catch (storageErr) {
             console.warn('[JoinRoom] sessionStorage failed (non-fatal):', storageErr);
           }
@@ -225,17 +227,18 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           )}
           {mode === 'dykm' && (
             <div className="mb-4 flex flex-col items-center gap-1" style={{
-              background: 'rgba(245,237,224,0.82)',
+              background: 'rgba(253,246,238,0.92)',
               backdropFilter: 'blur(6px)',
               WebkitBackdropFilter: 'blur(6px)',
               padding: '18px 28px 14px',
-              borderRadius: 2,
-              border: '1.5px solid rgba(92,32,48,0.25)',
+              borderRadius: 0,
+              border: '2px solid rgba(139,0,0,0.35)',
+              boxShadow: '4px 4px 0 rgba(139,0,0,0.18)',
             }}>
               <div style={{
-                fontFamily: "'Courier New', Courier, monospace",
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 'clamp(11px, 2.5vw, 14px)',
-                color: '#6b9e9f',
+                color: '#3d7a6a',
                 letterSpacing: '0.35em',
                 textTransform: 'uppercase',
                 marginBottom: 4,
@@ -243,23 +246,24 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 ▶ REC • MEMORY ARCHIVE
               </div>
               <h1 style={{
-                fontFamily: isAr ? "'Changa', sans-serif" : "'Courier New', Courier, monospace",
+                fontFamily: isAr ? "'Changa', sans-serif" : "Georgia, 'Times New Roman', serif",
                 fontSize: isAr ? 'clamp(36px, 10vw, 72px)' : 'clamp(26px, 7vw, 52px)',
                 fontWeight: 900,
-                color: '#5c2030',
+                color: '#8b0000',
                 letterSpacing: isAr ? undefined : '0.04em',
                 lineHeight: 1.1,
-                textShadow: '2px 2px 0 rgba(196,130,122,0.5)',
+                textShadow: '2px 2px 0 rgba(139,0,0,0.25)',
                 direction: isAr ? 'rtl' : undefined,
               }}>
                 {t.dykmMode}
               </h1>
               <p style={{
-                fontFamily: "'Courier New', Courier, monospace",
+                fontFamily: "Georgia, 'Times New Roman', serif",
                 fontSize: 'clamp(10px, 2.2vw, 13px)',
-                color: '#9e7060',
+                color: '#8b0000',
                 letterSpacing: '0.2em',
                 textTransform: 'uppercase',
+                opacity: 0.7,
               }}>
                 DO YOU KNOW ME ?
               </p>
@@ -274,15 +278,15 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 <button
                   className="w-full text-xl h-16 font-black tracking-wide transition-transform active:scale-95"
                   style={{
-                    background: 'rgba(245,237,224,0.88)',
-                    border: '2px solid #5c2030',
+                    background: '#fdf6ee',
+                    border: '2px solid #8b0000',
                     borderRadius: 0,
-                    color: '#5c2030',
-                    textShadow: '1px 1px 0 rgba(196,130,122,0.4)',
-                    boxShadow: '3px 3px 0 #5c2030',
-                    fontFamily: "'Courier New', Courier, monospace",
+                    color: '#8b0000',
+                    textShadow: 'none',
+                    boxShadow: '4px 4px 0 rgba(139,0,0,0.4)',
+                    fontFamily: isAr ? "'Changa', sans-serif" : "Georgia, 'Times New Roman', serif",
+                    fontWeight: 700,
                     letterSpacing: '0.05em',
-                    ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
                   }}
                   onClick={() => setView('create')}
                 >
@@ -291,15 +295,15 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 <button
                   className="w-full text-xl h-16 font-black tracking-wide transition-transform active:scale-95"
                   style={{
-                    background: 'rgba(245,237,224,0.88)',
-                    border: '2px solid #6b9e9f',
+                    background: '#8b0000',
+                    border: '2px solid #8b0000',
                     borderRadius: 0,
-                    color: '#6b9e9f',
-                    textShadow: '1px 1px 0 rgba(107,158,159,0.3)',
-                    boxShadow: '3px 3px 0 #6b9e9f',
-                    fontFamily: "'Courier New', Courier, monospace",
+                    color: 'white',
+                    textShadow: 'none',
+                    boxShadow: '4px 4px 0 rgba(139,0,0,0.4)',
+                    fontFamily: isAr ? "'Changa', sans-serif" : "Georgia, 'Times New Roman', serif",
+                    fontWeight: 700,
                     letterSpacing: '0.05em',
-                    ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
                   }}
                   onClick={() => setView('join')}
                 >
@@ -393,16 +397,21 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
               background: 'rgba(0,4,18,0.88)',
               backdropFilter: 'blur(14px)',
               boxShadow: '0 0 28px rgba(57,213,255,0.2)',
+            } : mode === 'dykm' ? {
+              borderRadius: 0,
+              border: '2px solid #8b0000',
+              background: '#fdf6ee',
+              boxShadow: '4px 4px 0 rgba(139,0,0,0.4)',
             } : undefined}
           >
             <CardHeader>
               <CardTitle
                 className="text-2xl"
-                style={mode === 'character' ? { color: '#39d5ff', textShadow: '0 0 10px rgba(57,213,255,0.7)' } : undefined}
+                style={mode === 'character' ? { color: '#39d5ff', textShadow: '0 0 10px rgba(57,213,255,0.7)' } : mode === 'dykm' ? { color: '#8b0000', fontFamily: "Georgia, 'Times New Roman', serif" } : undefined}
               >
                 {t.createRoomTitle}
               </CardTitle>
-              <CardDescription style={mode === 'character' ? { color: 'rgba(255,255,255,0.55)' } : undefined}>
+              <CardDescription style={mode === 'character' ? { color: 'rgba(255,255,255,0.55)' } : mode === 'dykm' ? { color: '#5a0a0a', fontFamily: "Georgia, 'Times New Roman', serif" } : undefined}>
                 {t.createRoomDesc}
               </CardDescription>
             </CardHeader>
@@ -416,7 +425,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                       <FormItem>
                         <FormLabel
                           className="text-lg font-bold"
-                          style={mode === 'character' ? { color: 'rgba(255,255,255,0.85)' } : undefined}
+                          style={mode === 'character' ? { color: 'rgba(255,255,255,0.85)' } : mode === 'dykm' ? { color: '#8b0000', fontFamily: "Georgia, 'Times New Roman', serif" } : undefined}
                         >
                           {t.yourName}
                         </FormLabel>
@@ -430,6 +439,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                               background: 'rgba(0,0,0,0.55)',
                               color: 'white',
                               boxShadow: '0 0 8px rgba(57,213,255,0.15)',
+                            } : mode === 'dykm' ? {
+                              borderRadius: 0,
+                              border: '2px solid #8b0000',
+                              background: '#ffffff',
+                              color: '#1a0505',
+                              fontFamily: "Georgia, 'Times New Roman', serif",
                             } : undefined}
                             {...field}
                           />
@@ -448,6 +463,11 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                         border: '2px solid rgba(255,255,255,0.25)',
                         background: 'transparent',
                         color: 'rgba(255,255,255,0.7)',
+                      } : mode === 'dykm' ? {
+                        borderRadius: 0,
+                        border: '2px solid #8b0000',
+                        background: 'transparent',
+                        color: '#8b0000',
                       } : { borderRadius: '1rem' }}
                       onClick={() => setView('main')}
                     >
@@ -463,6 +483,13 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                         color: '#c219a6',
                         textShadow: '0 0 8px #c219a6',
                         boxShadow: '0 0 14px rgba(194,25,166,0.5)',
+                      } : mode === 'dykm' ? {
+                        borderRadius: 0,
+                        background: '#8b0000',
+                        border: 'none',
+                        color: 'white',
+                        fontFamily: "Georgia, 'Times New Roman', serif",
+                        fontWeight: 700,
                       } : undefined}
                       disabled={createRoomMutation.isPending}
                     >
@@ -484,16 +511,21 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
               background: 'rgba(0,4,18,0.88)',
               backdropFilter: 'blur(14px)',
               boxShadow: '0 0 28px rgba(57,213,255,0.2)',
+            } : mode === 'dykm' ? {
+              borderRadius: 0,
+              border: '2px solid #8b0000',
+              background: '#fdf6ee',
+              boxShadow: '4px 4px 0 rgba(139,0,0,0.4)',
             } : undefined}
           >
             <CardHeader>
               <CardTitle
                 className="text-2xl"
-                style={mode === 'character' ? { color: '#39d5ff', textShadow: '0 0 10px rgba(57,213,255,0.7)' } : undefined}
+                style={mode === 'character' ? { color: '#39d5ff', textShadow: '0 0 10px rgba(57,213,255,0.7)' } : mode === 'dykm' ? { color: '#8b0000', fontFamily: "Georgia, 'Times New Roman', serif" } : undefined}
               >
                 {t.joinRoomTitle}
               </CardTitle>
-              <CardDescription style={mode === 'character' ? { color: 'rgba(255,255,255,0.55)' } : undefined}>
+              <CardDescription style={mode === 'character' ? { color: 'rgba(255,255,255,0.55)' } : mode === 'dykm' ? { color: '#5a0a0a', fontFamily: "Georgia, 'Times New Roman', serif" } : undefined}>
                 {t.joinRoomDesc}
               </CardDescription>
             </CardHeader>
@@ -507,7 +539,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                       <FormItem>
                         <FormLabel
                           className="text-lg font-bold"
-                          style={mode === 'character' ? { color: 'rgba(255,255,255,0.85)' } : undefined}
+                          style={mode === 'character' ? { color: 'rgba(255,255,255,0.85)' } : mode === 'dykm' ? { color: '#8b0000', fontFamily: "Georgia, 'Times New Roman', serif" } : undefined}
                         >
                           {t.roomCode}
                         </FormLabel>
@@ -522,6 +554,14 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                               color: '#39d5ff',
                               letterSpacing: '0.25em',
                               boxShadow: '0 0 8px rgba(57,213,255,0.15)',
+                            } : mode === 'dykm' ? {
+                              borderRadius: 0,
+                              border: '2px solid #8b0000',
+                              background: '#ffffff',
+                              color: '#8b0000',
+                              letterSpacing: '0.3em',
+                              fontFamily: "Georgia, 'Times New Roman', serif",
+                              fontWeight: 900,
                             } : undefined}
                             maxLength={5}
                             {...field}
@@ -538,7 +578,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                       <FormItem>
                         <FormLabel
                           className="text-lg font-bold"
-                          style={mode === 'character' ? { color: 'rgba(255,255,255,0.85)' } : undefined}
+                          style={mode === 'character' ? { color: 'rgba(255,255,255,0.85)' } : mode === 'dykm' ? { color: '#8b0000', fontFamily: "Georgia, 'Times New Roman', serif" } : undefined}
                         >
                           {t.yourName}
                         </FormLabel>
@@ -552,6 +592,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                               background: 'rgba(0,0,0,0.55)',
                               color: 'white',
                               boxShadow: '0 0 8px rgba(57,213,255,0.15)',
+                            } : mode === 'dykm' ? {
+                              borderRadius: 0,
+                              border: '2px solid #8b0000',
+                              background: '#ffffff',
+                              color: '#1a0505',
+                              fontFamily: "Georgia, 'Times New Roman', serif",
                             } : undefined}
                             {...field}
                           />
@@ -570,6 +616,11 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                         border: '2px solid rgba(255,255,255,0.25)',
                         background: 'transparent',
                         color: 'rgba(255,255,255,0.7)',
+                      } : mode === 'dykm' ? {
+                        borderRadius: 0,
+                        border: '2px solid #8b0000',
+                        background: 'transparent',
+                        color: '#8b0000',
                       } : { borderRadius: '1rem' }}
                       onClick={() => setView('main')}
                     >
@@ -586,6 +637,13 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                         color: '#39d5ff',
                         textShadow: '0 0 8px #39d5ff',
                         boxShadow: '0 0 14px rgba(57,213,255,0.5)',
+                      } : mode === 'dykm' ? {
+                        borderRadius: 0,
+                        background: '#8b0000',
+                        border: 'none',
+                        color: 'white',
+                        fontFamily: "Georgia, 'Times New Roman', serif",
+                        fontWeight: 700,
                       } : undefined}
                       disabled={joinRoomMutation.isPending}
                     >

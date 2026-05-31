@@ -7,30 +7,18 @@ import PetalSwoop from '@/components/PetalSwoop';
 import grassBg from '@assets/6E21F754-65A0-4119-A739-67DD40CAA6B4_1780250343871.png';
 
 // ── palette ──────────────────────────────────────────────────────────────────
-const CREAM   = '#f5ede0';
-const MAROON  = '#5c2030';
-const ROSE    = '#c4827a';
-const TEAL    = '#6b9e9f';
-const LAVENDER = '#b09ec0';
-const PARCHMENT = '#ede0ce';
+const CREAM     = '#fdf6ee';
+const MAROON    = '#8b0000';   // deep blood red — matches petals
+const ROSE      = '#c0392b';   // medium red
+const TEAL      = '#3d7a6a';   // forest teal
+const PARCHMENT = '#f0e4d0';
 
-const FONT_MONO = "'Courier New', Courier, monospace";
+const FONT_MONO = "Georgia, 'Times New Roman', serif";
 
 // ── sub-components ────────────────────────────────────────────────────────────
 
 function CrtScanlines() {
-  return (
-    <div
-      aria-hidden
-      style={{
-        position: 'fixed',
-        inset: 0,
-        pointerEvents: 'none',
-        zIndex: 999,
-        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px)',
-      }}
-    />
-  );
+  return null;
 }
 
 function VhsBadge({ text }: { text: string }) {
@@ -110,12 +98,8 @@ function QuestionNewsreel({ questions, lang, error, loading }: { questions: Dykm
 
   return (
     <div style={{ position: 'relative' }}>
-      {/* VHS tape strip top */}
-      <div style={{
-        height: 8,
-        background: `repeating-linear-gradient(90deg, ${MAROON} 0px, ${MAROON} 12px, ${PARCHMENT} 12px, ${PARCHMENT} 14px)`,
-        marginBottom: 2,
-      }} />
+      {/* Accent strip top */}
+      <div style={{ height: 3, background: MAROON, marginBottom: 2 }} />
 
       {/* Question card */}
       <div style={{
@@ -215,12 +199,8 @@ function QuestionNewsreel({ questions, lang, error, loading }: { questions: Dykm
         </span>
       </div>
 
-      {/* VHS tape strip bottom */}
-      <div style={{
-        height: 8,
-        background: `repeating-linear-gradient(90deg, ${MAROON} 0px, ${MAROON} 12px, ${PARCHMENT} 12px, ${PARCHMENT} 14px)`,
-        marginTop: 2,
-      }} />
+      {/* Accent strip bottom */}
+      <div style={{ height: 3, background: MAROON, marginTop: 2 }} />
     </div>
   );
 }
@@ -324,7 +304,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
             <p style={{ fontFamily: FONT_MONO, fontSize: 9, color: TEAL, letterSpacing: '0.45em', textTransform: 'uppercase', marginBottom: 8 }}>
               {isAr ? 'رمز الغرفة' : 'ROOM CODE'}
             </p>
-            <p style={{ fontFamily: FONT_MONO, fontSize: 'clamp(40px, 11vw, 58px)', fontWeight: 900, color: MAROON, letterSpacing: '0.3em', lineHeight: 1 }}>
+            <p style={{ fontFamily: FONT_MONO, fontSize: 'clamp(40px, 11vw, 58px)', fontWeight: 900, color: 'white', letterSpacing: '0.3em', lineHeight: 1, textShadow: `3px 3px 0 ${MAROON}, 0 0 20px rgba(139,0,0,0.55)` }}>
               {code}
             </p>
           </div>
@@ -373,7 +353,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                       style={{
                         flex: 1,
                         padding: '12px 0',
-                        background: selectedScore === s ? MAROON : 'transparent',
+                        background: selectedScore === s ? MAROON : PARCHMENT,
                         color: selectedScore === s ? CREAM : MAROON,
                         border: `2px solid ${MAROON}`,
                         fontFamily: FONT_MONO,
@@ -405,7 +385,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                       onClick={() => setSelectedAskerId(p.id)}
                       style={{
                         padding: '10px 16px',
-                        background: selectedAskerId === p.id ? MAROON : 'transparent',
+                        background: selectedAskerId === p.id ? MAROON : PARCHMENT,
                         color: selectedAskerId === p.id ? CREAM : MAROON,
                         border: `2px solid ${selectedAskerId === p.id ? MAROON : ROSE}`,
                         fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
@@ -609,7 +589,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                     onClick={() => setSelectedCategory(null)}
                     style={{
                       padding: '5px 12px',
-                      background: selectedCategory === null ? MAROON : 'transparent',
+                      background: selectedCategory === null ? MAROON : PARCHMENT,
                       color: selectedCategory === null ? CREAM : MAROON,
                       border: `1.5px solid ${MAROON}`,
                       fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.15em', cursor: 'pointer',
@@ -623,7 +603,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                       onClick={() => setSelectedCategory(cat)}
                       style={{
                         padding: '5px 12px',
-                        background: selectedCategory === cat ? MAROON : 'transparent',
+                        background: selectedCategory === cat ? MAROON : PARCHMENT,
                         color: selectedCategory === cat ? CREAM : MAROON,
                         border: `1.5px solid ${selectedCategory === cat ? MAROON : ROSE}`,
                         fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
@@ -677,7 +657,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                   <p style={{ fontFamily: FONT_MONO, fontSize: 9, color: TEAL, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 6 }}>
                     {isAr ? 'السؤال' : 'QUESTION'}
                   </p>
-                  <div style={{ height: 8, background: `repeating-linear-gradient(90deg, ${MAROON} 0px, ${MAROON} 12px, ${PARCHMENT} 12px, ${PARCHMENT} 14px)`, marginBottom: 2 }} />
+                  <div style={{ height: 3, background: MAROON, marginBottom: 2 }} />
                   <div style={{
                     background: CREAM,
                     border: `2px solid ${MAROON}`,
@@ -705,7 +685,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                       [{ds.selectedQuestion.categoryName}]
                     </span>
                   </div>
-                  <div style={{ height: 8, background: `repeating-linear-gradient(90deg, ${MAROON} 0px, ${MAROON} 12px, ${PARCHMENT} 12px, ${PARCHMENT} 14px)`, marginTop: 2 }} />
+                  <div style={{ height: 3, background: MAROON, marginTop: 2 }} />
                 </>
               ) : (
                 <div style={{
@@ -750,7 +730,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                 <div
                   key={player.id}
                   style={{
-                    background: player.id === playerId ? `rgba(92,32,48,0.06)` : PARCHMENT,
+                    background: player.id === playerId ? CREAM : PARCHMENT,
                     border: `2px solid ${player.id === playerId ? MAROON : ROSE}`,
                     padding: '12px 14px',
                     boxShadow: player.id === playerId ? `3px 3px 0 ${ROSE}` : 'none',
@@ -845,11 +825,11 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
             return (
               <div style={{
                 border: `1.5px dashed ${TEAL}`,
+                background: PARCHMENT,
                 padding: '10px 14px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                opacity: 0.75,
               }}>
                 <div>
                   <p style={{ fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO, fontSize: 14, color: TEAL, direction: isAr ? 'rtl' : 'ltr' }}>
@@ -881,7 +861,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
           {/* Change asker (host only) */}
           {amHost && (
             <div>
-              <p style={{ fontFamily: FONT_MONO, fontSize: 9, color: LAVENDER, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: 6 }}>
+              <p style={{ fontFamily: FONT_MONO, fontSize: 9, color: TEAL, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: 6 }}>
                 {isAr ? 'تغيير السائل' : 'CHANGE ASKER'}
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -891,9 +871,9 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                     onClick={() => handleSetAsker(p.id)}
                     style={{
                       padding: '6px 14px',
-                      background: 'transparent',
-                      border: `1.5px solid ${LAVENDER}`,
-                      color: LAVENDER,
+                      background: PARCHMENT,
+                      border: `1.5px solid ${TEAL}`,
+                      color: TEAL,
                       fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
                       fontSize: 12,
                       cursor: 'pointer',

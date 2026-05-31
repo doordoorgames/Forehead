@@ -15,7 +15,9 @@ const queryClient = new QueryClient();
 
 function Router() {
   const [location] = useLocation();
-  const showCyberpunk = !location.startsWith('/character') && !location.startsWith('/dykm') && !location.startsWith('/doyouknowme');
+  const roomCode = location.startsWith('/room/') ? location.split('/room/')[1]?.toUpperCase() : null;
+  const isDykmRoom = !!roomCode && sessionStorage.getItem(`fg_roomMode_${roomCode}`) === 'dykm';
+  const showCyberpunk = !location.startsWith('/character') && !location.startsWith('/dykm') && !location.startsWith('/doyouknowme') && !isDykmRoom;
 
   return (
     <>

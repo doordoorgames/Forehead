@@ -11,6 +11,8 @@ import CharacterRoom from './character-room';
 import CharadesRoom from './charades-room';
 import DykmRoom from './dykm-room';
 import RoomJoinQR from '@/components/RoomJoinQR';
+import PetalSwoop from '@/components/PetalSwoop';
+import grassBg from '@assets/6E21F754-65A0-4119-A739-67DD40CAA6B4_1780250343871.png';
 
 export default function Room() {
   const params = useParams<{ code: string }>();
@@ -44,6 +46,25 @@ export default function Room() {
   if (!code || !playerId || !playerName) return null;
 
   if (isRoomLoading && !socket.roomState) {
+    const storedMode = code ? sessionStorage.getItem(`fg_roomMode_${code}`) : null;
+    if (storedMode === 'dykm') {
+      return (
+        <div style={{
+          position: 'relative',
+          minHeight: '100dvh',
+          background: `linear-gradient(rgba(10,28,10,0.22), rgba(10,28,10,0.22)), url(${grassBg}) center/cover no-repeat`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <PetalSwoop immediate />
+          <div style={{ textAlign: 'center', fontFamily: "Georgia, 'Times New Roman', serif", color: '#fdf6ee', zIndex: 10, position: 'relative' }}>
+            <div style={{ fontSize: 36, marginBottom: 12, letterSpacing: '0.2em' }}>❀</div>
+            <div style={{ letterSpacing: '0.4em', fontSize: 12, textTransform: 'uppercase', textShadow: '1px 1px 0 #8b0000' }}>Loading…</div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-[100dvh] flex items-center justify-center">
         <Loader2 className="w-16 h-16 animate-spin text-primary" />

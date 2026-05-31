@@ -9,9 +9,9 @@ import {
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
-import { getCharacterPool, CharacterEntry } from "../lib/characterPool";
 import { getCharadesPool } from "../lib/charadesPool";
-import { fetchForeheadWordsFromSupabase } from "../lib/supabase-forehead";
+import { fetchForeheadWordsFromSupabase, fetchCharactersFromSupabase, SupabaseCharacterEntry } from "../lib/supabase-forehead";
+type CharacterEntry = SupabaseCharacterEntry;
 
 // ── CLIENT REGISTRY ──────────────────────────────────────────────────────────
 
@@ -152,16 +152,19 @@ async function getRoomState(code: string) {
 
 // ── CHARACTER GAME HELPERS ────────────────────────────────────────────────────
 
-async function pickNextCharacter(lang: string, existing: CharacterRoundState | undefined): Promise<{ entry: CharacterEntry } | null> {
-  const pool = await getCharacterPool(lang);
-  if (pool.length === 0) return null;
+async function pickNextCharacter(lang: string, existing: CharacterRoundState | undefined): Promise<{ entry: CharacterEntry; error?: string } | null> {
+  const { characters, error } = await fetchCharactersFromSupabase(lang);
+  if (characters.length === 0) {
+    logger.warn({ lang, error }, '[CharacterGame] No characters returned from Supabase');
+    return null;
+  }
 
   const usedSoFar = existing?.usedPoolIndices ?? [];
-  let available = pool.filter(e => !usedSoFar.includes(e.id));
+  let available = characters.filter(e => !usedSoFar.includes(e.id));
 
   if (available.length === 0) {
-    // All used — reset
-    available = pool;
+    // All used — reset and start over
+    available = characters;
   }
 
   const entry = available[Math.floor(Math.random() * available.length)];
@@ -760,7 +763,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     const lang = room.lang ?? "en";
     const picked = await pickNextCharacter(lang, undefined);
     if (!picked) {
-      sendTo(ws, { type: "error", payload: { message: "No character data loaded for this language. Please upload characters from the admin panel first." } });
+      sendTo(ws, { type: "error", payload: { message: "No characters found for this language." } });
       return;
     }
 
@@ -815,7 +818,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
 
     const picked = await pickNextCharacter(cs.lang, cs);
     if (!picked) {
-      sendTo(ws, { type: "error", payload: { message: "No character data available." } });
+      sendTo(ws, { type: "error", payload: { message: "No characters found for this language." } });
       return;
     }
 

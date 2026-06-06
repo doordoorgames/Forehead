@@ -68,7 +68,9 @@ export async function fetchCharactersFromSupabase(
 
 export async function fetchForeheadWordsByKKCategory(
   categoryId: number,
+  lang?: string,
 ): Promise<{ words: string[]; error: string | null }> {
+  const errMsg = lang === 'ar' ? 'تعذر تحميل الكلمات' : 'Could not load words for this category.';
   console.log(`[Forehead] Fetching words for kk_entries category_id=${categoryId}`);
   try {
     const url =
@@ -77,17 +79,15 @@ export async function fetchForeheadWordsByKKCategory(
     const res = await fetch(url, { headers: HEADERS });
     if (!res.ok) {
       const body = await res.text();
-      const msg = `Supabase kk_entries fetch failed: HTTP ${res.status} — ${body}`;
-      console.error(msg);
-      return { words: [], error: msg };
+      console.error(`kk_entries fetch failed: HTTP ${res.status} — ${body}`);
+      return { words: [], error: errMsg };
     }
     const rows = (await res.json()) as { answer: string }[];
     console.log(`[Forehead] Loaded ${rows.length} entries for category_id=${categoryId}`);
     return { words: rows.map((r) => r.answer), error: null };
   } catch (err) {
-    const msg = `Supabase kk_entries fetch failed: ${err instanceof Error ? err.message : String(err)}`;
-    console.error(msg);
-    return { words: [], error: msg };
+    console.error('fetchForeheadWordsByKKCategory error:', err);
+    return { words: [], error: errMsg };
   }
 }
 

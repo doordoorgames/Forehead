@@ -255,11 +255,15 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
           <div>
             <p className="font-bold mb-1.5">{t.selectCategory}</p>
             {catError ? (
-              <p className="text-sm text-red-400 text-center py-2">{catError}</p>
+              <p className="text-sm text-red-400 text-center py-2" dir={lang === 'ar' ? 'rtl' : 'ltr'}>{catError}</p>
             ) : catLoading ? (
-              <p className="text-sm text-muted-foreground text-center py-2">Loading categories…</p>
+              <p className="text-sm text-muted-foreground text-center py-2">
+                {lang === 'ar' ? 'جاري تحميل التصنيفات...' : 'Loading categories…'}
+              </p>
             ) : categories.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-2">This category has no words yet.</p>
+              <p className="text-sm text-muted-foreground text-center py-2" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+                {lang === 'ar' ? 'لا توجد كلمات في هذا التصنيف' : 'This category has no words yet.'}
+              </p>
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 {categories.map((c) => {

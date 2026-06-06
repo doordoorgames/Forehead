@@ -322,9 +322,13 @@ async function beginWordDisplay(roomCode: string) {
   let categoryName: string;
 
   if (supabaseCat) {
-    const result = await fetchForeheadWordsByKKCategory(supabaseCat.kkCategoryId);
+    const roomLang = room.lang ?? 'en';
+    const result = await fetchForeheadWordsByKKCategory(supabaseCat.kkCategoryId, roomLang);
     if (result.error || result.words.length === 0) {
-      broadcast(roomCode, { type: "error", payload: { message: result.error ?? `No words in "${supabaseCat.categoryName}"` } });
+      const noWordsMsg = roomLang === 'ar'
+        ? 'لا توجد كلمات في هذا التصنيف'
+        : `No words in "${supabaseCat.categoryName}"`;
+      broadcast(roomCode, { type: "error", payload: { message: result.error ?? noWordsMsg } });
       return;
     }
     wordPool = result.words;
@@ -619,7 +623,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     );
     let available: string[];
     if (supabaseCat) {
-      const result = await fetchForeheadWordsByKKCategory(supabaseCat.kkCategoryId);
+      const result = await fetchForeheadWordsByKKCategory(supabaseCat.kkCategoryId, room.lang ?? 'en');
       if (result.error || result.words.length === 0) return;
       available = result.words.filter((w) => !usedWords.has(w));
     } else {

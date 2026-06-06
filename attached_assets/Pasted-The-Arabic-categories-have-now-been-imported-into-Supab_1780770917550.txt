@@ -1,0 +1,69 @@
+The Arabic categories have now been imported into Supabase and should no longer be loaded from local files, JSON, CSVs, or hardcoded arrays.
+
+Update the KK (Forehead) game to use Supabase as the single source of truth for Arabic categories and Arabic answers.
+
+Database structure:
+
+Table: kk_categories
+
+* id
+* language
+* category_name
+* active
+
+Table: kk_entries
+
+* id
+* category_id
+* answer
+* active
+
+Requirements:
+
+1. When the player selects Arabic language:
+    * Query kk_categories
+    * Filter language = ‘ar’
+    * Filter active = true
+    * Sort alphabetically by category_name
+    * Display the returned Arabic category names
+2. When an Arabic category is selected:
+    * Find its category id
+    * Query kk_entries where category_id matches
+    * Filter active = true
+    * Load all Arabic answers from Supabase
+3. Remove any dependency on:
+    * forehead_arabic.csv
+    * local JSON files
+    * hardcoded Arabic category arrays
+    * bundled Arabic datasets
+4. The game must work even when new Arabic categories are added later.
+    No code changes should be required when a new category is inserted into kk_categories.
+5. Cache categories only for the current session.
+    On refresh, fetch fresh data from Supabase.
+6. Add error handling:
+    * Failed category load → “تعذر تحميل التصنيفات”
+    * Failed entries load → “تعذر تحميل الكلمات”
+    * Empty category → “لا توجد كلمات في هذا التصنيف”
+7. Preserve all existing gameplay, room code system, QR joining, multiplayer logic, scoring, animations, and UI.
+    Only replace the category and answer source.
+8. Use the existing Supabase project already configured in Replit.
+
+Expected category query:
+
+SELECT id, category_name
+FROM kk_categories
+WHERE language = ‘ar’
+AND active = true
+ORDER BY category_name;
+
+Expected entry query:
+
+SELECT answer
+FROM kk_entries
+WHERE category_id = selectedCategoryId
+AND active = true;
+
+After loading, shuffle the answers and prevent repeats until the category is exhausted.
+
+Supabase is now the permanent backend for Arabic content.
+No local Arabic data source should remain in production.

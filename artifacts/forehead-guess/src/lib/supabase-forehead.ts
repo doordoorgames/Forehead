@@ -17,6 +17,10 @@ export interface ForeheadCategory {
 export async function fetchForeheadCategories(
   lang: 'en' | 'ar',
 ): Promise<{ categories: ForeheadCategory[]; error: string | null }> {
+  const errorMsg = lang === 'ar'
+    ? 'تعذر تحميل التصنيفات'
+    : 'Could not load categories. Please try again.';
+
   try {
     const catUrl =
       `${SUPABASE_URL}/rest/v1/kk_categories` +
@@ -26,7 +30,7 @@ export async function fetchForeheadCategories(
     if (!catRes.ok) {
       const body = await catRes.text();
       console.error(`kk_categories fetch failed: HTTP ${catRes.status} — ${body}`);
-      return { categories: [], error: 'Could not load categories. Please try again.' };
+      return { categories: [], error: errorMsg };
     }
 
     const catRows: { id: number; category_name: string }[] = await catRes.json();
@@ -53,8 +57,7 @@ export async function fetchForeheadCategories(
 
     return { categories, error: null };
   } catch (err) {
-    const msg = `Could not load categories. Please try again.`;
     console.error('fetchForeheadCategories error:', err);
-    return { categories: [], error: msg };
+    return { categories: [], error: errorMsg };
   }
 }

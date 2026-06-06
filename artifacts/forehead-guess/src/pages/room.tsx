@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'wouter';
 import { useGetRoom } from '@workspace/api-client-react';
-import { fetchForeheadCategories, ForeheadCategory } from '@/lib/supabase-forehead';
+import { fetchForeheadCategories, ForeheadCategory, ForeheadCategoriesResult } from '@/lib/supabase-forehead';
 import { useGameSocket, RoomState, RoundInfo, RevealInfo } from '@/hooks/useGameSocket';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -191,14 +191,16 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
   const [categories, setCategories] = useState<ForeheadCategory[]>([]);
   const [catError, setCatError] = useState<string | null>(null);
   const [catLoading, setCatLoading] = useState(true);
+  const [catDebug, setCatDebug] = useState({ totalRows: 0, totalCategories: 0 });
   const { t, lang } = useLang();
 
   useEffect(() => {
     setCatError(null);
     setCatLoading(true);
-    fetchForeheadCategories(lang as 'en' | 'ar').then(({ categories: cats, error }) => {
-      if (error) setCatError(error);
-      setCategories(cats);
+    fetchForeheadCategories(lang as 'en' | 'ar').then((result: ForeheadCategoriesResult) => {
+      if (result.error) setCatError(result.error);
+      setCategories(result.categories);
+      setCatDebug({ totalRows: result.debugTotalRows, totalCategories: result.debugTotalCategories });
       setCatLoading(false);
     });
   }, [lang]);
@@ -265,31 +267,39 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
                 {lang === 'ar' ? 'لا توجد كلمات في هذا التصنيف' : 'This category has no words yet.'}
               </p>
             ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {categories.map((c) => {
-                  const selected = selectedCategoryName === c.name;
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setCategory(c.name, c.id)}
-                      className="relative flex flex-col items-center justify-center text-center px-3 py-4 font-bold text-white transition-all active:scale-95"
-                      style={{
-                        background: selected ? '#5b21b6' : '#3b0764',
-                        boxShadow: selected
-                          ? '0 0 0 3px #a855f7, 0 4px 16px rgba(168,85,247,0.4)'
-                          : '0 2px 8px rgba(0,0,0,0.4)',
-                      }}
-                    >
-                      <span className="text-sm font-black leading-tight">{c.name}</span>
-                      <span className="text-xs font-medium mt-1 opacity-70">{c.wordCount} {t.words}</span>
-                      {selected && (
-                        <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-purple-300" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  {categories.map((c) => {
+                    const selected = selectedCategoryName === c.name;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setCategory(c.name, c.id)}
+                        className="relative flex flex-col items-center justify-center text-center px-3 py-4 font-bold text-white transition-all active:scale-95"
+                        style={{
+                          background: selected ? '#5b21b6' : '#3b0764',
+                          boxShadow: selected
+                            ? '0 0 0 3px #a855f7, 0 4px 16px rgba(168,85,247,0.4)'
+                            : '0 2px 8px rgba(0,0,0,0.4)',
+                        }}
+                      >
+                        <span className="text-sm font-black leading-tight" dir={lang === 'ar' ? 'rtl' : 'ltr'}>{c.name}</span>
+                        <span className="text-xs font-medium mt-1 opacity-70">
+                          {lang === 'ar' ? `${c.wordCount} كلمة` : `${c.wordCount} ${t.words}`}
+                        </span>
+                        {selected && (
+                          <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-purple-300" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Debug panel */}
+                <div className="mt-2 px-2 py-1.5 bg-black/30 border border-white/10 text-xs text-white/50 font-mono" dir="ltr">
+                  Total {lang === 'ar' ? 'Arabic' : 'English'} Rows: {catDebug.totalRows} · Total Categories: {catDebug.totalCategories}
+                </div>
+              </>
             )}
           </div>
 

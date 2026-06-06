@@ -1,0 +1,84 @@
+Copy and paste this to Replit:
+
+⸻
+
+SUPABASE CATEGORY AUTO-GENERATION FIX (ARABIC)
+
+The Arabic category screen is currently showing many categories with 0 كلمات because the UI is using a hardcoded category list instead of generating categories from the actual Supabase data.
+
+Required Fix
+
+Do NOT use a predefined category array for Arabic.
+
+Instead:
+
+1. Fetch all Arabic entries directly from Supabase.
+2. Read the category field from every row.
+3. Build the category list dynamically.
+4. Count how many entries belong to each category.
+5. Only display categories that actually exist in Supabase.
+6. Sort categories alphabetically or by word count.
+7. Remove any category card whose count is 0.
+
+Example
+
+If Supabase contains:
+
+[
+  { "category": "الأكل", "entry": "مجبوس" },
+  { "category": "الأكل", "entry": "شاورما" },
+  { "category": "الدول", "entry": "الكويت" }
+]
+
+Generate:
+
+[
+  { "name": "الأكل", "count": 2 },
+  { "name": "الدول", "count": 1 }
+]
+
+SQL Query
+
+Use something similar to:
+
+SELECT
+  category,
+  COUNT(*) as total
+FROM forehead_arabic
+GROUP BY category
+ORDER BY total DESC;
+
+or fetch all rows and group client-side.
+
+UI Requirements
+
+* Never show categories with 0 words.
+* If a category exists in Supabase, show it automatically.
+* If I import a new CSV tomorrow with a new category, it should instantly appear without changing code.
+* Category cards should always reflect the live Supabase database.
+* Display count as:
+
+48 كلمة
+127 كلمة
+394 كلمة
+
+Debug Panel
+
+Temporarily add:
+
+Total Arabic Rows: XXX
+Total Arabic Categories: XX
+
+and log:
+
+console.log("Arabic categories loaded:", categories);
+
+so we can verify Supabase is actually returning data.
+
+Goal
+
+The Arabic category page must be 100% database-driven. No hardcoded categories, no manual category maintenance, and no category card should ever show 0 unless the database itself is empty.
+
+⸻
+
+This is the cleaner long-term solution because every time you import new Arabic CSVs into Supabase, the categories page updates automatically.

@@ -9,40 +9,52 @@ const HEADERS = {
 };
 
 export interface ForeheadCategory {
+  id: number;
   name: string;
-  table: string;
   wordCount: number;
 }
 
 export async function fetchForeheadCategories(
   lang: 'en' | 'ar',
 ): Promise<{ categories: ForeheadCategory[]; error: string | null }> {
-  const table = lang === 'ar' ? 'forehead_arabic' : 'forehead_english';
-  console.log('Fetching Forehead entries from Supabase…');
   try {
-    const url = `${SUPABASE_URL}/rest/v1/${table}?active=eq.true&select=category,word`;
-    const res = await fetch(url, { headers: HEADERS });
-    if (!res.ok) {
-      const body = await res.text();
-      const msg = `Supabase fetch failed: HTTP ${res.status} — ${body}`;
-      console.error(msg);
-      return { categories: [], error: msg };
-    }
-    const rows: { category: string; word: string }[] = await res.json();
-    console.log(`Loaded ${rows.length} entries successfully`);
+    const catUrl =
+      `${SUPABASE_URL}/rest/v1/kk_categories` +
+      `?language=eq.${encodeURIComponent(lang)}&active=eq.true&select=id,category_name&order=category_name.asc`;
 
-    const counts: Record<string, number> = {};
-    for (const row of rows) {
-      counts[row.category] = (counts[row.category] ?? 0) + 1;
+    const catRes = await fetch(catUrl, { headers: HEADERS });
+    if (!catRes.ok) {
+      const body = await catRes.text();
+      console.error(`kk_categories fetch failed: HTTP ${catRes.status} — ${body}`);
+      return { categories: [], error: 'Could not load categories. Please try again.' };
     }
-    const categories: ForeheadCategory[] = Object.entries(counts)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([name, wordCount]) => ({ name, table, wordCount }));
+
+    const catRows: { id: number; category_name: string }[] = await catRes.json();
+    if (catRows.length === 0) {
+      return { categories: [], error: null };
+    }
+
+    const entryUrl =
+      `${SUPABASE_URL}/rest/v1/kk_entries?active=eq.true&select=category_id`;
+    const entryRes = await fetch(entryUrl, { headers: HEADERS });
+    const countMap: Record<number, number> = {};
+    if (entryRes.ok) {
+      const entryRows: { category_id: number }[] = await entryRes.json();
+      for (const row of entryRows) {
+        countMap[row.category_id] = (countMap[row.category_id] ?? 0) + 1;
+      }
+    }
+
+    const categories: ForeheadCategory[] = catRows.map((row) => ({
+      id: row.id,
+      name: row.category_name,
+      wordCount: countMap[row.id] ?? 0,
+    }));
 
     return { categories, error: null };
   } catch (err) {
-    const msg = `Supabase fetch failed: ${err instanceof Error ? err.message : String(err)}`;
-    console.error(msg);
+    const msg = `Could not load categories. Please try again.`;
+    console.error('fetchForeheadCategories error:', err);
     return { categories: [], error: msg };
   }
 }

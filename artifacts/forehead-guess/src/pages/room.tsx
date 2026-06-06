@@ -184,19 +184,22 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
   roomCode: string;
   playerId: number;
   roomState: RoomState;
-  setCategory: (name: string, table: string) => void;
+  setCategory: (name: string, id: number) => void;
   startGame: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [categories, setCategories] = useState<ForeheadCategory[]>([]);
   const [catError, setCatError] = useState<string | null>(null);
+  const [catLoading, setCatLoading] = useState(true);
   const { t, lang } = useLang();
 
   useEffect(() => {
     setCatError(null);
+    setCatLoading(true);
     fetchForeheadCategories(lang as 'en' | 'ar').then(({ categories: cats, error }) => {
       if (error) setCatError(error);
       setCategories(cats);
+      setCatLoading(false);
     });
   }, [lang]);
 
@@ -253,17 +256,19 @@ function LobbyView({ roomCode, playerId, roomState, setCategory, startGame }: {
             <p className="font-bold mb-1.5">{t.selectCategory}</p>
             {catError ? (
               <p className="text-sm text-red-400 text-center py-2">{catError}</p>
+            ) : catLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-2">Loading categories…</p>
             ) : categories.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-2">{t.chooseCategory}</p>
+              <p className="text-sm text-muted-foreground text-center py-2">This category has no words yet.</p>
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 {categories.map((c) => {
                   const selected = selectedCategoryName === c.name;
                   return (
                     <button
-                      key={c.name}
+                      key={c.id}
                       type="button"
-                      onClick={() => setCategory(c.name, c.table)}
+                      onClick={() => setCategory(c.name, c.id)}
                       className="relative flex flex-col items-center justify-center text-center px-3 py-4 font-bold text-white transition-all active:scale-95"
                       style={{
                         background: selected ? '#5b21b6' : '#3b0764',

@@ -10,7 +10,7 @@ import {
 import { eq, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { getCharadesPool } from "../lib/charadesPool";
-import { fetchForeheadWordsFromSupabase, fetchCharactersFromSupabase, SupabaseCharacterEntry } from "../lib/supabase-forehead";
+import { fetchForeheadWordsByKKCategory, fetchCharactersFromSupabase, SupabaseCharacterEntry } from "../lib/supabase-forehead";
 type CharacterEntry = SupabaseCharacterEntry;
 
 // ── CLIENT REGISTRY ──────────────────────────────────────────────────────────
@@ -93,8 +93,8 @@ const roomRoundState = new Map<string, RoundState>();
 const roomCharacterState = new Map<string, CharacterRoundState>();
 const roomCharadesState = new Map<string, CharadesRoundState>();
 const roomDykmState = new Map<string, DykmGameState>();
-// roomCode → Supabase category info for forehead mode
-const roomSupabaseCategory = new Map<string, { table: string; category: string }>();
+// roomCode → kk_categories info for forehead mode
+const roomSupabaseCategory = new Map<string, { kkCategoryId: number; categoryName: string }>();
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
@@ -128,7 +128,7 @@ async function getRoomState(code: string) {
   let categoryName: string | null = null;
   const supabaseCat = roomSupabaseCategory.get(code);
   if (supabaseCat) {
-    categoryName = supabaseCat.category;
+    categoryName = supabaseCat.categoryName;
   } else if (room.categoryId) {
     const cat = await db.query.categoriesTable.findFirst({ where: eq(categoriesTable.id, room.categoryId) });
     categoryName = cat?.name ?? null;
@@ -322,13 +322,13 @@ async function beginWordDisplay(roomCode: string) {
   let categoryName: string;
 
   if (supabaseCat) {
-    const result = await fetchForeheadWordsFromSupabase(supabaseCat.table, supabaseCat.category);
+    const result = await fetchForeheadWordsByKKCategory(supabaseCat.kkCategoryId);
     if (result.error || result.words.length === 0) {
-      broadcast(roomCode, { type: "error", payload: { message: result.error ?? `No words in "${supabaseCat.category}"` } });
+      broadcast(roomCode, { type: "error", payload: { message: result.error ?? `No words in "${supabaseCat.categoryName}"` } });
       return;
     }
     wordPool = result.words;
-    categoryName = supabaseCat.category;
+    categoryName = supabaseCat.categoryName;
   } else {
     const items = await db.select().from(categoryItemsTable).where(eq(categoryItemsTable.categoryId, room.categoryId!));
     wordPool = items.map((i) => i.itemText);
@@ -520,8 +520,8 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
 
   // ── FOREHEAD: SET CATEGORY ────────────────────────────────────────────────
   if (type === "setCategory") {
-    const { roomCode, categoryId, supabaseCategory, supabaseTable } = payload as {
-      roomCode: string; categoryId: number; supabaseCategory?: string; supabaseTable?: string;
+    const { roomCode, kkCategoryId, supabaseCategory } = payload as {
+      roomCode: string; kkCategoryId?: number; supabaseCategory?: string;
     };
     const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
     if (!room) return;
@@ -529,12 +529,11 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
       where: and(eq(playersTable.roomId, room.id), eq(playersTable.isHost, true)),
     });
     if (host?.id !== client.playerId) return;
-    if (supabaseCategory && supabaseTable) {
-      roomSupabaseCategory.set(roomCode, { table: supabaseTable, category: supabaseCategory });
+    if (kkCategoryId != null && supabaseCategory) {
+      roomSupabaseCategory.set(roomCode, { kkCategoryId, categoryName: supabaseCategory });
       await db.update(roomsTable).set({ categoryId: null }).where(eq(roomsTable.code, roomCode));
     } else {
       roomSupabaseCategory.delete(roomCode);
-      await db.update(roomsTable).set({ categoryId: Number(categoryId) }).where(eq(roomsTable.code, roomCode));
     }
     broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
     return;
@@ -620,7 +619,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     );
     let available: string[];
     if (supabaseCat) {
-      const result = await fetchForeheadWordsFromSupabase(supabaseCat.table, supabaseCat.category);
+      const result = await fetchForeheadWordsByKKCategory(supabaseCat.kkCategoryId);
       if (result.error || result.words.length === 0) return;
       available = result.words.filter((w) => !usedWords.has(w));
     } else {
@@ -642,7 +641,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
       if (normalWords.length > 0) rs.normalWord = normalWords[0];
     }
 
-    const regenCatName = supabaseCat?.category ?? rs.categoryName;
+    const regenCatName = supabaseCat?.categoryName ?? rs.categoryName;
     const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
     const connected = players.filter((p) => p.connected);
 

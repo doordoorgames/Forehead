@@ -18,7 +18,6 @@ const HEADERS = {
 export async function fetchCharactersFromSupabase(
   lang: string,
 ): Promise<{ characters: SupabaseCharacterEntry[]; error: string | null }> {
-  // Map room lang ('en'/'ar') to Supabase language column values
   const selectedLanguage = lang === 'ar' ? 'arabic' : 'english';
   console.log('[CharacterGame] selectedLanguage:', selectedLanguage);
 
@@ -67,6 +66,32 @@ export async function fetchCharactersFromSupabase(
   }
 }
 
+export async function fetchForeheadWordsByKKCategory(
+  categoryId: number,
+): Promise<{ words: string[]; error: string | null }> {
+  console.log(`[Forehead] Fetching words for kk_entries category_id=${categoryId}`);
+  try {
+    const url =
+      `${SUPABASE_URL}/rest/v1/kk_entries` +
+      `?category_id=eq.${categoryId}&active=eq.true&select=answer`;
+    const res = await fetch(url, { headers: HEADERS });
+    if (!res.ok) {
+      const body = await res.text();
+      const msg = `Supabase kk_entries fetch failed: HTTP ${res.status} — ${body}`;
+      console.error(msg);
+      return { words: [], error: msg };
+    }
+    const rows = (await res.json()) as { answer: string }[];
+    console.log(`[Forehead] Loaded ${rows.length} entries for category_id=${categoryId}`);
+    return { words: rows.map((r) => r.answer), error: null };
+  } catch (err) {
+    const msg = `Supabase kk_entries fetch failed: ${err instanceof Error ? err.message : String(err)}`;
+    console.error(msg);
+    return { words: [], error: msg };
+  }
+}
+
+/** @deprecated Use fetchForeheadWordsByKKCategory instead */
 export async function fetchForeheadWordsFromSupabase(
   table: string,
   category: string,

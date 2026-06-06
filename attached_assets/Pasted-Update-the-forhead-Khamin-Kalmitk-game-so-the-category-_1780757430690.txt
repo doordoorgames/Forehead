@@ -1,0 +1,76 @@
+Update the forhead / Khamin Kalmitk game so the category system uses Supabase as the backend instead of hardcoded local category arrays.
+
+Supabase tables already exist and are populated:
+
+1. kk_categories
+Columns:
+- id
+- language
+- category_name
+- active
+- created_at
+
+2. kk_entries
+Columns:
+- id
+- category_id
+- answer
+- active
+- created_at
+
+Important relationship:
+kk_categories.id = kk_entries.category_id
+
+Required behavior:
+
+1. On the category selection screen, load categories from Supabase:
+- Use kk_categories
+- Only show active = true
+- Filter by selected language, usually "en" or "ar"
+- Display category_name to the user
+
+2. When a category is selected, load the words/answers from Supabase:
+- Use kk_entries
+- Match kk_entries.category_id to the selected kk_categories.id
+- Only use active = true entries
+- Randomly select answers from that category for gameplay
+
+3. Do not use the old hardcoded category lists anymore.
+- Remove or bypass any local arrays for Countries, Food, Famous Figures, 90s Kid Things, etc.
+- Supabase is now the source of truth.
+
+4. Add proper loading and error states:
+- While categories are loading, show “Loading categories…”
+- If Supabase fails, show “Could not load categories. Please try again.”
+- If a category has no entries, show “This category has no words yet.”
+
+5. Keep the existing game flow, room system, QR code, player joining, and UI design exactly the same.
+Only change the category and answer source.
+
+6. Use the existing Supabase project keys already configured in this Replit project.
+If they are not configured, add environment variables:
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
+
+7. Expected Supabase query logic:
+
+Load categories:
+SELECT id, category_name
+FROM kk_categories
+WHERE language = selectedLanguage
+AND active = true
+ORDER BY category_name ASC;
+
+Load entries:
+SELECT answer
+FROM kk_entries
+WHERE category_id = selectedCategoryId
+AND active = true;
+
+8. After loading entries, shuffle them in the app and use them for rounds without repeating until the list is exhausted.
+
+9. Make sure this works on mobile Safari and iPad browser.
+
+Do not create new tables.
+Do not rename tables.
+Do not delete any existing data.

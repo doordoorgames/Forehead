@@ -293,7 +293,7 @@ async function startCountdown(roomCode: string) {
   await db.update(roomsTable).set({ status: "countdown" }).where(eq(roomsTable.code, roomCode));
   broadcast(roomCode, { type: "roomUpdate", payload: await getRoomState(roomCode) });
 
-  let secondsLeft = 7;
+  let secondsLeft = 3;
   broadcast(roomCode, { type: "countdownTick", payload: { secondsLeft } });
 
   clearRoomTimer(roomCode);

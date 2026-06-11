@@ -66,12 +66,48 @@ export async function fetchCharactersFromSupabase(
   }
 }
 
+/**
+ * Fetch all active words for a category from the flat forehead tables.
+ * Uses forehead_english for lang='en', forehead_arabic for lang='ar'.
+ * The categoryName must match the `category` column exactly as stored in Supabase.
+ */
+export async function fetchForeheadWordsByFlatCategory(
+  categoryName: string,
+  lang?: string,
+): Promise<{ words: string[]; error: string | null }> {
+  const errMsg = lang === 'ar' ? 'تعذر تحميل الكلمات' : 'Could not load words for this category.';
+  const table = lang === 'ar' ? 'forehead_arabic' : 'forehead_english';
+
+  console.log(`[Forehead] Fetching words from ${table} WHERE category="${categoryName}"`);
+
+  try {
+    const url =
+      `${SUPABASE_URL}/rest/v1/${table}` +
+      `?category=eq.${encodeURIComponent(categoryName)}&active=eq.true&select=word&limit=50000`;
+
+    const res = await fetch(url, { headers: HEADERS });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`[Forehead] ${table} fetch failed: HTTP ${res.status} — ${body}`);
+      return { words: [], error: errMsg };
+    }
+
+    const rows = (await res.json()) as { word: string }[];
+    console.log(`[Forehead] Loaded ${rows.length} words for category "${categoryName}" from ${table}`);
+    return { words: rows.map((r) => r.word), error: null };
+  } catch (err) {
+    console.error('[Forehead] fetchForeheadWordsByFlatCategory error:', err);
+    return { words: [], error: errMsg };
+  }
+}
+
+/** @deprecated Use fetchForeheadWordsByFlatCategory instead */
 export async function fetchForeheadWordsByKKCategory(
   categoryId: number,
   lang?: string,
 ): Promise<{ words: string[]; error: string | null }> {
   const errMsg = lang === 'ar' ? 'تعذر تحميل الكلمات' : 'Could not load words for this category.';
-  console.log(`[Forehead] Fetching words for kk_entries category_id=${categoryId}`);
+  console.log(`[Forehead] fetchForeheadWordsByKKCategory called (deprecated) category_id=${categoryId}`);
   try {
     const url =
       `${SUPABASE_URL}/rest/v1/kk_entries` +

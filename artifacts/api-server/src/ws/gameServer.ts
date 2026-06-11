@@ -10,7 +10,7 @@ import {
 import { eq, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { getCharadesPool } from "../lib/charadesPool";
-import { fetchForeheadWordsByKKCategory, fetchCharactersFromSupabase, SupabaseCharacterEntry } from "../lib/supabase-forehead";
+import { fetchForeheadWordsByFlatCategory, fetchCharactersFromSupabase, SupabaseCharacterEntry } from "../lib/supabase-forehead";
 type CharacterEntry = SupabaseCharacterEntry;
 
 // ── CLIENT REGISTRY ──────────────────────────────────────────────────────────
@@ -323,7 +323,7 @@ async function beginWordDisplay(roomCode: string) {
 
   if (supabaseCat) {
     const roomLang = room.lang ?? 'en';
-    const result = await fetchForeheadWordsByKKCategory(supabaseCat.kkCategoryId, roomLang);
+    const result = await fetchForeheadWordsByFlatCategory(supabaseCat.categoryName, roomLang);
     if (result.error || result.words.length === 0) {
       const noWordsMsg = roomLang === 'ar'
         ? 'لا توجد كلمات في هذا التصنيف'
@@ -623,7 +623,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     );
     let available: string[];
     if (supabaseCat) {
-      const result = await fetchForeheadWordsByKKCategory(supabaseCat.kkCategoryId, room.lang ?? 'en');
+      const result = await fetchForeheadWordsByFlatCategory(supabaseCat.categoryName, room.lang ?? 'en');
       if (result.error || result.words.length === 0) return;
       available = result.words.filter((w) => !usedWords.has(w));
     } else {

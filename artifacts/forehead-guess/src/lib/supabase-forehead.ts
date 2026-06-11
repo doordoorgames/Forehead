@@ -21,12 +21,19 @@ export interface ForeheadCategoriesResult {
   debugTotalCategories: number;
 }
 
+/**
+ * Fetch all active categories for the given language from the flat tables
+ * (forehead_english / forehead_arabic). Categories are derived dynamically
+ * from the `category` column — no hardcoded list is used.
+ */
 export async function fetchForeheadCategories(
   lang: 'en' | 'ar',
 ): Promise<ForeheadCategoriesResult> {
-  const errorMsg = lang === 'ar'
-    ? 'تعذر تحميل التصنيفات'
-    : 'Could not load categories. Please try again.';
+  const table = lang === 'ar' ? 'forehead_arabic' : 'forehead_english';
+  const errorMsg =
+    lang === 'ar'
+      ? 'تعذر تحميل التصنيفات'
+      : 'Could not load categories. Please try again.';
 
   const empty: ForeheadCategoriesResult = {
     categories: [],
@@ -36,65 +43,43 @@ export async function fetchForeheadCategories(
   };
 
   try {
-    // Step 1: fetch all active categories for this language
-    const catUrl =
-      `${SUPABASE_URL}/rest/v1/kk_categories` +
-      `?language=eq.${encodeURIComponent(lang)}&active=eq.true` +
-      `&select=id,category_name&order=category_name.asc`;
+    // Fetch all active rows — only need the category column to build counts.
+    // limit=50000 prevents Supabase's default 1000-row page cap from silently
+    // truncating results.
+    const url =
+      `${SUPABASE_URL}/rest/v1/${table}` +
+      `?active=eq.true&select=category&limit=50000`;
 
-    const catRes = await fetch(catUrl, { headers: HEADERS });
-    if (!catRes.ok) {
-      const body = await catRes.text();
-      console.error(`[Forehead] kk_categories fetch failed: HTTP ${catRes.status} — ${body}`);
+    const res = await fetch(url, { headers: HEADERS });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`[Forehead] ${table} fetch failed: HTTP ${res.status} — ${body}`);
       return { ...empty, error: errorMsg };
     }
 
-    const catRows: { id: number; category_name: string }[] = await catRes.json();
-    if (catRows.length === 0) {
-      console.log('[Forehead] No categories found for lang:', lang);
-      return empty;
-    }
+    const rows: { category: string }[] = await res.json();
+    const totalRows = rows.length;
 
-    // Step 2: fetch entry counts scoped to ONLY this language's category IDs.
-    // Using category_id=in.(id1,id2,...) avoids the global 1000-row page limit
-    // that would otherwise silently truncate results.
-    const idList = catRows.map((r) => r.id).join(',');
-    const entryUrl =
-      `${SUPABASE_URL}/rest/v1/kk_entries` +
-      `?category_id=in.(${idList})&active=eq.true&select=category_id&limit=50000`;
-
-    const entryRes = await fetch(entryUrl, { headers: HEADERS });
-    const countMap: Record<number, number> = {};
-    let totalRows = 0;
-
-    if (entryRes.ok) {
-      const entryRows: { category_id: number }[] = await entryRes.json();
-      totalRows = entryRows.length;
-      for (const row of entryRows) {
-        countMap[row.category_id] = (countMap[row.category_id] ?? 0) + 1;
+    // Group by category text exactly as stored in Supabase
+    const countMap: Record<string, number> = {};
+    for (const row of rows) {
+      if (row.category) {
+        countMap[row.category] = (countMap[row.category] ?? 0) + 1;
       }
     }
 
-    // Step 3: build category list, filtering out any with zero entries
-    const categories: ForeheadCategory[] = catRows
-      .map((row) => ({
-        id: row.id,
-        name: row.category_name,
-        wordCount: countMap[row.id] ?? 0,
-      }))
-      .filter((cat) => cat.wordCount > 0);
+    // Build and sort alphabetically; filter out any accidental 0-count entries
+    const categories: ForeheadCategory[] = Object.entries(countMap)
+      .filter(([, count]) => count > 0)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, wordCount], i) => ({ id: i + 1, name, wordCount }));
 
-    console.log(`[Forehead] Arabic categories loaded:`, categories);
-    console.log(
-      `[Forehead] Total rows: ${totalRows}, categories with words: ${categories.length}`,
-    );
+    const totalCategories = categories.length;
 
-    return {
-      categories,
-      error: null,
-      debugTotalRows: totalRows,
-      debugTotalCategories: categories.length,
-    };
+    console.log(`[Forehead] ${lang.toUpperCase()} categories loaded (${totalCategories}):`, categories.map((c) => `${c.name} (${c.wordCount})`));
+    console.log(`[Forehead] Total ${lang.toUpperCase()} rows: ${totalRows}`);
+
+    return { categories, error: null, debugTotalRows: totalRows, debugTotalCategories: totalCategories };
   } catch (err) {
     console.error('[Forehead] fetchForeheadCategories error:', err);
     return { ...empty, error: errorMsg };

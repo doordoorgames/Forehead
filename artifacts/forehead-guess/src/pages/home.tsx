@@ -432,9 +432,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
               </>
             )}
 
-            <Button variant="ghost" size="sm" className="mt-2 text-muted-foreground" onClick={() => setLocation('/mode')}>
-              ← {t.back}
-            </Button>
+            <a
+              href="https://dordor.games/"
+              className="mt-2 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors text-center"
+            >
+              ← Back to Dordor.games
+            </a>
             <Button variant="ghost" className="mt-2" onClick={() => setLocation('/admin')}>
               {t.adminPanel}
             </Button>

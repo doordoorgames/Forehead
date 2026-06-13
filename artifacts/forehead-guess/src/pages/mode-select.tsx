@@ -97,13 +97,13 @@ export default function ModeSelect() {
           </button>
         </div>
 
-        <button
-          onClick={() => setLocation('/')}
+        <a
+          href="https://dordor.games/"
           className="text-muted-foreground text-sm underline underline-offset-4 mx-auto hover:text-foreground transition-colors"
           style={fontStyle}
         >
-          {t.back}
-        </button>
+          ← Back to Dordor.games
+        </a>
       </div>
     </div>
   );

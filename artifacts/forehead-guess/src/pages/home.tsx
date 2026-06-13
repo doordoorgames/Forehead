@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import PetalSwoop from '@/components/PetalSwoop';
+import CharadesBackground from '@/components/CharadesBackground';
 import grassBg from '@assets/6E21F754-65A0-4119-A739-67DD40CAA6B4_1780250343871.png';
 import khaminLogo from '@assets/IMG_1974_1780586546169.png';
 import { z } from 'zod';
@@ -144,7 +145,8 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           <PetalSwoop />
         </>
       )}
-      {mode !== 'character' && mode !== 'dykm' && (
+      {mode === 'charades' && <CharadesBackground />}
+      {mode !== 'character' && mode !== 'dykm' && mode !== 'charades' && (
         <>
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-3xl" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary/20 blur-3xl" />

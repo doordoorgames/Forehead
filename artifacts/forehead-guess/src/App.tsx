@@ -17,7 +17,8 @@ function Router() {
   const [location] = useLocation();
   const roomCode = location.startsWith('/room/') ? location.split('/room/')[1]?.toUpperCase() : null;
   const isDykmRoom = !!roomCode && sessionStorage.getItem(`fg_roomMode_${roomCode}`) === 'dykm';
-  const showCyberpunk = !location.startsWith('/character') && !location.startsWith('/dykm') && !location.startsWith('/doyouknowme') && !isDykmRoom;
+  const isCharadesRoom = !!roomCode && sessionStorage.getItem(`fg_roomMode_${roomCode}`) === 'charades';
+  const showCyberpunk = !location.startsWith('/character') && !location.startsWith('/dykm') && !location.startsWith('/doyouknowme') && !location.startsWith('/charades') && !isDykmRoom && !isCharadesRoom;
 
   return (
     <>

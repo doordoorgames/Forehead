@@ -70,32 +70,6 @@ export default function CharadesBackground() {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
 
-      // Painted canvas texture — horizontal brushstrokes
-      ctx.save();
-      for (let y = 0; y < H; y += 10) {
-        const alpha = 0.015 + Math.abs(Math.sin(y * 0.08 + t * 0.008)) * 0.015;
-        ctx.strokeStyle = `rgba(168, 85, 247, ${alpha})`;
-        ctx.lineWidth = 4 + Math.sin(y * 0.03) * 2;
-        ctx.beginPath();
-        ctx.moveTo(0, y + Math.sin(y * 0.04 + t * 0.005) * 1.5);
-        ctx.lineTo(W, y + Math.cos(y * 0.04 + t * 0.005 + 1) * 1.5);
-        ctx.stroke();
-      }
-      ctx.restore();
-
-      // Occasional vertical accent strokes (oil painting texture)
-      ctx.save();
-      for (let x = 0; x < W; x += 80 + Math.sin(x) * 30) {
-        const alpha = 0.005 + Math.abs(Math.sin(x * 0.02 + t * 0.003)) * 0.01;
-        ctx.strokeStyle = `rgba(250, 200, 0, ${alpha})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x + Math.sin(x * 0.1) * 8, H);
-        ctx.stroke();
-      }
-      ctx.restore();
-
       // Draw floating emoji items
       for (const item of items) {
         item.y -= item.speed;

@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Copy, Check, Users } from 'lucide-react';
 import { useLang } from '@/context/LanguageContext';
-import CharadesBackground from '@/components/CharadesBackground';
+import bgBigRect from '@assets/398199A7-F3AA-42BA-9585-D50E4BFBCD6C_1781444797139.png';
+import bgClean from '@assets/5A7DC98A-72C4-4B1B-993C-37EE3278D61C_1781444797139.png';
 import type { RoomState } from '@/hooks/useGameSocket';
 import RoomJoinQR from '@/components/RoomJoinQR';
 
@@ -137,12 +138,18 @@ export default function CharadesRoom({ code, playerId, roomState, socket, onGoHo
 
   const status = roomState?.status ?? 'waiting';
 
+  const bgImage = status === 'charades_playing' ? bgBigRect : bgClean;
+
   return (
     <div
       className="min-h-[100dvh] text-white flex flex-col relative overflow-hidden"
       dir={isAr ? 'rtl' : 'ltr'}
+      style={{
+        backgroundImage: `url(${bgImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+      }}
     >
-      <CharadesBackground />
 
       {socket.error && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-[#a855f7] text-white p-3 text-center font-bold text-lg">

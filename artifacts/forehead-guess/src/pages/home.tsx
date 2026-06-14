@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import PetalSwoop from '@/components/PetalSwoop';
-import CharadesBackground from '@/components/CharadesBackground';
 import grassBg from '@assets/6E21F754-65A0-4119-A739-67DD40CAA6B4_1780250343871.png';
+import charadesBg3 from '@assets/IMG_2041_1781444797139.png';
+import charadesBgRect from '@assets/398199A7-F3AA-42BA-9585-D50E4BFBCD6C_1781444797139.png';
 import khaminLogo from '@assets/IMG_1974_1780586546169.png';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -114,6 +115,288 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
 
   const isAr = lang === 'ar';
 
+  // ──── CHARADES SPECIAL LAYOUTS ────────────────────────────────────────────
+  if (mode === 'charades' && view === 'main') {
+    return (
+      <div
+        style={{
+          position: 'fixed', inset: 0, overflow: 'hidden',
+          backgroundImage: `url(${charadesBg3})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center top',
+        }}
+      >
+        {/* Create Room — left rectangle (~47-62% h, 6-47% w) */}
+        <button
+          onClick={() => setView('create')}
+          style={{
+            position: 'absolute', top: '47%', left: '6%', width: '41%', height: '15%',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            color: '#3b1700', fontWeight: 900,
+            fontSize: 'clamp(13px, 3.5vw, 18px)',
+            fontFamily: isAr ? "'Changa', sans-serif" : "'Arial', sans-serif",
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          {t.createRoom}
+        </button>
+
+        {/* Join Room — right rectangle (~47-62% h, 53-94% w) */}
+        <button
+          onClick={() => setView('join')}
+          style={{
+            position: 'absolute', top: '47%', left: '53%', width: '41%', height: '15%',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            color: '#3b1700', fontWeight: 900,
+            fontSize: 'clamp(13px, 3.5vw, 18px)',
+            fontFamily: isAr ? "'Changa', sans-serif" : "'Arial', sans-serif",
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          {t.joinRoom}
+        </button>
+
+        {/* Language toggle — bottom rectangle (~66-79% h, 6-92% w) */}
+        <button
+          onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+          style={{
+            position: 'absolute', top: '66%', left: '6%', width: '88%', height: '13%',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            color: '#3b1700', fontWeight: 900,
+            fontSize: 'clamp(13px, 3.5vw, 18px)',
+            fontFamily: "'Changa', sans-serif",
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          {lang === 'ar' ? 'English' : 'عربية'}
+        </button>
+
+        <a
+          href="https://dordor.games/"
+          style={{
+            position: 'absolute', bottom: '3%', left: '50%', transform: 'translateX(-50%)',
+            color: 'rgba(255,200,80,0.7)', fontSize: '11px',
+            textDecoration: 'underline', whiteSpace: 'nowrap', zIndex: 10,
+          }}
+        >
+          ← Back to Dordor.games
+        </a>
+      </div>
+    );
+  }
+
+  if (mode === 'charades' && view === 'create') {
+    return (
+      <div
+        style={{
+          position: 'fixed', inset: 0, overflow: 'hidden',
+          backgroundImage: `url(${charadesBgRect})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center top',
+        }}
+      >
+        <Form {...createForm}>
+          <form onSubmit={createForm.handleSubmit(onCreateSubmit)}>
+            {/* Inputs overlaid on big rectangle (~36-58% h, 4-96% w) */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '38%', left: '5%', width: '90%', height: '20%',
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                gap: 8, padding: '0 12px',
+              }}
+            >
+              <p
+                style={{
+                  color: '#3b1700', fontWeight: 800,
+                  fontSize: 'clamp(13px, 3.5vw, 17px)',
+                  fontFamily: isAr ? "'Changa', sans-serif" : "'Arial', sans-serif",
+                  marginBottom: 4, textAlign: 'center',
+                }}
+              >
+                {t.yourName}
+              </p>
+              <FormField
+                control={createForm.control}
+                name="hostName"
+                render={({ field }) => (
+                  <FormItem style={{ width: '100%' }}>
+                    <FormControl>
+                      <Input
+                        placeholder={t.namePlaceholder}
+                        className="text-lg h-10 text-center"
+                        style={{
+                          background: 'rgba(255,240,200,0.55)',
+                          border: '1.5px solid rgba(59,23,0,0.4)',
+                          borderRadius: 8, color: '#3b1700',
+                          fontFamily: isAr ? "'Changa', sans-serif" : undefined,
+                          fontWeight: 700,
+                        }}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Back — bottom left */}
+            <button
+              type="button"
+              onClick={() => setView('main')}
+              style={{
+                position: 'absolute', bottom: '10%', left: '5%',
+                background: 'rgba(255,240,200,0.65)',
+                border: '1.5px solid rgba(59,23,0,0.35)',
+                borderRadius: 10, padding: '8px 20px',
+                color: '#3b1700', fontWeight: 700,
+                fontSize: 'clamp(12px, 3vw, 16px)',
+                fontFamily: isAr ? "'Changa', sans-serif" : undefined,
+                cursor: 'pointer',
+              }}
+            >
+              {t.back}
+            </button>
+
+            {/* Play ▶ — bottom right */}
+            <button
+              type="submit"
+              disabled={createRoomMutation.isPending}
+              style={{
+                position: 'absolute', bottom: '10%', right: '5%',
+                background: 'rgba(255,220,100,0.9)',
+                border: '2px solid rgba(59,23,0,0.5)',
+                borderRadius: 10, padding: '8px 24px',
+                color: '#3b1700', fontWeight: 900,
+                fontSize: 'clamp(14px, 3.5vw, 18px)',
+                fontFamily: isAr ? "'Changa', sans-serif" : "'Arial', sans-serif",
+                cursor: 'pointer',
+                boxShadow: '0 3px 0 rgba(59,23,0,0.3)',
+              }}
+            >
+              {createRoomMutation.isPending ? '...' : `▶ ${t.createRoom}`}
+            </button>
+          </form>
+        </Form>
+      </div>
+    );
+  }
+
+  if (mode === 'charades' && view === 'join') {
+    return (
+      <div
+        style={{
+          position: 'fixed', inset: 0, overflow: 'hidden',
+          backgroundImage: `url(${charadesBgRect})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center top',
+        }}
+      >
+        <Form {...joinForm}>
+          <form onSubmit={joinForm.handleSubmit(onJoinSubmit)}>
+            {/* Two inputs overlaid on big rectangle */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '36%', left: '5%', width: '90%', height: '24%',
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                gap: 6, padding: '0 12px',
+              }}
+            >
+              <FormField
+                control={joinForm.control}
+                name="roomCode"
+                render={({ field }) => (
+                  <FormItem style={{ width: '100%' }}>
+                    <FormControl>
+                      <Input
+                        placeholder="XXXXX"
+                        maxLength={5}
+                        className="text-xl h-10 text-center font-black tracking-widest uppercase"
+                        style={{
+                          background: 'rgba(255,240,200,0.55)',
+                          border: '1.5px solid rgba(59,23,0,0.4)',
+                          borderRadius: 8, color: '#3b1700',
+                          letterSpacing: '0.15em',
+                        }}
+                        {...field}
+                        onChange={e => field.onChange(e.target.value.toUpperCase())}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={joinForm.control}
+                name="playerName"
+                render={({ field }) => (
+                  <FormItem style={{ width: '100%' }}>
+                    <FormControl>
+                      <Input
+                        placeholder={t.namePlaceholder}
+                        className="text-lg h-10 text-center"
+                        style={{
+                          background: 'rgba(255,240,200,0.55)',
+                          border: '1.5px solid rgba(59,23,0,0.4)',
+                          borderRadius: 8, color: '#3b1700',
+                          fontFamily: isAr ? "'Changa', sans-serif" : undefined,
+                          fontWeight: 700,
+                        }}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Back — bottom left */}
+            <button
+              type="button"
+              onClick={() => setView('main')}
+              style={{
+                position: 'absolute', bottom: '10%', left: '5%',
+                background: 'rgba(255,240,200,0.65)',
+                border: '1.5px solid rgba(59,23,0,0.35)',
+                borderRadius: 10, padding: '8px 20px',
+                color: '#3b1700', fontWeight: 700,
+                fontSize: 'clamp(12px, 3vw, 16px)',
+                fontFamily: isAr ? "'Changa', sans-serif" : undefined,
+                cursor: 'pointer',
+              }}
+            >
+              {t.back}
+            </button>
+
+            {/* Play ▶ — bottom right */}
+            <button
+              type="submit"
+              disabled={joinRoomMutation.isPending}
+              style={{
+                position: 'absolute', bottom: '10%', right: '5%',
+                background: 'rgba(255,220,100,0.9)',
+                border: '2px solid rgba(59,23,0,0.5)',
+                borderRadius: 10, padding: '8px 24px',
+                color: '#3b1700', fontWeight: 900,
+                fontSize: 'clamp(14px, 3.5vw, 18px)',
+                fontFamily: isAr ? "'Changa', sans-serif" : "'Arial', sans-serif",
+                cursor: 'pointer',
+                boxShadow: '0 3px 0 rgba(59,23,0,0.3)',
+              }}
+            >
+              {joinRoomMutation.isPending ? '...' : `▶ ${t.joinRoom}`}
+            </button>
+          </form>
+        </Form>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Character mode: replace the cyberpunk city with the vending-machine scene */}
@@ -145,7 +428,6 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           <PetalSwoop />
         </>
       )}
-      {mode === 'charades' && <CharadesBackground />}
       {mode !== 'character' && mode !== 'dykm' && mode !== 'charades' && (
         <>
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-3xl" />

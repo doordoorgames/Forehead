@@ -1,0 +1,148 @@
+CHARADES UI CLEANUP PASS
+
+Apply the following changes across ALL Charades screens. The goal is to make the UI feel like it belongs to the custom background artwork instead of looking like a generic game overlay.
+
+GLOBAL RULES
+
+* Remove ALL emojis from the UI.
+* Do not use emoji icons beside text.
+* Do not use 🎭, ▶, 🎮, 🎬, or any other emoji.
+* Use clean text labels only.
+
+TEXT STYLE
+
+* All UI text should be:
+    * White
+    * Sharp black shadow
+    * Shadow very close to the letters
+    * No blur
+    * No glow
+    * No yellow text
+* Any highlighted text should use:
+    * Burnt orange
+    * Warm pink
+* Never use bright yellow.
+* Never use purple accents unless already part of the background artwork.
+
+CONTAINERS / PANELS
+
+* Remove rounded rectangle panels wherever possible.
+* Remove solid colored backgrounds behind UI elements.
+* Do not place generic game cards on top of the artwork.
+* Use transparent overlays instead.
+* Allow the custom background art to remain visible.
+* UI should feel integrated into the artwork.
+
+COLOR PALETTE
+
+Only use:
+
+* Burnt orange
+* Warm pink
+* White
+* Black shadows
+
+Avoid:
+
+* Purple UI panels
+* Black UI blocks
+* Generic gaming colors
+* Neon gaming overlays
+
+SCREEN 1 (CREATE ROOM / JOIN ROOM / ARABIAN)
+
+Fix text alignment.
+
+Current issue:
+
+* “Create Room” and “Join Room” sit too high inside their paper/button areas.
+* “Arabian” sits too low.
+
+Required:
+
+* Move CREATE ROOM down so it is perfectly centered vertically.
+* Move JOIN ROOM down so it is perfectly centered vertically.
+* Move ARABIAN slightly upward so it is perfectly centered vertically.
+* Ensure all three labels are visually centered within their shapes.
+
+SCREEN 2 (ROOM / QR CODE SCREEN)
+
+Current issue:
+
+* Added colored overlay panels and rounded containers do not match the artwork.
+
+Required:
+
+* Remove unnecessary colored backgrounds.
+* Remove rounded game-style cards.
+* Keep UI transparent.
+* Use the background artwork itself as the visual foundation.
+
+QR CODE
+
+Current issue:
+
+* Purple and black styling.
+
+Required:
+
+* Replace purple accents.
+* Replace black decorative styling.
+* Use burnt orange and warm pink styling only.
+* Keep QR code highly scannable.
+
+SCREEN 3 (ACTIVE GAME SCREEN)
+
+Current issue:
+
+* Some player names and active indicators appear in yellow.
+
+Required:
+
+* Change yellow text to black where appropriate.
+* Follow global text rules.
+* White text with sharp black shadow.
+* No blurry shadows.
+* No glow effects.
+
+SCREEN 4 (PLAYER PERFORMING SCREEN)
+
+Current issue:
+
+* Large rounded panel behind the performer section.
+
+Required:
+
+* Remove the panel.
+* Remove rounded rectangle containers.
+* Keep the artwork fully visible.
+* Use transparent overlays only.
+
+END TURN / STATUS COLORS
+
+Current issue:
+
+* Uses colors that don’t match the art direction.
+
+Required:
+
+* Change status colors to:
+    * Burnt orange
+    * Warm pink
+* Keep visual consistency with the rest of the UI.
+
+FINAL ART DIRECTION
+
+The custom background artwork is the star of the experience.
+
+The UI should feel lightly placed on top of the artwork, not boxed inside generic game panels.
+
+Think:
+
+* Anime poster
+* Printed paper overlays
+* Minimal interface
+* Transparent layers
+* Artwork-first design
+
+Do not add any new containers unless absolutely necessary.

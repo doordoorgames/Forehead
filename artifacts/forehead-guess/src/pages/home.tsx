@@ -185,6 +185,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     );
   }
 
+  const CHARADES_TEXT: React.CSSProperties = {
+    color: '#000',
+    textShadow: '1px 1px 0 #fff, -1px 1px 0 #fff, 1px -1px 0 #fff, -1px -1px 0 #fff',
+    fontFamily: isAr ? "'Changa', sans-serif" : "'Arial', sans-serif",
+  };
+
   if (mode === 'charades' && view === 'create') {
     return (
       <div
@@ -197,22 +203,22 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
       >
         <Form {...createForm}>
           <form onSubmit={createForm.handleSubmit(onCreateSubmit)}>
-            {/* Inputs overlaid on big rectangle (~36-58% h, 4-96% w) */}
+            {/* Label + input overlaid on big rectangle */}
             <div
               style={{
                 position: 'absolute',
                 top: '38%', left: '5%', width: '90%', height: '20%',
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
-                gap: 8, padding: '0 12px',
+                gap: 10, padding: '0 12px',
               }}
             >
               <p
                 style={{
-                  color: '#3b1700', fontWeight: 800,
-                  fontSize: 'clamp(13px, 3.5vw, 17px)',
-                  fontFamily: isAr ? "'Changa', sans-serif" : "'Arial', sans-serif",
-                  marginBottom: 4, textAlign: 'center',
+                  ...CHARADES_TEXT,
+                  fontWeight: 800,
+                  fontSize: 'clamp(14px, 3.8vw, 18px)',
+                  textAlign: 'center',
                 }}
               >
                 {t.yourName}
@@ -227,9 +233,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                         placeholder={t.namePlaceholder}
                         className="text-lg h-10 text-center"
                         style={{
-                          background: 'rgba(255,240,200,0.55)',
-                          border: '1.5px solid rgba(59,23,0,0.4)',
-                          borderRadius: 8, color: '#3b1700',
+                          background: 'transparent',
+                          border: 'none',
+                          borderBottom: '2px solid rgba(0,0,0,0.5)',
+                          borderRadius: 0,
+                          boxShadow: 'none',
+                          color: '#000',
                           fontFamily: isAr ? "'Changa', sans-serif" : undefined,
                           fontWeight: 700,
                         }}
@@ -248,35 +257,28 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
               onClick={() => setView('main')}
               style={{
                 position: 'absolute', bottom: '10%', left: '5%',
-                background: 'rgba(255,240,200,0.65)',
-                border: '1.5px solid rgba(59,23,0,0.35)',
-                borderRadius: 10, padding: '8px 20px',
-                color: '#3b1700', fontWeight: 700,
+                background: 'transparent', border: 'none',
+                padding: '8px 20px', cursor: 'pointer',
+                ...CHARADES_TEXT, fontWeight: 700,
                 fontSize: 'clamp(12px, 3vw, 16px)',
-                fontFamily: isAr ? "'Changa', sans-serif" : undefined,
-                cursor: 'pointer',
               }}
             >
               {t.back}
             </button>
 
-            {/* Play ▶ — bottom right */}
+            {/* Create Room — bottom right */}
             <button
               type="submit"
               disabled={createRoomMutation.isPending}
               style={{
                 position: 'absolute', bottom: '10%', right: '5%',
-                background: 'rgba(255,220,100,0.9)',
-                border: '2px solid rgba(59,23,0,0.5)',
-                borderRadius: 10, padding: '8px 24px',
-                color: '#3b1700', fontWeight: 900,
+                background: 'transparent', border: 'none',
+                padding: '8px 24px', cursor: 'pointer',
+                ...CHARADES_TEXT, fontWeight: 900,
                 fontSize: 'clamp(14px, 3.5vw, 18px)',
-                fontFamily: isAr ? "'Changa', sans-serif" : "'Arial', sans-serif",
-                cursor: 'pointer',
-                boxShadow: '0 3px 0 rgba(59,23,0,0.3)',
               }}
             >
-              {createRoomMutation.isPending ? '...' : `▶ ${t.createRoom}`}
+              {createRoomMutation.isPending ? '...' : t.createRoom}
             </button>
           </form>
         </Form>
@@ -303,7 +305,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 top: '36%', left: '5%', width: '90%', height: '24%',
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
-                gap: 6, padding: '0 12px',
+                gap: 10, padding: '0 12px',
               }}
             >
               <FormField
@@ -317,9 +319,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                         maxLength={5}
                         className="text-xl h-10 text-center font-black tracking-widest uppercase"
                         style={{
-                          background: 'rgba(255,240,200,0.55)',
-                          border: '1.5px solid rgba(59,23,0,0.4)',
-                          borderRadius: 8, color: '#3b1700',
+                          background: 'transparent',
+                          border: 'none',
+                          borderBottom: '2px solid rgba(0,0,0,0.5)',
+                          borderRadius: 0,
+                          boxShadow: 'none',
+                          color: '#000',
                           letterSpacing: '0.15em',
                         }}
                         {...field}
@@ -340,9 +345,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                         placeholder={t.namePlaceholder}
                         className="text-lg h-10 text-center"
                         style={{
-                          background: 'rgba(255,240,200,0.55)',
-                          border: '1.5px solid rgba(59,23,0,0.4)',
-                          borderRadius: 8, color: '#3b1700',
+                          background: 'transparent',
+                          border: 'none',
+                          borderBottom: '2px solid rgba(0,0,0,0.5)',
+                          borderRadius: 0,
+                          boxShadow: 'none',
+                          color: '#000',
                           fontFamily: isAr ? "'Changa', sans-serif" : undefined,
                           fontWeight: 700,
                         }}
@@ -361,35 +369,28 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
               onClick={() => setView('main')}
               style={{
                 position: 'absolute', bottom: '10%', left: '5%',
-                background: 'rgba(255,240,200,0.65)',
-                border: '1.5px solid rgba(59,23,0,0.35)',
-                borderRadius: 10, padding: '8px 20px',
-                color: '#3b1700', fontWeight: 700,
+                background: 'transparent', border: 'none',
+                padding: '8px 20px', cursor: 'pointer',
+                ...CHARADES_TEXT, fontWeight: 700,
                 fontSize: 'clamp(12px, 3vw, 16px)',
-                fontFamily: isAr ? "'Changa', sans-serif" : undefined,
-                cursor: 'pointer',
               }}
             >
               {t.back}
             </button>
 
-            {/* Play ▶ — bottom right */}
+            {/* Join Room — bottom right */}
             <button
               type="submit"
               disabled={joinRoomMutation.isPending}
               style={{
                 position: 'absolute', bottom: '10%', right: '5%',
-                background: 'rgba(255,220,100,0.9)',
-                border: '2px solid rgba(59,23,0,0.5)',
-                borderRadius: 10, padding: '8px 24px',
-                color: '#3b1700', fontWeight: 900,
+                background: 'transparent', border: 'none',
+                padding: '8px 24px', cursor: 'pointer',
+                ...CHARADES_TEXT, fontWeight: 900,
                 fontSize: 'clamp(14px, 3.5vw, 18px)',
-                fontFamily: isAr ? "'Changa', sans-serif" : "'Arial', sans-serif",
-                cursor: 'pointer',
-                boxShadow: '0 3px 0 rgba(59,23,0,0.3)',
               }}
             >
-              {joinRoomMutation.isPending ? '...' : `▶ ${t.joinRoom}`}
+              {joinRoomMutation.isPending ? '...' : t.joinRoom}
             </button>
           </form>
         </Form>

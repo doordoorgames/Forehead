@@ -126,11 +126,11 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           backgroundPosition: 'center top',
         }}
       >
-        {/* Create Room — left rectangle (~49-63% h, 6-47% w) */}
+        {/* Create Room — left rectangle (~53-63% h, 6-47% w) */}
         <button
           onClick={() => setView('create')}
           style={{
-            position: 'absolute', top: '49%', left: '6%', width: '41%', height: '14%',
+            position: 'absolute', top: '53%', left: '6%', width: '41%', height: '10%',
             background: 'transparent', border: 'none', cursor: 'pointer',
             color: '#3b1700', fontWeight: 900,
             fontSize: 'clamp(13px, 3.5vw, 18px)',
@@ -141,11 +141,11 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           {t.createRoom}
         </button>
 
-        {/* Join Room — right rectangle (~49-63% h, 53-94% w) */}
+        {/* Join Room — right rectangle (~53-63% h, 53-94% w) */}
         <button
           onClick={() => setView('join')}
           style={{
-            position: 'absolute', top: '49%', left: '53%', width: '41%', height: '14%',
+            position: 'absolute', top: '53%', left: '53%', width: '41%', height: '10%',
             background: 'transparent', border: 'none', cursor: 'pointer',
             color: '#3b1700', fontWeight: 900,
             fontSize: 'clamp(13px, 3.5vw, 18px)',

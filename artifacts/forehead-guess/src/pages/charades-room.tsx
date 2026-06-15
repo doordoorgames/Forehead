@@ -11,8 +11,8 @@ const ORANGE = '#d4540a';      // burnt orange
 const PINK   = '#e84d7a';      // warm pink
 const RED    = '#e84d7a';      // alias for time-sensitive states → warm pink
 
-// Sharp black text shadow — no blur, no glow
-const SHARP = '1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000';
+// Sharp white text shadow — no blur, no glow
+const SHARP = '1px 1px 0 #fff, -1px 1px 0 #fff, 1px -1px 0 #fff, -1px -1px 0 #fff';
 
 const TURN_DURATION = 60;
 
@@ -24,18 +24,14 @@ function HourglassTimer({ seconds, total = TURN_DURATION }: { seconds: number; t
   const progress = seconds / total;
   const dashOffset = circ * (1 - progress);
 
-  const color = seconds > 20 ? 'white' : seconds > 10 ? ORANGE : RED;
+  const arcColor = seconds > 20 ? ORANGE : seconds > 10 ? ORANGE : RED;
   const isUrgent = seconds <= 10;
 
   return (
     <div className="flex flex-col items-center gap-1">
       <div
         className="relative"
-        style={{
-          width: 110,
-          height: 110,
-          filter: isUrgent ? `drop-shadow(0 0 10px ${RED}80)` : undefined,
-        }}
+        style={{ width: 110, height: 110 }}
       >
         <svg
           width="110"
@@ -47,14 +43,14 @@ function HourglassTimer({ seconds, total = TURN_DURATION }: { seconds: number; t
           <circle
             cx="50" cy="50" r={radius}
             fill="none"
-            stroke="rgba(255,255,255,0.08)"
+            stroke="rgba(0,0,0,0.12)"
             strokeWidth="9"
           />
           {/* Progress arc */}
           <circle
             cx="50" cy="50" r={radius}
             fill="none"
-            stroke={color}
+            stroke={arcColor}
             strokeWidth="9"
             strokeLinecap="round"
             strokeDasharray={`${circ}`}
@@ -63,11 +59,11 @@ function HourglassTimer({ seconds, total = TURN_DURATION }: { seconds: number; t
           />
         </svg>
 
-        {/* Center content — seconds only, sharp shadow */}
+        {/* Center — black number, white shadow */}
         <div className="absolute inset-0 flex items-center justify-center">
           <span
             className="text-4xl font-black tabular-nums leading-none"
-            style={{ color, textShadow: SHARP }}
+            style={{ color: '#000', textShadow: SHARP }}
           >
             {seconds}
           </span>
@@ -79,7 +75,7 @@ function HourglassTimer({ seconds, total = TURN_DURATION }: { seconds: number; t
         <span
           className="text-xs font-black tracking-widest uppercase"
           style={{
-            color: RED,
+            color: '#000',
             textShadow: SHARP,
             animation: 'urgency-pulse 0.5s ease-in-out infinite alternate',
           }}
@@ -132,7 +128,7 @@ export default function CharadesRoom({ code, playerId, roomState, socket, onGoHo
 
   return (
     <div
-      className="min-h-[100dvh] text-white flex flex-col relative overflow-hidden"
+      className="min-h-[100dvh] flex flex-col relative overflow-hidden"
       dir={isAr ? 'rtl' : 'ltr'}
       style={{
         backgroundImage: `url(${bgImage})`,
@@ -207,7 +203,7 @@ function CharadesLobbyView({
       {/* Title */}
       <p
         className="text-lg font-black uppercase tracking-widest"
-        style={{ color: 'white', textShadow: SHARP, ...fontStyle }}
+        style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
       >
         {t.charadesLobbyTitle}
       </p>
@@ -216,22 +212,22 @@ function CharadesLobbyView({
       <div className="text-center">
         <p
           className="text-xs font-bold uppercase tracking-widest mb-1"
-          style={{ color: 'rgba(255,255,255,0.6)', textShadow: SHARP }}
+          style={{ color: '#000', textShadow: SHARP }}
         >
           {t.roomCodeLabel}
         </p>
         <div className="flex items-center justify-center gap-3">
           <span
             className="text-5xl font-black tracking-widest leading-none"
-            style={{ color: ORANGE, textShadow: SHARP }}
+            style={{ color: '#000', textShadow: SHARP }}
           >
             {roomCode}
           </span>
           <button
             onClick={handleCopy}
-            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+            className="p-2 rounded-lg bg-black/10 hover:bg-black/20 transition-colors"
           >
-            {copied ? <Check className="w-5 h-5 text-white" /> : <Copy className="w-5 h-5 text-white/70" />}
+            {copied ? <Check className="w-5 h-5 text-black" /> : <Copy className="w-5 h-5 text-black/60" />}
           </button>
         </div>
       </div>
@@ -242,7 +238,7 @@ function CharadesLobbyView({
       <div className="w-full">
         <p
           className="text-xs font-bold uppercase tracking-widest mb-2 text-center"
-          style={{ color: ORANGE, textShadow: SHARP, ...fontStyle }}
+          style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
         >
           {t.players} ({connected.length})
         </p>
@@ -251,17 +247,13 @@ function CharadesLobbyView({
             <li key={p.id} className="flex items-center justify-between px-3 py-1.5">
               <span
                 className="font-bold text-base"
-                style={{
-                  color: p.id === playerId ? ORANGE : 'white',
-                  textShadow: SHARP,
-                  ...fontStyle,
-                }}
+                style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
               >
                 {p.name}
                 {p.id === playerId && (
                   <span
                     className="text-xs font-normal ml-2"
-                    style={{ color: 'rgba(255,255,255,0.5)', textShadow: 'none' }}
+                    style={{ color: 'rgba(0,0,0,0.45)', textShadow: 'none' }}
                   >
                     {t.you}
                   </span>
@@ -270,7 +262,7 @@ function CharadesLobbyView({
               {p.isHost && (
                 <span
                   className="text-xs font-bold"
-                  style={{ color: PINK, textShadow: SHARP, ...fontStyle }}
+                  style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
                 >
                   {t.host}
                 </span>
@@ -283,11 +275,12 @@ function CharadesLobbyView({
       {isHost ? (
         <div className="w-full space-y-3">
           <button
-            className="w-full h-14 text-xl font-black text-white transition-opacity"
+            className="w-full h-14 text-xl font-black transition-opacity"
             style={{
-              background: canStart ? `linear-gradient(135deg, ${ORANGE}, ${PINK})` : 'rgba(255,255,255,0.15)',
-              border: `2px solid ${canStart ? ORANGE : 'rgba(255,255,255,0.2)'}`,
+              background: canStart ? `linear-gradient(135deg, ${ORANGE}, ${PINK})` : 'rgba(0,0,0,0.12)',
+              border: `2px solid ${canStart ? ORANGE : 'rgba(0,0,0,0.2)'}`,
               borderRadius: 12,
+              color: '#000',
               textShadow: SHARP,
               opacity: canStart ? 1 : 0.5,
               cursor: canStart ? 'pointer' : 'not-allowed',
@@ -301,7 +294,7 @@ function CharadesLobbyView({
           {!canStart && (
             <p
               className="text-center text-sm"
-              style={{ color: 'rgba(255,255,255,0.6)', textShadow: SHARP, ...fontStyle }}
+              style={{ color: 'rgba(0,0,0,0.55)', textShadow: SHARP, ...fontStyle }}
             >
               {t.charadesNeedPlayers}
             </p>
@@ -309,10 +302,10 @@ function CharadesLobbyView({
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: ORANGE }} />
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#000' }} />
           <p
             className="font-bold"
-            style={{ color: 'white', textShadow: SHARP, ...fontStyle }}
+            style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
           >
             {t.charadesWaitingToStart}
           </p>
@@ -451,7 +444,7 @@ function PerformerView({ word, wordNumber, totalWords, timeLeft, timesUp, t, fon
       {/* Word counter */}
       <span
         className="text-xs font-black uppercase tracking-widest"
-        style={{ color: 'white', textShadow: SHARP, ...fontStyle }}
+        style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
       >
         {t.charadesWordNumber} {wordNumber}
       </span>
@@ -460,13 +453,13 @@ function PerformerView({ word, wordNumber, totalWords, timeLeft, timesUp, t, fon
       <div>
         <p
           className="text-3xl font-black mb-1"
-          style={{ color: ORANGE, textShadow: SHARP, ...fontStyle }}
+          style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
         >
           {t.charadesYourTurn}
         </p>
         <p
           className="text-base"
-          style={{ color: 'white', textShadow: SHARP, ...fontStyle }}
+          style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
         >
           {t.charadesPerformWord}
         </p>
@@ -478,18 +471,18 @@ function PerformerView({ word, wordNumber, totalWords, timeLeft, timesUp, t, fon
       ) : (
         <p
           className="text-4xl font-black"
-          style={{ color: PINK, textShadow: SHARP, ...fontStyle }}
+          style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
         >
           {t.charadesTimesUp}
         </p>
       )}
 
-      {/* The word — HUGE */}
+      {/* The word — 18pt */}
       <div
-        className="font-black text-center leading-tight px-4 break-words"
+        className="font-black text-center leading-snug px-4 break-words"
         style={{
-          fontSize: 'clamp(48px, 12vw, 130px)',
-          color: 'white',
+          fontSize: '18pt',
+          color: '#000',
           textShadow: SHARP,
           maxWidth: '90vw',
           fontFamily: (fontStyle as any).fontFamily || undefined,
@@ -523,11 +516,7 @@ function HostGameView({
       {/* Badge */}
       <span
         className="text-xs font-black uppercase tracking-widest"
-        style={{
-          color: isPerformer ? ORANGE : PINK,
-          textShadow: SHARP,
-          ...fontStyle,
-        }}
+        style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
       >
         {isPerformer ? t.charadesYourTurn : t.charadesAdminLabel}
       </span>
@@ -538,7 +527,7 @@ function HostGameView({
       ) : (
         <p
           className="text-3xl font-black"
-          style={{ color: PINK, textShadow: SHARP, ...fontStyle }}
+          style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
         >
           {t.charadesTimesUp}
         </p>
@@ -547,25 +536,25 @@ function HostGameView({
       {/* Word number */}
       <span
         className="text-xs font-black uppercase tracking-widest"
-        style={{ color: 'white', textShadow: SHARP, ...fontStyle }}
+        style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
       >
         {t.charadesWordNumber} {wordNumber}
       </span>
 
-      {/* Word or performer name — no panel, just text */}
+      {/* Word or performer name */}
       {isPerformer ? (
         <div>
           <p
             className="text-xs font-bold uppercase tracking-widest mb-2"
-            style={{ color: 'rgba(255,255,255,0.6)', textShadow: SHARP, ...fontStyle }}
+            style={{ color: 'rgba(0,0,0,0.55)', textShadow: SHARP, ...fontStyle }}
           >
             {t.charadesPerformWord}
           </p>
           <p
-            className="font-black leading-tight break-words"
+            className="font-black leading-snug break-words"
             style={{
-              fontSize: 'clamp(36px, 9vw, 80px)',
-              color: 'white',
+              fontSize: '18pt',
+              color: '#000',
               textShadow: SHARP,
               opacity: timesUp ? 0.4 : 1,
               transition: 'opacity 0.5s',
@@ -579,13 +568,13 @@ function HostGameView({
         <div>
           <p
             className="text-xs font-bold uppercase tracking-widest mb-1"
-            style={{ color: 'rgba(255,255,255,0.6)', textShadow: SHARP, ...fontStyle }}
+            style={{ color: 'rgba(0,0,0,0.55)', textShadow: SHARP, ...fontStyle }}
           >
             {t.charadesCurrentPerformer}
           </p>
           <p
             className="text-2xl font-black"
-            style={{ color: ORANGE, textShadow: SHARP, ...fontStyle }}
+            style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
           >
             {performerName}
           </p>
@@ -596,21 +585,22 @@ function HostGameView({
       {nextPerformerName && nextPerformerName !== performerName && (
         <p
           className="text-sm"
-          style={{ color: 'rgba(255,255,255,0.55)', textShadow: SHARP, ...fontStyle }}
+          style={{ color: 'rgba(0,0,0,0.55)', textShadow: SHARP, ...fontStyle }}
         >
-          {t.charadesUpNext}: <span className="font-black" style={{ color: 'white' }}>{nextPerformerName}</span>
+          {t.charadesUpNext}: <span className="font-black" style={{ color: '#000' }}>{nextPerformerName}</span>
         </p>
       )}
 
       {/* End Turn */}
       <button
-        className="w-full h-16 text-xl font-black text-white transition-all"
+        className="w-full h-16 text-xl font-black transition-all"
         style={{
           background: isUrgent || timesUp
             ? `linear-gradient(135deg, ${PINK}, #c0184d)`
             : `linear-gradient(135deg, ${ORANGE}, #b84508)`,
           border: `2px solid ${isUrgent || timesUp ? PINK : ORANGE}`,
           borderRadius: 12,
+          color: '#000',
           textShadow: SHARP,
           ...fontStyle,
         }}
@@ -622,11 +612,12 @@ function HostGameView({
       {/* Secondary controls */}
       <div className="flex gap-3 w-full">
         <button
-          className="flex-1 h-10 font-bold text-white transition-opacity hover:opacity-80"
+          className="flex-1 h-10 font-bold transition-opacity hover:opacity-80"
           style={{
-            background: 'rgba(255,255,255,0.12)',
-            border: '1.5px solid rgba(255,255,255,0.25)',
+            background: 'rgba(0,0,0,0.08)',
+            border: '1.5px solid rgba(0,0,0,0.2)',
             borderRadius: 10,
+            color: '#000',
             textShadow: SHARP,
             ...fontStyle,
           }}
@@ -637,10 +628,10 @@ function HostGameView({
         <button
           className="flex-1 h-10 font-bold transition-opacity hover:opacity-80"
           style={{
-            background: 'rgba(232,77,122,0.18)',
+            background: 'rgba(232,77,122,0.15)',
             border: `1.5px solid ${PINK}`,
             borderRadius: 10,
-            color: PINK,
+            color: '#000',
             textShadow: SHARP,
             ...fontStyle,
           }}
@@ -652,7 +643,7 @@ function HostGameView({
 
       <p
         className="text-xs text-center"
-        style={{ color: 'rgba(255,255,255,0.35)', textShadow: SHARP, ...fontStyle }}
+        style={{ color: 'rgba(0,0,0,0.4)', textShadow: SHARP, ...fontStyle }}
       >
         {t.charadesHostInstructions}
       </p>
@@ -674,7 +665,7 @@ function SpectatorView({ performerName, wordNumber, totalWords, timeLeft, timesU
       {/* Word counter */}
       <span
         className="text-xs font-black uppercase tracking-widest"
-        style={{ color: 'white', textShadow: SHARP, ...fontStyle }}
+        style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
       >
         {t.charadesWordNumber} {wordNumber}
       </span>
@@ -685,7 +676,7 @@ function SpectatorView({ performerName, wordNumber, totalWords, timeLeft, timesU
           className="font-black leading-tight"
           style={{
             fontSize: 'clamp(26px, 7vw, 56px)',
-            color: ORANGE,
+            color: '#000',
             textShadow: SHARP,
             ...fontStyle,
           }}
@@ -694,7 +685,7 @@ function SpectatorView({ performerName, wordNumber, totalWords, timeLeft, timesU
         </p>
         <p
           className="text-base mt-2"
-          style={{ color: 'white', textShadow: SHARP, ...fontStyle }}
+          style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
         >
           {t.charadesWatchingDesc}
         </p>
@@ -706,7 +697,7 @@ function SpectatorView({ performerName, wordNumber, totalWords, timeLeft, timesU
       ) : (
         <p
           className="text-3xl font-black"
-          style={{ color: PINK, textShadow: SHARP, ...fontStyle }}
+          style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
         >
           {t.charadesTimesUp}
         </p>
@@ -729,7 +720,7 @@ function CharadesFinishedView({ onGoHome, t, fontStyle }: { onGoHome: () => void
         className="font-black"
         style={{
           fontSize: 'clamp(40px, 10vw, 80px)',
-          color: 'white',
+          color: '#000',
           textShadow: SHARP,
           ...fontStyle,
         }}
@@ -737,11 +728,12 @@ function CharadesFinishedView({ onGoHome, t, fontStyle }: { onGoHome: () => void
         {t.gameOver}
       </h1>
       <button
-        className="h-14 px-10 text-xl font-black text-white"
+        className="h-14 px-10 text-xl font-black"
         style={{
           background: `linear-gradient(135deg, ${ORANGE}, ${PINK})`,
           border: `2px solid ${ORANGE}`,
           borderRadius: 12,
+          color: '#000',
           textShadow: SHARP,
           ...fontStyle,
         }}

@@ -529,7 +529,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 textTransform: 'uppercase',
                 marginBottom: 4,
               }}>
-                ▶ REC • MEMORY ARCHIVE
+                MEMORY ARCHIVE
               </div>
               <h1 style={{
                 fontFamily: isAr ? "'Changa', sans-serif" : "Georgia, 'Times New Roman', serif",

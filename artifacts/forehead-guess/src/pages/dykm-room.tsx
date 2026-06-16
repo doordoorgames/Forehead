@@ -238,6 +238,8 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedScore, setSelectedScore] = useState<3 | 10>(3);
   const [selectedAskerId, setSelectedAskerId] = useState<number>(playerId);
+  // Track which players have already been the asker this rotation
+  const [playedAskerIds, setPlayedAskerIds] = useState<number[]>([]);
 
   const isHost = roomState.players.find(p => p.id === playerId)?.isHost ?? false;
   const roomLang = (roomState as any).lang ?? lang;
@@ -264,6 +266,15 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
     }
   }, [roomState.players, selectedAskerId]);
 
+  // When a game finishes, record the asker as having played
+  useEffect(() => {
+    if (roomState.status === 'finished' && dykmState?.askerId != null) {
+      setPlayedAskerIds(prev =>
+        prev.includes(dykmState.askerId) ? prev : [...prev, dykmState.askerId]
+      );
+    }
+  }, [roomState.status, dykmState?.askerId]);
+
   const handleStart = () => {
     dykmStart(selectedScore, selectedAskerId);
   };
@@ -287,7 +298,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
-          <VhsBadge text="▶ REC" />
+          <span style={{ width: 40 }} />
           <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: PARCHMENT, letterSpacing: '0.3em' }}>
             {isAr ? 'هل تعرفني؟' : 'DO YOU KNOW ME?'}
           </span>
@@ -528,9 +539,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
           justifyContent: 'space-between',
           flexShrink: 0,
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <VhsBadge text="▶ REC" />
-          </div>
+          <div style={{ width: 40 }} />
           <div style={{
             fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
             fontSize: 11,
@@ -916,10 +925,15 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
   // ── FINISHED ───────────────────────────────────────────────────────────────
   if (roomState.status === 'finished' && dykmState) {
     const ds: DykmState = dykmState;
-    const sortedPlayers = (ds.players ?? roomState.players)
+    const allPlayers = ds.players ?? roomState.players;
+    const sortedPlayers = allPlayers
       .filter(p => p.id !== ds.askerId)
       .slice()
       .sort((a, b) => (ds.scores?.[b.id] ?? 0) - (ds.scores?.[a.id] ?? 0));
+
+    // Next player rotation logic
+    const nextPlayer = allPlayers.find(p => !playedAskerIds.includes(p.id));
+    const everyonePlayed = allPlayers.length > 0 && allPlayers.every(p => playedAskerIds.includes(p.id));
 
     return (
       <div style={{
@@ -1015,6 +1029,44 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
         {/* Host controls */}
         {isHost && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 400 }}>
+
+            {/* Next Player rotation button */}
+            {everyonePlayed ? (
+              <div style={{
+                width: '100%',
+                padding: '14px 0',
+                background: TEAL,
+                color: CREAM,
+                fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                fontSize: 13,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textAlign: 'center',
+                border: `2px solid ${TEAL}`,
+              }}>
+                {isAr ? '✓ لعب الجميع دورهم!' : '✓ EVERYONE HAS PLAYED!'}
+              </div>
+            ) : nextPlayer ? (
+              <button
+                onClick={() => dykmStart(ds.targetScore as 3 | 10, nextPlayer.id)}
+                style={{
+                  width: '100%',
+                  padding: '16px 0',
+                  background: TEAL,
+                  color: CREAM,
+                  border: 'none',
+                  fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                  fontSize: 15,
+                  fontWeight: 900,
+                  letterSpacing: '0.1em',
+                  cursor: 'pointer',
+                  boxShadow: `3px 3px 0 ${MAROON}`,
+                }}
+              >
+                {isAr ? `← اللاعب التالي: ${nextPlayer.name}` : `NEXT PLAYER: ${nextPlayer.name} →`}
+              </button>
+            ) : null}
+
             <button
               onClick={dykmBackToLobby}
               style={{

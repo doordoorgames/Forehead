@@ -4,14 +4,15 @@ const SUPABASE_URL = 'https://qvzxjtyvbfexuhmmqbzl.supabase.co';
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2enhqdHl2YmZleHVobW1xYnpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NDg1MDAsImV4cCI6MjA5NDUyNDUwMH0.NLFRSK77OV83ZUJ4lK_q0kMXD0a5BGiXrEsrQgQJBmg';
 
-const REST_URL = `${SUPABASE_URL}/rest/v1/do_you_know_me_questions`;
+const EN_TABLE = 'do_you_know_me_questions';
+const AR_TABLE = 'do_you_know_me_questions_ar';
 
 interface SupabaseRow {
   id: number;
   category: string;
   question: string;
   intensity: string | null;
-  active: boolean;
+  active: boolean | null;
   created_at: string;
 }
 
@@ -20,28 +21,33 @@ export interface DykmFetchResult {
   error: string | null;
 }
 
-export async function fetchDykmQuestionsFromSupabase(): Promise<DykmFetchResult> {
-  console.log('Fetching Do You Know Me questions from Supabase…');
+async function fetchFromTable(table: string): Promise<DykmFetchResult> {
+  const baseUrl = `${SUPABASE_URL}/rest/v1/${table}`;
+  const headers = {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    Accept: 'application/json',
+  };
 
   try {
-    const url = `${REST_URL}?active=eq.true&select=id,category,question,intensity,active,created_at`;
-    const res = await fetch(url, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        Accept: 'application/json',
-      },
-    });
+    // Try with active filter first
+    const urlWithActive = `${baseUrl}?active=eq.true&select=id,category,question,intensity,active,created_at`;
+    const res = await fetch(urlWithActive, { headers });
 
-    if (!res.ok) {
-      const body = await res.text();
-      const msg = `Supabase error: HTTP ${res.status} — ${body}`;
-      console.error(msg);
-      return { questions: [], error: msg };
+    let rows: SupabaseRow[];
+
+    if (res.ok) {
+      rows = await res.json();
+    } else {
+      // Fallback: fetch without active filter (table may not have that column)
+      const urlAll = `${baseUrl}?select=id,category,question`;
+      const res2 = await fetch(urlAll, { headers });
+      if (!res2.ok) {
+        const body = await res2.text();
+        return { questions: [], error: `Supabase error: HTTP ${res2.status} — ${body}` };
+      }
+      rows = await res2.json();
     }
-
-    const rows: SupabaseRow[] = await res.json();
-    console.log(`Loaded ${rows.length} Do You Know Me questions`);
 
     const questions: DykmQuestion[] = rows.map(row => ({
       id: row.id,
@@ -53,9 +59,13 @@ export async function fetchDykmQuestionsFromSupabase(): Promise<DykmFetchResult>
     return { questions, error: null };
   } catch (err) {
     const msg = `Supabase error: ${err instanceof Error ? err.message : String(err)}`;
-    console.error(msg);
     return { questions: [], error: msg };
   }
+}
+
+export async function fetchDykmQuestionsFromSupabase(lang: 'en' | 'ar' = 'en'): Promise<DykmFetchResult> {
+  const table = lang === 'ar' ? AR_TABLE : EN_TABLE;
+  return fetchFromTable(table);
 }
 
 export function getDykmCategories(questions: DykmQuestion[]): string[] {

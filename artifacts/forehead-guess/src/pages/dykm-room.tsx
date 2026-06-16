@@ -244,15 +244,16 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
   const isHost = roomState.players.find(p => p.id === playerId)?.isHost ?? false;
   const roomLang = (roomState as any).lang ?? lang;
 
-  // Load questions from Supabase once
+  // Load questions from Supabase whenever language changes
   useEffect(() => {
     setQuestionsLoading(true);
-    fetchDykmQuestionsFromSupabase().then(({ questions, error }) => {
+    setSelectedCategory(null);
+    fetchDykmQuestionsFromSupabase(lang as 'en' | 'ar').then(({ questions, error }) => {
       setAllQuestions(questions);
       setQuestionsError(error);
       setQuestionsLoading(false);
     });
-  }, []);
+  }, [lang]);
 
   const categories = getDykmCategories(allQuestions);
   const questions = selectedCategory

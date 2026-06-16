@@ -532,7 +532,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 MEMORY ARCHIVE
               </div>
               <h1 style={{
-                fontFamily: isAr ? "'Changa', sans-serif" : "Georgia, 'Times New Roman', serif",
+                fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : "Georgia, 'Times New Roman', serif",
                 fontSize: isAr ? 'clamp(36px, 10vw, 72px)' : 'clamp(26px, 7vw, 52px)',
                 fontWeight: 900,
                 color: '#8b0000',
@@ -570,7 +570,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                     color: '#8b0000',
                     textShadow: 'none',
                     boxShadow: '4px 4px 0 rgba(139,0,0,0.4)',
-                    fontFamily: isAr ? "'Changa', sans-serif" : "Georgia, 'Times New Roman', serif",
+                    fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : "Georgia, 'Times New Roman', serif",
                     fontWeight: 700,
                     letterSpacing: '0.05em',
                   }}
@@ -587,13 +587,28 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                     color: 'white',
                     textShadow: 'none',
                     boxShadow: '4px 4px 0 rgba(139,0,0,0.4)',
-                    fontFamily: isAr ? "'Changa', sans-serif" : "Georgia, 'Times New Roman', serif",
+                    fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : "Georgia, 'Times New Roman', serif",
                     fontWeight: 700,
                     letterSpacing: '0.05em',
                   }}
                   onClick={() => setView('join')}
                 >
                   {t.joinRoom}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+                  className="w-full h-12 font-bold tracking-wide transition-all active:scale-95 border-2"
+                  style={{
+                    fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : "Georgia, 'Times New Roman', serif",
+                    fontSize: '1.1rem',
+                    color: '#8b0000',
+                    borderColor: 'rgba(139,0,0,0.4)',
+                    background: 'rgba(139,0,0,0.06)',
+                    borderRadius: 0,
+                  }}
+                >
+                  {lang === 'ar' ? 'English' : 'عربية'}
                 </button>
               </>
             ) : mode === 'character' ? (

@@ -132,7 +132,7 @@ function QuestionNewsreel({ questions, lang, error, loading }: { questions: Dykm
         <p
           ref={trackRef}
           style={{
-            fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+            fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
             fontSize: isAr ? 'clamp(14px, 4vw, 20px)' : 'clamp(13px, 3.5vw, 18px)',
             fontWeight: 700,
             color: MAROON,
@@ -332,7 +332,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {roomState.players.map(p => (
                 <div key={p.id} style={{
-                  fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                  fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                   fontSize: 13,
                   padding: '4px 12px',
                   background: p.id === playerId ? MAROON : PARCHMENT,
@@ -399,7 +399,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                         background: selectedAskerId === p.id ? MAROON : PARCHMENT,
                         color: selectedAskerId === p.id ? CREAM : MAROON,
                         border: `2px solid ${selectedAskerId === p.id ? MAROON : ROSE}`,
-                        fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                        fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                         fontSize: 15,
                         cursor: 'pointer',
                         textAlign: isAr ? 'right' : 'left',
@@ -427,7 +427,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                   background: MAROON,
                   color: CREAM,
                   border: 'none',
-                  fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                  fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                   fontSize: 18,
                   fontWeight: 900,
                   letterSpacing: '0.1em',
@@ -458,7 +458,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
             <div style={{
               marginTop: 40,
               textAlign: 'center',
-              fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+              fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
               color: MAROON,
               fontSize: 15,
               opacity: 0.8,
@@ -541,7 +541,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
         }}>
           <div style={{ width: 40 }} />
           <div style={{
-            fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+            fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
             fontSize: 11,
             color: PARCHMENT,
             letterSpacing: '0.15em',
@@ -572,7 +572,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                   </p>
                   <div style={{ background: MAROON, border: `2px solid ${ROSE}`, padding: '12px 16px' }}>
                     <p style={{
-                      fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                      fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                       fontSize: isAr ? 16 : 14,
                       color: CREAM,
                       textAlign: 'center',
@@ -615,7 +615,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                         background: selectedCategory === cat ? MAROON : PARCHMENT,
                         color: selectedCategory === cat ? CREAM : MAROON,
                         border: `1.5px solid ${selectedCategory === cat ? MAROON : ROSE}`,
-                        fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                        fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                         fontSize: 10, letterSpacing: '0.1em', cursor: 'pointer',
                       }}
                     >
@@ -646,7 +646,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                       padding: '9px 12px',
                       textAlign: isAr ? 'right' : 'left',
                       direction: isAr ? 'rtl' : 'ltr',
-                      fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                      fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                       fontSize: 13,
                       cursor: 'pointer',
                       lineHeight: 1.4,
@@ -678,7 +678,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                     justifyContent: 'center',
                   }}>
                     <p style={{
-                      fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                      fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                       fontSize: isAr ? 'clamp(15px, 4.5vw, 22px)' : 'clamp(13px, 3.5vw, 18px)',
                       fontWeight: 700,
                       color: MAROON,
@@ -702,7 +702,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                   border: `1.5px dashed ${ROSE}`,
                   padding: '20px 24px',
                   textAlign: 'center',
-                  fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                  fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                   color: MAROON,
                   fontSize: 13,
                   opacity: 0.7,
@@ -719,7 +719,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
             <div style={{
               background: TEAL,
               color: CREAM,
-              fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+              fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
               fontSize: 12,
               letterSpacing: '0.15em',
               textAlign: 'center',
@@ -749,7 +749,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{
-                        fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                        fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                         fontSize: 16,
                         fontWeight: 700,
                         color: MAROON,
@@ -841,7 +841,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                 alignItems: 'center',
               }}>
                 <div>
-                  <p style={{ fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO, fontSize: 14, color: TEAL, direction: isAr ? 'rtl' : 'ltr' }}>
+                  <p style={{ fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO, fontSize: 14, color: TEAL, direction: isAr ? 'rtl' : 'ltr' }}>
                     {askerPlayer.name} <span style={{ fontSize: 10, letterSpacing: '0.2em' }}>[{isAr ? 'السائل' : 'ASKER'}]</span>
                   </p>
                   <p style={{ fontFamily: FONT_MONO, fontSize: 11, color: TEAL }}>{score} / {ds.targetScore} pts</p>
@@ -883,7 +883,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                       background: PARCHMENT,
                       border: `1.5px solid ${TEAL}`,
                       color: TEAL,
-                      fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                      fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                       fontSize: 12,
                       cursor: 'pointer',
                       letterSpacing: '0.05em',
@@ -964,7 +964,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
               ▶ GAME OVER ◀
             </div>
             <div style={{
-              fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+              fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
               fontSize: 'clamp(28px, 8vw, 52px)',
               fontWeight: 900,
               color: MAROON,
@@ -1011,7 +1011,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                 {i === 0 ? '★' : `${i + 1}.`}
               </span>
               <span style={{
-                fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                 fontSize: 15,
                 fontWeight: 700,
                 flex: 1,
@@ -1037,7 +1037,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                 padding: '14px 0',
                 background: TEAL,
                 color: CREAM,
-                fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                 fontSize: 13,
                 fontWeight: 700,
                 letterSpacing: '0.12em',
@@ -1055,7 +1055,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                   background: TEAL,
                   color: CREAM,
                   border: 'none',
-                  fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                  fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                   fontSize: 15,
                   fontWeight: 900,
                   letterSpacing: '0.1em',
@@ -1075,7 +1075,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
                 background: MAROON,
                 color: CREAM,
                 border: 'none',
-                fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+                fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
                 fontSize: 15,
                 fontWeight: 700,
                 letterSpacing: '0.1em',
@@ -1106,7 +1106,7 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
 
         {!isHost && (
           <p style={{
-            fontFamily: isAr ? "'Changa', sans-serif" : FONT_MONO,
+            fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : FONT_MONO,
             color: MAROON,
             fontSize: 14,
             opacity: 0.7,

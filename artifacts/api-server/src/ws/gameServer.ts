@@ -318,6 +318,11 @@ async function beginWordDisplay(roomCode: string) {
   const connected = players.filter((p) => p.connected);
   if (connected.length < 2) return;
 
+  // Assign words to ALL players in the room (not just currently-connected ones).
+  // This prevents players with a brief WebSocket blip during the countdown from
+  // showing as ??? to everyone else.
+  const wordPlayers = players;
+
   let wordPool: string[];
   let categoryName: string;
 
@@ -340,16 +345,16 @@ async function beginWordDisplay(roomCode: string) {
     categoryName = cat?.name ?? "Unknown";
   }
 
-  if (wordPool.length < connected.length) {
+  if (wordPool.length < wordPlayers.length) {
     broadcast(roomCode, {
       type: "error",
-      payload: { message: `Need at least ${connected.length} words in this category for ${connected.length} players. Add more words or switch category.` },
+      payload: { message: `Need at least ${wordPlayers.length} words in this category for ${wordPlayers.length} players. Add more words or switch category.` },
     });
     return;
   }
 
-  const shuffledWords = [...wordPool].sort(() => Math.random() - 0.5).slice(0, connected.length);
-  const shuffledPlayers = [...connected].sort(() => Math.random() - 0.5);
+  const shuffledWords = [...wordPool].sort(() => Math.random() - 0.5).slice(0, wordPlayers.length);
+  const shuffledPlayers = [...wordPlayers].sort(() => Math.random() - 0.5);
   const imposterPlayer = shuffledPlayers[0];
   const normalPlayers = shuffledPlayers.slice(1);
 
@@ -383,7 +388,7 @@ async function beginWordDisplay(roomCode: string) {
     if (client.roomCode === roomCode && ws.readyState === WebSocket.OPEN && client.playerId) {
       const isImposter = client.playerId === imposterPlayer.id;
       const myWord = playerWords[client.playerId] ?? "???";
-      const allPlayerWords = connected.map((p) => ({
+      const allPlayerWords = wordPlayers.map((p) => ({
         playerId: p.id,
         playerName: p.name,
         word: p.id === client.playerId ? "???" : (playerWords[p.id] ?? "???"),

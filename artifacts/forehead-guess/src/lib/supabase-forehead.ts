@@ -43,21 +43,26 @@ export async function fetchForeheadCategories(
   };
 
   try {
-    // Fetch all active rows — only need the category column to build counts.
-    // limit=50000 prevents Supabase's default 1000-row page cap from silently
-    // truncating results.
-    const url =
-      `${SUPABASE_URL}/rest/v1/${table}` +
-      `?active=eq.true&select=category&limit=50000`;
-
-    const res = await fetch(url, { headers: HEADERS });
-    if (!res.ok) {
-      const body = await res.text();
-      console.error(`[Forehead] ${table} fetch failed: HTTP ${res.status} — ${body}`);
-      return { ...empty, error: errorMsg };
+    // Supabase REST API hard-caps at 1000 rows per response regardless of the
+    // limit param. Paginate with offset until we get a partial page.
+    const PAGE = 1000;
+    const rows: { category: string }[] = [];
+    let offset = 0;
+    while (true) {
+      const url =
+        `${SUPABASE_URL}/rest/v1/${table}` +
+        `?active=eq.true&select=category&limit=${PAGE}&offset=${offset}`;
+      const res = await fetch(url, { headers: HEADERS });
+      if (!res.ok) {
+        const body = await res.text();
+        console.error(`[Forehead] ${table} fetch failed: HTTP ${res.status} — ${body}`);
+        return { ...empty, error: errorMsg };
+      }
+      const page: { category: string }[] = await res.json();
+      rows.push(...page);
+      if (page.length < PAGE) break;
+      offset += PAGE;
     }
-
-    const rows: { category: string }[] = await res.json();
     const totalRows = rows.length;
 
     // Group by category text exactly as stored in Supabase

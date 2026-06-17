@@ -81,20 +81,28 @@ export async function fetchForeheadWordsByFlatCategory(
   console.log(`[Forehead] Fetching words from ${table} WHERE category="${categoryName}"`);
 
   try {
-    const url =
-      `${SUPABASE_URL}/rest/v1/${table}` +
-      `?category=eq.${encodeURIComponent(categoryName)}&active=eq.true&select=word&limit=50000`;
-
-    const res = await fetch(url, { headers: HEADERS });
-    if (!res.ok) {
-      const body = await res.text();
-      console.error(`[Forehead] ${table} fetch failed: HTTP ${res.status} — ${body}`);
-      return { words: [], error: errMsg };
+    // Supabase REST API hard-caps at 1000 rows per response regardless of the
+    // limit param. Paginate with offset until we get a partial page.
+    const PAGE = 1000;
+    const allRows: { word: string }[] = [];
+    let offset = 0;
+    while (true) {
+      const url =
+        `${SUPABASE_URL}/rest/v1/${table}` +
+        `?category=eq.${encodeURIComponent(categoryName)}&active=eq.true&select=word&limit=${PAGE}&offset=${offset}`;
+      const res = await fetch(url, { headers: HEADERS });
+      if (!res.ok) {
+        const body = await res.text();
+        console.error(`[Forehead] ${table} fetch failed: HTTP ${res.status} — ${body}`);
+        return { words: [], error: errMsg };
+      }
+      const page = (await res.json()) as { word: string }[];
+      allRows.push(...page);
+      if (page.length < PAGE) break;
+      offset += PAGE;
     }
-
-    const rows = (await res.json()) as { word: string }[];
-    console.log(`[Forehead] Loaded ${rows.length} words for category "${categoryName}" from ${table}`);
-    return { words: rows.map((r) => r.word), error: null };
+    console.log(`[Forehead] Loaded ${allRows.length} words for category "${categoryName}" from ${table}`);
+    return { words: allRows.map((r) => r.word), error: null };
   } catch (err) {
     console.error('[Forehead] fetchForeheadWordsByFlatCategory error:', err);
     return { words: [], error: errMsg };

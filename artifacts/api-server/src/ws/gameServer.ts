@@ -1058,7 +1058,7 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
   if (type === "dykmStart") {
     const { roomCode, targetScore, askerId } = payload as { roomCode: string; targetScore: number; askerId: number };
     const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
-    if (!room || room.mode !== "dykm" || room.status !== "waiting") return;
+    if (!room || room.mode !== "dykm" || (room.status !== "waiting" && room.status !== "finished")) return;
     const players = await db.select().from(playersTable).where(eq(playersTable.roomId, room.id));
     const host = players.find(p => p.id === client.playerId && p.isHost);
     if (!host) return;

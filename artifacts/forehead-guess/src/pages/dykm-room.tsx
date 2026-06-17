@@ -218,8 +218,16 @@ interface Props {
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }: Props) {
-  const { lang } = useLang();
-  const isAr = lang === 'ar';
+  const { lang, setLang } = useLang();
+
+  // Room language is always determined by the host/creator; sync local lang to it
+  const roomLang: 'en' | 'ar' = ((roomState as any).lang === 'ar' ? 'ar' : 'en');
+  const isAr = roomLang === 'ar';
+
+  // Keep the player's UI language in sync with the room language
+  useEffect(() => {
+    if (roomLang !== lang) setLang(roomLang);
+  }, [roomLang]);
 
   const {
     dykmState,
@@ -242,18 +250,17 @@ export default function DykmRoom({ code, playerId, roomState, socket, onGoHome }
   const [playedAskerIds, setPlayedAskerIds] = useState<number[]>([]);
 
   const isHost = roomState.players.find(p => p.id === playerId)?.isHost ?? false;
-  const roomLang = (roomState as any).lang ?? lang;
 
-  // Load questions from Supabase whenever language changes
+  // Load questions from Supabase whenever room language changes
   useEffect(() => {
     setQuestionsLoading(true);
     setSelectedCategory(null);
-    fetchDykmQuestionsFromSupabase(lang as 'en' | 'ar').then(({ questions, error }) => {
+    fetchDykmQuestionsFromSupabase(roomLang).then(({ questions, error }) => {
       setAllQuestions(questions);
       setQuestionsError(error);
       setQuestionsLoading(false);
     });
-  }, [lang]);
+  }, [roomLang]);
 
   const categories = getDykmCategories(allQuestions);
   const questions = selectedCategory

@@ -1,0 +1,84 @@
+Update the Guess the Character game so it gets all character entries from Supabase from now on.
+
+Supabase table:
+public.guess_the_character
+
+Columns:
+id
+answer
+hint1
+hint2
+hint3
+hint4
+hint5
+hint6
+hint7
+hint8
+hint9
+hint10
+
+There are currently 128 rows in this table. Do not hardcode the characters anymore. The game must fetch the characters from Supabase every time a room/game starts.
+
+Use this data structure in the app after fetching:
+
+{
+  id: row.id,
+  answer: row.answer,
+  hints: [
+    row.hint1,
+    row.hint2,
+    row.hint3,
+    row.hint4,
+    row.hint5,
+    row.hint6,
+    row.hint7,
+    row.hint8,
+    row.hint9,
+    row.hint10
+  ].filter(Boolean)
+}
+
+Important rules:
+1. Pull all rows from public.guess_the_character.
+2. Shuffle the rows before selecting a character.
+3. The answer shown to the host/admin is from answer.
+4. The hints shown one by one are hint1 through hint10.
+5. Hint 1 should appear first, then each “Next Hint” press reveals the next hint.
+6. Do not show the answer to players.
+7. Keep the existing room code, QR code, lobby, and game flow unchanged.
+8. Only replace the old hardcoded Guess the Character entries with Supabase entries.
+9. If Supabase returns no rows, show a clear error: “No characters found in Supabase.”
+10. Make sure this works on mobile.
+
+Supabase query logic should be equivalent to:
+
+const { data, error } = await supabase
+  .from('guess_the_character')
+  .select('id, answer, hint1, hint2, hint3, hint4, hint5, hint6, hint7, hint8, hint9, hint10');
+
+if (error) {
+  console.error('Failed to load Guess the Character entries:', error);
+}
+
+if (!data || data.length === 0) {
+  throw new Error('No characters found in Supabase');
+}
+
+const characters = data.map(row => ({
+  id: row.id,
+  answer: row.answer,
+  hints: [
+    row.hint1,
+    row.hint2,
+    row.hint3,
+    row.hint4,
+    row.hint5,
+    row.hint6,
+    row.hint7,
+    row.hint8,
+    row.hint9,
+    row.hint10
+  ].filter(Boolean)
+}));
+
+Use these characters for the Guess the Character game from now on.

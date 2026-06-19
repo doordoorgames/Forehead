@@ -6,7 +6,6 @@ export interface SupabaseCharacterEntry {
   id: number;
   answer: string;
   hints: string[];
-  lang: string;
 }
 
 const HEADERS = {
@@ -16,15 +15,14 @@ const HEADERS = {
 };
 
 export async function fetchCharactersFromSupabase(
-  lang: string,
+  _lang?: string,
 ): Promise<{ characters: SupabaseCharacterEntry[]; error: string | null }> {
-  const selectedLanguage = lang === 'ar' ? 'arabic' : 'english';
-  console.log('[CharacterGame] selectedLanguage:', selectedLanguage);
+  console.log('[CharacterGame] Fetching from guess_the_character table');
 
   try {
     const url =
-      `${SUPABASE_URL}/rest/v1/character_questions_test` +
-      `?language=eq.${encodeURIComponent(selectedLanguage)}&category=eq.characters&select=*`;
+      `${SUPABASE_URL}/rest/v1/guess_the_character` +
+      `?select=id,answer,hint1,hint2,hint3,hint4,hint5,hint6,hint7,hint8,hint9,hint10`;
 
     const res = await fetch(url, { headers: HEADERS });
     if (!res.ok) {
@@ -35,27 +33,25 @@ export async function fetchCharactersFromSupabase(
     }
 
     const rows = (await res.json()) as Array<{
+      id: number;
       answer: string;
-      hint_1?: string; hint_2?: string; hint_3?: string; hint_4?: string; hint_5?: string;
-      hint_6?: string; hint_7?: string; hint_8?: string; hint_9?: string; hint_10?: string;
-      language: string; category: string;
+      hint1?: string; hint2?: string; hint3?: string; hint4?: string; hint5?: string;
+      hint6?: string; hint7?: string; hint8?: string; hint9?: string; hint10?: string;
     }>;
 
-    console.log(`[CharacterGame] Fetched ${rows.length} rows for language "${selectedLanguage}"`);
-    if (rows.length > 0) console.log('[CharacterGame] First row:', JSON.stringify(rows[0]));
+    console.log(`[CharacterGame] Fetched ${rows.length} rows from guess_the_character`);
 
     if (rows.length === 0) {
-      return { characters: [], error: 'No characters found for this language.' };
+      return { characters: [], error: 'No characters found in Supabase.' };
     }
 
-    const characters: SupabaseCharacterEntry[] = rows.map((row, i) => ({
-      id: i,
+    const characters: SupabaseCharacterEntry[] = rows.map((row) => ({
+      id: row.id,
       answer: row.answer,
       hints: [
-        row.hint_1, row.hint_2, row.hint_3, row.hint_4, row.hint_5,
-        row.hint_6, row.hint_7, row.hint_8, row.hint_9, row.hint_10,
+        row.hint1, row.hint2, row.hint3, row.hint4, row.hint5,
+        row.hint6, row.hint7, row.hint8, row.hint9, row.hint10,
       ].filter((h): h is string => !!h),
-      lang,
     }));
 
     return { characters, error: null };

@@ -14,10 +14,13 @@ const HEADERS = {
   Accept: 'application/json',
 };
 
+const ARABIC_RE = /[\u0600-\u06FF]/;
+
 export async function fetchCharactersFromSupabase(
-  _lang?: string,
+  lang?: string,
 ): Promise<{ characters: SupabaseCharacterEntry[]; error: string | null }> {
-  console.log('[CharacterGame] Fetching from guess_the_character table');
+  const wantArabic = lang === 'ar';
+  console.log(`[CharacterGame] Fetching from guess_the_character (lang=${lang ?? 'en'})`);
 
   try {
     const url =
@@ -39,13 +42,19 @@ export async function fetchCharactersFromSupabase(
       hint6?: string; hint7?: string; hint8?: string; hint9?: string; hint10?: string;
     }>;
 
-    console.log(`[CharacterGame] Fetched ${rows.length} rows from guess_the_character`);
+    console.log(`[CharacterGame] Fetched ${rows.length} total rows from guess_the_character`);
 
-    if (rows.length === 0) {
+    // Filter to the correct language by detecting Arabic characters in the answer.
+    // English rows have Latin answers; Arabic rows have Arabic-script answers.
+    const filtered = rows.filter((r) => ARABIC_RE.test(r.answer) === wantArabic);
+
+    console.log(`[CharacterGame] ${filtered.length} rows match lang="${lang ?? 'en'}"`);
+
+    if (filtered.length === 0) {
       return { characters: [], error: 'No characters found in Supabase.' };
     }
 
-    const characters: SupabaseCharacterEntry[] = rows.map((row) => ({
+    const characters: SupabaseCharacterEntry[] = filtered.map((row) => ({
       id: row.id,
       answer: row.answer,
       hints: [

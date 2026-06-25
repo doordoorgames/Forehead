@@ -9,8 +9,7 @@ import {
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
-import { getCharadesPool } from "../lib/charadesPool";
-import { fetchForeheadWordsByFlatCategory, fetchCharactersFromSupabase, SupabaseCharacterEntry } from "../lib/supabase-forehead";
+import { fetchForeheadWordsByFlatCategory, fetchCharactersFromSupabase, fetchCharadesFromSupabase, SupabaseCharacterEntry } from "../lib/supabase-forehead";
 type CharacterEntry = SupabaseCharacterEntry;
 
 // ── CLIENT REGISTRY ──────────────────────────────────────────────────────────
@@ -969,9 +968,9 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     if (host?.id !== client.playerId) return;
 
     const lang = room.lang ?? "en";
-    const pool = await getCharadesPool(lang);
+    const { words: pool, error: poolError } = await fetchCharadesFromSupabase(lang);
     if (pool.length === 0) {
-      sendTo(ws, { type: "error", payload: { message: "No charades words loaded for this language. Please upload words from the admin panel first." } });
+      sendTo(ws, { type: "error", payload: { message: poolError ?? "No charades entries found for this language." } });
       return;
     }
 

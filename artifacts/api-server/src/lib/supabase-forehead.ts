@@ -72,6 +72,50 @@ export async function fetchCharactersFromSupabase(
 }
 
 /**
+ * Fetch all active charades phrases from the Supabase `charades` table.
+ * lang='en' → language='English', lang='ar' → language='Arabic'.
+ * Returns shuffled results so each game session has a different order.
+ */
+export async function fetchCharadesFromSupabase(
+  lang: string,
+): Promise<{ words: Array<{ id: number; answer: string }>; error: string | null }> {
+  const language = lang === 'ar' ? 'Arabic' : 'English';
+  console.log(`[Charades] Fetching from Supabase (language="${language}")`);
+
+  try {
+    const url =
+      `${SUPABASE_URL}/rest/v1/charades` +
+      `?active=eq.true&language=eq.${encodeURIComponent(language)}&select=id,phrase`;
+
+    const res = await fetch(url, { headers: HEADERS });
+    if (!res.ok) {
+      const body = await res.text();
+      const msg = `Supabase charades fetch failed: HTTP ${res.status} — ${body}`;
+      console.error(msg);
+      return { words: [], error: msg };
+    }
+
+    const rows = (await res.json()) as Array<{ id: number; phrase: string }>;
+    console.log(`[Charades] Fetched ${rows.length} rows for language="${language}"`);
+
+    if (rows.length === 0) {
+      return { words: [], error: 'No charades entries found for this language.' };
+    }
+
+    // Shuffle so each game session gets a different order
+    const shuffled = rows
+      .map((r) => ({ id: r.id, answer: r.phrase }))
+      .sort(() => Math.random() - 0.5);
+
+    return { words: shuffled, error: null };
+  } catch (err) {
+    const msg = `Supabase charades fetch failed: ${err instanceof Error ? err.message : String(err)}`;
+    console.error(msg);
+    return { words: [], error: msg };
+  }
+}
+
+/**
  * Fetch all active words for a category from the flat forehead tables.
  * Uses forehead_english for lang='en', forehead_arabic for lang='ar'.
  * The categoryName must match the `category` column exactly as stored in Supabase.

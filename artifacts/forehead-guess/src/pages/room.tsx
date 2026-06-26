@@ -19,7 +19,7 @@ export default function Room() {
   const code = params.code?.toUpperCase();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { t } = useLang();
+  const { t, lang } = useLang();
 
   const [playerId, setPlayerId] = useState<number | null>(null);
   const [playerName, setPlayerName] = useState<string | null>(null);
@@ -83,30 +83,50 @@ export default function Room() {
 
   const status = roomState?.status || 'waiting';
   const mode = roomState?.mode ?? 'forehead';
+  const hostReconnecting = socket.roomState?.hostReconnecting ?? false;
+
+  const hostReconnectingBanner = hostReconnecting ? (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.82)', color: '#facc15',
+      padding: '10px 16px', textAlign: 'center',
+      fontWeight: 700, fontSize: 15, letterSpacing: '0.03em',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+    }}>
+      <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: '50%', background: '#facc15', animation: 'pulse 1s infinite' }} />
+      {lang === 'ar' ? 'المضيف يعيد الاتصال…' : 'Host reconnecting…'}
+    </div>
+  ) : null;
 
   // Character mode: render dedicated component
   if (mode === 'character') {
     return (
-      <CharacterRoom
-        code={code}
-        playerId={playerId}
-        roomState={roomState}
-        socket={socket}
-        onGoHome={() => setLocation('/home')}
-      />
+      <>
+        {hostReconnectingBanner}
+        <CharacterRoom
+          code={code}
+          playerId={playerId}
+          roomState={roomState}
+          socket={socket}
+          onGoHome={() => setLocation('/home')}
+        />
+      </>
     );
   }
 
   // Charades mode: render dedicated component
   if (mode === 'charades') {
     return (
-      <CharadesRoom
-        code={code}
-        playerId={playerId}
-        roomState={roomState}
-        socket={socket}
-        onGoHome={() => setLocation('/home')}
-      />
+      <>
+        {hostReconnectingBanner}
+        <CharadesRoom
+          code={code}
+          playerId={playerId}
+          roomState={roomState}
+          socket={socket}
+          onGoHome={() => setLocation('/home')}
+        />
+      </>
     );
   }
 
@@ -114,19 +134,23 @@ export default function Room() {
   if (mode === 'dykm') {
     if (!roomState) return null;
     return (
-      <DykmRoom
-        code={code}
-        playerId={playerId}
-        roomState={roomState}
-        socket={socket}
-        onGoHome={() => setLocation('/mode')}
-      />
+      <>
+        {hostReconnectingBanner}
+        <DykmRoom
+          code={code}
+          playerId={playerId}
+          roomState={roomState}
+          socket={socket}
+          onGoHome={() => setLocation('/mode')}
+        />
+      </>
     );
   }
 
   // Forehead mode
   return (
     <div className="game-container min-h-[100dvh] text-foreground flex flex-col relative" style={{ overflowX: 'hidden', overflowY: 'auto' }}>
+      {hostReconnectingBanner}
       {socket.error && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-destructive text-destructive-foreground p-3 text-center font-bold text-lg">
           {socket.error}

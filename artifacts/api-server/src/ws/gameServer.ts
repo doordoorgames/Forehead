@@ -21,6 +21,15 @@ interface WsClient {
   playerName: string | null;
 }
 
+// ── HOST GRACE PERIOD & HEARTBEAT ────────────────────────────────────────────
+const GRACE_PERIOD_MS  = 90_000;  // 90 s before host is transferred after disconnect
+const PING_INTERVAL_MS = 25_000;  // server→client ping every 25 s
+
+/** roomCode → { timer, playerId } — set when host disconnects, cleared on reconnect */
+const hostGraceTimers = new Map<string, { timer: ReturnType<typeof setTimeout>; playerId: number }>();
+/** ws → interval handle for outgoing pings */
+const clientPingIntervals = new Map<WebSocket, ReturnType<typeof setInterval>>();
+
 // ── FOREHEAD GAME STATE ───────────────────────────────────────────────────────
 
 interface RoundState {
@@ -139,6 +148,7 @@ async function getRoomState(code: string) {
     lang: room.lang ?? "en",
     categoryId: supabaseCat ? null : (room.categoryId ?? null),
     categoryName,
+    hostReconnecting: hostGraceTimers.has(code),
     players: players.map((p) => ({
       id: p.id,
       name: p.name,
@@ -420,6 +430,9 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
 
   const { type, payload } = msg;
 
+  // ── PONG (heartbeat reply from client) ───────────────────────────────────
+  if (type === "pong") return;
+
   // ── JOIN ──────────────────────────────────────────────────────────────────
   if (type === "join") {
     const { roomCode, playerId, playerName } = payload as { roomCode: string; playerId: number; playerName: string };
@@ -428,6 +441,14 @@ async function handleMessage(ws: WebSocket, client: WsClient, raw: string) {
     client.playerName = playerName;
 
     await db.update(playersTable).set({ connected: true }).where(eq(playersTable.id, Number(playerId)));
+
+    // If this player had a host grace timer running, cancel it — they reconnected in time
+    const grace = hostGraceTimers.get(roomCode);
+    if (grace && grace.playerId === Number(playerId)) {
+      clearTimeout(grace.timer);
+      hostGraceTimers.delete(roomCode);
+      logger.info({ roomCode, playerId }, '[Host] Reconnected within grace period — host status retained');
+    }
 
     const state = await getRoomState(roomCode);
     if (state) sendTo(ws, { type: "roomUpdate", payload: state });
@@ -1192,59 +1213,83 @@ export function setupWebSocketServer(server: import("http").Server) {
     });
 
     ws.on("close", async () => {
+      // Clear outgoing ping interval for this connection
+      const pingInterval = clientPingIntervals.get(ws);
+      if (pingInterval) { clearInterval(pingInterval); clientPingIntervals.delete(ws); }
+
       if (client.playerId && client.roomCode) {
+        const disconnectedId = client.playerId;
+        const roomCode = client.roomCode;
         try {
-          await db.update(playersTable).set({ connected: false }).where(eq(playersTable.id, client.playerId));
-          const player = await db.query.playersTable.findFirst({ where: eq(playersTable.id, client.playerId) });
+          await db.update(playersTable).set({ connected: false }).where(eq(playersTable.id, disconnectedId));
+          const player = await db.query.playersTable.findFirst({ where: eq(playersTable.id, disconnectedId) });
+
           if (player?.isHost) {
-            const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, client.roomCode) });
-            if (room) {
-              const others = await db.select().from(playersTable).where(
-                and(eq(playersTable.roomId, room.id), eq(playersTable.connected, true))
-              );
-              if (others.length > 0) {
-                await db.update(playersTable).set({ isHost: false }).where(eq(playersTable.roomId, room.id));
-                await db.update(playersTable).set({ isHost: true }).where(eq(playersTable.id, others[0].id));
-              }
-            }
-          }
+            // ── HOST DISCONNECTED: start grace period instead of transferring immediately ──
+            logger.info({ roomCode, playerId: disconnectedId }, '[Host] Disconnected — starting 90 s grace period');
 
-          // If the departing player was the character game admin, transfer to another connected player
-          if (client.roomCode) {
-            const cs = roomCharacterState.get(client.roomCode);
-            if (cs && cs.adminId === client.playerId) {
-              const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, client.roomCode) });
-              if (room) {
+            const timer = setTimeout(async () => {
+              hostGraceTimers.delete(roomCode);
+              logger.info({ roomCode, playerId: disconnectedId }, '[Host] Grace period expired — transferring host');
+              try {
+                const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+                if (!room) return;
                 const others = await db.select().from(playersTable).where(
                   and(eq(playersTable.roomId, room.id), eq(playersTable.connected, true))
                 );
                 if (others.length > 0) {
+                  await db.update(playersTable).set({ isHost: false }).where(eq(playersTable.roomId, room.id));
+                  await db.update(playersTable).set({ isHost: true }).where(eq(playersTable.id, others[0].id));
+                }
+                // Transfer character/charades admin too
+                const cs = roomCharacterState.get(roomCode);
+                if (cs && cs.adminId === disconnectedId && others.length > 0) {
                   cs.adminId = others[0].id;
-                  await broadcastCharacterState(client.roomCode);
+                  await broadcastCharacterState(roomCode);
                 }
+                const crs = roomCharadesState.get(roomCode);
+                if (crs && crs.hostId === disconnectedId && others.length > 0) {
+                  crs.hostId = others[0].id;
+                  await broadcastCharadesState(roomCode);
+                }
+                const state = await getRoomState(roomCode);
+                if (state) broadcast(roomCode, { type: "roomUpdate", payload: state });
+              } catch (err) {
+                logger.error({ err }, '[Host] Error during grace period host transfer');
               }
-            }
-          }
+            }, GRACE_PERIOD_MS);
 
-          // If the departing player was the charades host, transfer to the new host
-          if (client.roomCode) {
-            const crs = roomCharadesState.get(client.roomCode);
-            if (crs && crs.hostId === client.playerId) {
-              const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, client.roomCode) });
+            hostGraceTimers.set(roomCode, { timer, playerId: disconnectedId });
+
+            // Broadcast immediately so players see "Host reconnecting…"
+            const state = await getRoomState(roomCode);
+            if (state) broadcast(roomCode, { type: "roomUpdate", payload: state });
+
+          } else {
+            // ── NON-HOST DISCONNECTED: transfer in-game roles immediately ──
+            const cs = roomCharacterState.get(roomCode);
+            if (cs && cs.adminId === disconnectedId) {
+              const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
               if (room) {
                 const others = await db.select().from(playersTable).where(
                   and(eq(playersTable.roomId, room.id), eq(playersTable.connected, true))
                 );
-                if (others.length > 0) {
-                  crs.hostId = others[0].id;
-                  await broadcastCharadesState(client.roomCode);
-                }
+                if (others.length > 0) { cs.adminId = others[0].id; await broadcastCharacterState(roomCode); }
               }
             }
+            const crs = roomCharadesState.get(roomCode);
+            if (crs && crs.hostId === disconnectedId) {
+              const room = await db.query.roomsTable.findFirst({ where: eq(roomsTable.code, roomCode) });
+              if (room) {
+                const others = await db.select().from(playersTable).where(
+                  and(eq(playersTable.roomId, room.id), eq(playersTable.connected, true))
+                );
+                if (others.length > 0) { crs.hostId = others[0].id; await broadcastCharadesState(roomCode); }
+              }
+            }
+            const state = await getRoomState(roomCode);
+            if (state) broadcast(roomCode, { type: "roomUpdate", payload: state });
           }
-
-          const state = await getRoomState(client.roomCode);
-          if (state) broadcast(client.roomCode, { type: "roomUpdate", payload: state });
         } catch (err) {
           logger.error({ err }, "Error handling WS close");
         }
@@ -1255,6 +1300,17 @@ export function setupWebSocketServer(server: import("http").Server) {
     ws.on("error", (err) => {
       logger.error({ err }, "WS error");
     });
+
+    // ── HEARTBEAT: ping client every 25 s ────────────────────────────────────
+    const pingInterval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        sendTo(ws, { type: "ping" });
+      } else {
+        clearInterval(pingInterval);
+        clientPingIntervals.delete(ws);
+      }
+    }, PING_INTERVAL_MS);
+    clientPingIntervals.set(ws, pingInterval);
   });
 
   logger.info("WebSocket server ready at /ws");

@@ -38,6 +38,7 @@ export interface RoomState {
   mode: 'forehead' | 'character' | 'charades' | 'dykm';
   categoryId: number | null;
   categoryName: string | null;
+  hostReconnecting?: boolean;
   players: Array<{
     id: number;
     name: string;
@@ -182,6 +183,9 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
             break;
           case 'dykmState':
             setState(s => ({ ...s, dykmState: msg.payload as DykmState }));
+            break;
+          case 'ping':
+            socket.send(JSON.stringify({ type: 'pong', payload: {} }));
             break;
           case 'error':
             setState(s => ({ ...s, error: msg.payload.message }));

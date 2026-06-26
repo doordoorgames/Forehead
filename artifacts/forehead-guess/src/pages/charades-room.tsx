@@ -120,7 +120,7 @@ interface CharadesRoomProps {
 export default function CharadesRoom({ code, playerId, roomState, socket, onGoHome }: CharadesRoomProps) {
   const { t, lang } = useLang();
   const isAr = lang === 'ar';
-  const fontStyle = isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 800 } : {};
+  const fontStyle = isAr ? { fontFamily: "'Marhey', sans-serif", fontWeight: 800 } : { fontFamily: "'Patrick Hand', cursive" };
 
   const status = roomState?.status ?? 'waiting';
 

@@ -174,7 +174,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
   const CHARADES_TEXT: React.CSSProperties = {
     color: '#000',
     textShadow: '1px 1px 0 #fff, -1px 1px 0 #fff, 1px -1px 0 #fff, -1px -1px 0 #fff',
-    fontFamily: isAr ? "'Changa', sans-serif" : "'Arial', sans-serif",
+    fontFamily: isAr ? "'Marhey', sans-serif" : "'Patrick Hand', cursive",
   };
 
   if (mode === 'charades' && view === 'create') {
@@ -225,7 +225,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                           borderRadius: 0,
                           boxShadow: 'none',
                           color: '#000',
-                          fontFamily: isAr ? "'Changa', sans-serif" : undefined,
+                          fontFamily: isAr ? "'Marhey', sans-serif" : "'Patrick Hand', cursive",
                           fontWeight: 700,
                         }}
                         {...field}
@@ -337,7 +337,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                           borderRadius: 0,
                           boxShadow: 'none',
                           color: '#000',
-                          fontFamily: isAr ? "'Changa', sans-serif" : undefined,
+                          fontFamily: isAr ? "'Marhey', sans-serif" : "'Patrick Hand', cursive",
                           fontWeight: 700,
                         }}
                         {...field}

@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import PetalSwoop from '@/components/PetalSwoop';
 import grassBg from '@assets/6E21F754-65A0-4119-A739-67DD40CAA6B4_1780250343871.png';
-import charadesBg3 from '@assets/IMG_2041_1781444797139.png';
-import charadesBgRect from '@assets/398199A7-F3AA-42BA-9585-D50E4BFBCD6C_1781444797139.png';
+import charadesBtnEn from '@assets/IMG_2117_1782502451906.png';
+import charadesBtnAr from '@assets/IMG_2118_1782502451906.png';
+import charadesBgNew from '@assets/5A7DC98A-72C4-4B1B-993C-37EE3278D61C_1782502756991.jpeg';
 import khaminLogo from '@assets/IMG_1974_1780586546169.png';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -117,70 +118,55 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
 
   // ──── CHARADES SPECIAL LAYOUTS ────────────────────────────────────────────
   if (mode === 'charades' && view === 'main') {
+    // IMG_2117 (English): LEFT=CREATE ROOM, RIGHT=JOIN ROOM, BOTTOM=language
+    // IMG_2118 (Arabic):  LEFT=انضم (JOIN),  RIGHT=انشئ (CREATE), BOTTOM=language
+    const btnImg = lang === 'ar' ? charadesBtnAr : charadesBtnEn;
+    const leftClick  = lang === 'ar' ? () => setView('join')   : () => setView('create');
+    const rightClick = lang === 'ar' ? () => setView('create') : () => setView('join');
+
     return (
-      <div
-        style={{
-          position: 'fixed', inset: 0, overflow: 'hidden',
-          backgroundImage: `url(${charadesBg3})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center top',
-        }}
-      >
-        {/* Create Room — left rectangle (~53-63% h, 6-47% w) */}
-        <button
-          onClick={() => setView('create')}
-          style={{
-            position: 'absolute', top: '53%', left: '6%', width: '41%', height: '10%',
-            background: 'transparent', border: 'none', cursor: 'pointer',
-            color: '#3b1700', fontWeight: 900,
-            fontSize: 'clamp(13px, 3.5vw, 18px)',
-            fontFamily: isAr ? "'Changa', sans-serif" : "'Arial', sans-serif",
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          {t.createRoom}
-        </button>
+      <div style={{
+        position: 'fixed', inset: 0, overflow: 'hidden',
+        backgroundImage: `url(${charadesBgNew})`,
+        backgroundSize: 'cover', backgroundPosition: 'center',
+      }}>
+        {/* Button image + invisible hit areas */}
+        <div style={{
+          position: 'absolute',
+          top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'min(92vw, 138vh)',   /* keeps 3:2 ratio visible */
+        }}>
+          <div style={{ position: 'relative', width: '100%' }}>
+            <img
+              src={btnImg}
+              alt="charades buttons"
+              style={{ width: '100%', height: 'auto', display: 'block', pointerEvents: 'none', userSelect: 'none' }}
+              draggable={false}
+            />
+            {/* LEFT button (CREATE EN / JOIN AR) */}
+            <button onClick={leftClick} aria-label={lang === 'ar' ? 'انضم لغرفة' : 'Create Room'} style={{
+              position: 'absolute', top: '22%', left: '1%', width: '44%', height: '22%',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+            }} />
+            {/* RIGHT button (JOIN EN / CREATE AR) */}
+            <button onClick={rightClick} aria-label={lang === 'ar' ? 'انشئ غرفة' : 'Join Room'} style={{
+              position: 'absolute', top: '22%', left: '53%', width: '44%', height: '22%',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+            }} />
+            {/* LANGUAGE toggle button (bottom center) */}
+            <button onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} aria-label="Switch language" style={{
+              position: 'absolute', top: '51%', left: '30%', width: '40%', height: '20%',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+            }} />
+          </div>
+        </div>
 
-        {/* Join Room — right rectangle (~53-63% h, 53-94% w) */}
-        <button
-          onClick={() => setView('join')}
-          style={{
-            position: 'absolute', top: '53%', left: '53%', width: '41%', height: '10%',
-            background: 'transparent', border: 'none', cursor: 'pointer',
-            color: '#3b1700', fontWeight: 900,
-            fontSize: 'clamp(13px, 3.5vw, 18px)',
-            fontFamily: isAr ? "'Changa', sans-serif" : "'Arial', sans-serif",
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          {t.joinRoom}
-        </button>
-
-        {/* Language toggle — bottom rectangle (~63-76% h, 6-92% w) */}
-        <button
-          onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-          style={{
-            position: 'absolute', top: '63%', left: '6%', width: '88%', height: '13%',
-            background: 'transparent', border: 'none', cursor: 'pointer',
-            color: '#3b1700', fontWeight: 900,
-            fontSize: 'clamp(13px, 3.5vw, 18px)',
-            fontFamily: "'Changa', sans-serif",
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          {lang === 'ar' ? 'English' : 'عربية'}
-        </button>
-
-        <a
-          href="https://dordor.games/"
-          style={{
-            position: 'absolute', bottom: '3%', left: '50%', transform: 'translateX(-50%)',
-            color: 'rgba(255,200,80,0.7)', fontSize: '11px',
-            textDecoration: 'underline', whiteSpace: 'nowrap', zIndex: 10,
-          }}
-        >
-          ← Back to Dordor.games
-        </a>
+        <a href="https://dordor.games/" style={{
+          position: 'absolute', bottom: '3%', left: '50%', transform: 'translateX(-50%)',
+          color: 'rgba(255,200,80,0.7)', fontSize: '11px',
+          textDecoration: 'underline', whiteSpace: 'nowrap', zIndex: 10,
+        }}>← Back to Dordor.games</a>
       </div>
     );
   }
@@ -196,9 +182,9 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
       <div
         style={{
           position: 'fixed', inset: 0, overflow: 'hidden',
-          backgroundImage: `url(${charadesBgRect})`,
+          backgroundImage: `url(${charadesBgNew})`,
           backgroundSize: 'cover',
-          backgroundPosition: 'center top',
+          backgroundPosition: 'center',
         }}
       >
         <Form {...createForm}>
@@ -291,9 +277,9 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
       <div
         style={{
           position: 'fixed', inset: 0, overflow: 'hidden',
-          backgroundImage: `url(${charadesBgRect})`,
+          backgroundImage: `url(${charadesBgNew})`,
           backgroundSize: 'cover',
-          backgroundPosition: 'center top',
+          backgroundPosition: 'center',
         }}
       >
         <Form {...joinForm}>

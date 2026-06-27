@@ -11,7 +11,7 @@ const PINK   = '#e84d7a';      // warm pink
 const RED    = '#e84d7a';      // alias for time-sensitive states → warm pink
 
 // Sharp white text shadow — no blur, no glow
-const SHARP = '1px 1px 0 #fff';
+const SHARP = '4px 4px 0 #fff';
 
 const TURN_DURATION = 60;
 
@@ -132,6 +132,7 @@ export default function CharadesRoom({ code, playerId, roomState, socket, onGoHo
         backgroundImage: `url(${charadesBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center top',
+        WebkitTextStroke: '1px #000',
       }}
     >
 

@@ -132,7 +132,7 @@ export default function CharadesRoom({ code, playerId, roomState, socket, onGoHo
         backgroundImage: `url(${charadesBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center top',
-        WebkitTextStroke: '3px #000000',
+        WebkitTextStroke: '1px #ffffff',
         paintOrder: 'stroke fill',
       }}
     >

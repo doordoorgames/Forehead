@@ -11,7 +11,7 @@ const PINK   = '#e84d7a';      // warm pink
 const RED    = '#e84d7a';      // alias for time-sensitive states → warm pink
 
 // Sharp white text shadow — no blur, no glow
-const SHARP = '4px 4px 0 #fff';
+const SHARP = '0.04em 0.04em 0px rgba(0,0,0,0.8)';
 
 const TURN_DURATION = 60;
 
@@ -132,7 +132,8 @@ export default function CharadesRoom({ code, playerId, roomState, socket, onGoHo
         backgroundImage: `url(${charadesBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center top',
-        WebkitTextStroke: '1px #000',
+        WebkitTextStroke: '3px #000000',
+        paintOrder: 'stroke fill',
       }}
     >
 
@@ -224,7 +225,7 @@ function CharadesLobbyView({
           </span>
           <button
             onClick={handleCopy}
-            className="p-2 rounded-lg bg-black/10 hover:bg-black/20 transition-colors"
+            className="p-2 bg-black/10 hover:bg-black/20 transition-colors"
           >
             {copied ? <Check className="w-5 h-5 text-black" /> : <Copy className="w-5 h-5 text-black/60" />}
           </button>
@@ -278,7 +279,7 @@ function CharadesLobbyView({
             style={{
               background: canStart ? `linear-gradient(135deg, ${ORANGE}, ${PINK})` : 'rgba(0,0,0,0.12)',
               border: `2px solid ${canStart ? ORANGE : 'rgba(0,0,0,0.2)'}`,
-              borderRadius: 12,
+              borderRadius: 0,
               color: '#000',
               textShadow: SHARP,
               opacity: canStart ? 1 : 0.5,
@@ -598,7 +599,7 @@ function HostGameView({
             ? `linear-gradient(135deg, ${PINK}, #c0184d)`
             : `linear-gradient(135deg, ${ORANGE}, #b84508)`,
           border: `2px solid ${isUrgent || timesUp ? PINK : ORANGE}`,
-          borderRadius: 12,
+          borderRadius: 0,
           color: '#000',
           textShadow: SHARP,
           ...fontStyle,
@@ -615,7 +616,7 @@ function HostGameView({
           style={{
             background: 'rgba(0,0,0,0.08)',
             border: '1.5px solid rgba(0,0,0,0.2)',
-            borderRadius: 10,
+            borderRadius: 0,
             color: '#000',
             textShadow: SHARP,
             ...fontStyle,
@@ -629,7 +630,7 @@ function HostGameView({
           style={{
             background: 'rgba(232,77,122,0.15)',
             border: `1.5px solid ${PINK}`,
-            borderRadius: 10,
+            borderRadius: 0,
             color: '#000',
             textShadow: SHARP,
             ...fontStyle,
@@ -731,7 +732,7 @@ function CharadesFinishedView({ onGoHome, t, fontStyle }: { onGoHome: () => void
         style={{
           background: `linear-gradient(135deg, ${ORANGE}, ${PINK})`,
           border: `2px solid ${ORANGE}`,
-          borderRadius: 12,
+          borderRadius: 0,
           color: '#000',
           textShadow: SHARP,
           ...fontStyle,

@@ -4,7 +4,7 @@ import PetalSwoop from '@/components/PetalSwoop';
 import grassBg from '@assets/6E21F754-65A0-4119-A739-67DD40CAA6B4_1780250343871.png';
 import charadesBtnEn from '@assets/IMG_2117_1782502451906.png';
 import charadesBtnAr from '@assets/IMG_2118_1782502451906.png';
-import charadesBgNew from '@assets/5A7DC98A-72C4-4B1B-993C-37EE3278D61C_1782502756991.jpeg';
+import charadesBgNew from '@assets/125A4A6F-F984-4E1F-896A-FB167CA28D94_1782571007086.png';
 import khaminLogo from '@assets/IMG_1974_1780586546169.png';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';

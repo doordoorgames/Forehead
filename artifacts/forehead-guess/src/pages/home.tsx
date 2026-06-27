@@ -173,7 +173,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
 
   const CHARADES_TEXT: React.CSSProperties = {
     color: '#000',
-    textShadow: '0.04em 0.04em 0px rgba(0,0,0,0.8)',
+    textShadow: '0.04em 0.04em 0px #fff',
     WebkitTextStroke: '3px #000000',
     paintOrder: 'stroke fill',
     fontFamily: isAr ? "'Marhey', sans-serif" : "'Patrick Hand', cursive",

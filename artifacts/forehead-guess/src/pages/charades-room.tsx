@@ -11,7 +11,7 @@ const PINK   = '#e84d7a';      // warm pink
 const RED    = '#e84d7a';      // alias for time-sensitive states → warm pink
 
 // Sharp white text shadow — no blur, no glow
-const SHARP = '0.04em 0.04em 0px rgba(0,0,0,0.8)';
+const SHARP = '0.04em 0.04em 0px #fff';
 
 const TURN_DURATION = 60;
 

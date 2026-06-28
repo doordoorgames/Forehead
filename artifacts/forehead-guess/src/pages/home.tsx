@@ -724,9 +724,6 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
             >
               ← Back to Dordor.games
             </a>
-            <Button variant="ghost" className="mt-2" onClick={() => setLocation('/admin')}>
-              {t.adminPanel}
-            </Button>
           </div>
         )}
 

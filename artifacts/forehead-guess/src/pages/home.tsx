@@ -7,6 +7,8 @@ import charadesBtnAr from '@assets/IMG_2118_1782502451906.png';
 import charadesBgNew from '@assets/125A4A6F-F984-4E1F-896A-FB167CA28D94_1782571007086.png';
 import charadesHowToEn from '@assets/IMG_2149_1782759041386.png';
 import charadesHowToAr from '@assets/IMG_2148_1782759041386.jpeg';
+import characterHowToEn from '@assets/IMG_2150_1782760713908.jpeg';
+import characterHowToAr from '@assets/IMG_2151_1782760713908.jpeg';
 import khaminLogo from '@assets/IMG_1974_1780586546169.png';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -461,6 +463,64 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
             }}
           />
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.52)' }} />
+        </>
+      )}
+      {/* Character mode: "how to play" floating links */}
+      {mode === 'character' && (
+        <>
+          <button
+            onClick={() => setTutorial('en')}
+            style={{
+              position: 'absolute', top: '16px', left: '16px', zIndex: 20,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#fff', fontWeight: 700,
+              fontFamily: "'Patrick Hand', cursive",
+              fontSize: 'clamp(13px, 3.5vw, 17px)',
+              textShadow: '0.04em 0.04em 0px #000',
+              WebkitTextStroke: '0.5px #000',
+            }}
+          >
+            how to play
+          </button>
+          <button
+            onClick={() => setTutorial('ar')}
+            style={{
+              position: 'absolute', top: '16px', right: '16px', zIndex: 20,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#fff', fontWeight: 700,
+              fontFamily: "'Marhey', sans-serif",
+              fontSize: 'clamp(13px, 3.5vw, 17px)',
+              textShadow: '0.04em 0.04em 0px #000',
+              WebkitTextStroke: '0.5px #000',
+            }}
+          >
+            كيف نلعب
+          </button>
+          {/* Tutorial fullscreen overlay */}
+          {tutorial && (
+            <div style={{
+              position: 'fixed', inset: 0, zIndex: 200,
+              background: 'rgba(0,0,0,0.9)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <img
+                src={tutorial === 'en' ? characterHowToEn : characterHowToAr}
+                alt="how to play"
+                style={{ maxWidth: '100%', maxHeight: '100%', width: '100%', height: '100%', objectFit: 'contain' }}
+              />
+              <button
+                onClick={() => setTutorial(null)}
+                style={{
+                  position: 'absolute', top: '16px', right: '16px',
+                  background: 'rgba(0,0,0,0.6)', border: '2px solid #fff',
+                  borderRadius: '50%', width: 40, height: 40,
+                  color: '#fff', fontSize: '20px', fontWeight: 900,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+                aria-label="Close"
+              >✕</button>
+            </div>
+          )}
         </>
       )}
       {/* DYKM mode: grass garden background */}

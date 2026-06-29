@@ -1,0 +1,26 @@
+
+
+Published your App
+For charades make all the English font u use Patrick hand, and all the Arabic font you use Marhey (both google fonts)
+3 days ago
+Make this the background for charades, this single image for all the game during room creation and playing and under the timer and nickname selection, all the game
+2 days ago
+For charades, change the font style . Some places in the game u have the font with thick white stroke and some with none. I don't want the stroke, I want all the game to have black font with white shadow that is sharp not blurred, no stroke anywhere, both in Arabic and English.
+2 days ago
+Add a one pixel black stroke to all fonts in charades and make all the white shadows bigger increase the distance from source by a 3 pixels
+2 days ago
+For Charades make all the buttons list start game and back to lobby all have sharp corners rectangles. Never rounded corners any where. AlsoLook at the text styling across the website as shown in 3104.jpg. The text is currently illegible because the shadows are bleeding together on smaller text sizes, and the outlines aren't crisp against the detailed cloud background.
+
+Please update the global CSS typography rules for all text elements (including Arabic headings, timer numbers, and status text) with the following adjustments to make them beautiful and sharp:
+
+Dynamic Relative Shadows: Change all text-shadow offsets from absolute pixel 'px' values to relative 'em' units (for example: text-shadow: 0.04em 0.04em 0px rgba(0,0,0,0.8);). This ensures that the shadow scales down tightly on small text and expands correctly on larger text without losing legibility or overlapping.
+Heavy 3px Outer Stroke: Apply a clean, solid 3px black border/stroke around the text characters to isolate them from the light/dark variations of the background. Use either a multi-layered text-shadow or -webkit-text-stroke: 3px #000000; combined with paint-order: stroke fill; so that the thick stroke doesn't eat into the inner fill of the font.
+Do not add any blurry neon glows, and do not put any semi-opaque background boxes behind the text. Keep the layout identical to 3104.jpg, but make every single font razor-sharp, readable, and perfectly proportioned. Clean up any inline text-shadow styles that might be overriding this.
+2 days ago
+Make the shadow for the font stark white. All the font in the game Arabic and English
+2 days ago
+For Charades make the strike for all the font only 1 pixel and make it white stark white
+2 days ago
+There is a button at the bottom of guess the character first page that says "admin" remove it
+1 day ago
+For charades, on the top right and left write in the same fonts marhey and Patrick hand "how to play" and "كيف نلعب" and they are just floating clickable text no frame no buttons. When the Arab is clicked open the Arab pop up and when the English is clicked open the English pop up I attatched. When they open they fill the screen and there is an "x" button on the top right corner that closes this tutorial image

@@ -5,6 +5,8 @@ import grassBg from '@assets/6E21F754-65A0-4119-A739-67DD40CAA6B4_1780250343871.
 import charadesBtnEn from '@assets/IMG_2117_1782502451906.png';
 import charadesBtnAr from '@assets/IMG_2118_1782502451906.png';
 import charadesBgNew from '@assets/125A4A6F-F984-4E1F-896A-FB167CA28D94_1782571007086.png';
+import charadesHowToEn from '@assets/IMG_2149_1782759041386.png';
+import charadesHowToAr from '@assets/IMG_2148_1782759041386.jpeg';
 import khaminLogo from '@assets/IMG_1974_1780586546169.png';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -38,6 +40,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
   const { toast } = useToast();
   const { t, lang, setLang } = useLang();
   const [view, setView] = useState<'main' | 'create' | 'join'>('main');
+  const [tutorial, setTutorial] = useState<null | 'en' | 'ar'>(null);
 
   const createRoomMutation = useCreateRoom();
   const joinRoomMutation = useJoinRoom();
@@ -124,18 +127,45 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     const leftClick  = lang === 'ar' ? () => setView('join')   : () => setView('create');
     const rightClick = lang === 'ar' ? () => setView('create') : () => setView('join');
 
+    const howToStyle: React.CSSProperties = {
+      position: 'absolute', top: '4%',
+      background: 'none', border: 'none', cursor: 'pointer',
+      color: '#fff', fontWeight: 700,
+      fontSize: 'clamp(13px, 3.5vw, 17px)',
+      textShadow: '0.04em 0.04em 0px #000',
+      WebkitTextStroke: '0.5px #000',
+      zIndex: 20,
+    };
+
     return (
       <div style={{
         position: 'fixed', inset: 0, overflow: 'hidden',
         backgroundImage: `url(${charadesBgNew})`,
         backgroundSize: 'cover', backgroundPosition: 'center',
       }}>
+
+        {/* "how to play" — top left (Patrick Hand) */}
+        <button
+          onClick={() => setTutorial('en')}
+          style={{ ...howToStyle, left: '4%', fontFamily: "'Patrick Hand', cursive" }}
+        >
+          how to play
+        </button>
+
+        {/* "كيف نلعب" — top right (Marhey) */}
+        <button
+          onClick={() => setTutorial('ar')}
+          style={{ ...howToStyle, right: '4%', fontFamily: "'Marhey', sans-serif" }}
+        >
+          كيف نلعب
+        </button>
+
         {/* Button image + invisible hit areas */}
         <div style={{
           position: 'absolute',
           top: '50%', left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 'min(92vw, 138vh)',   /* keeps 3:2 ratio visible */
+          width: 'min(92vw, 138vh)',
         }}>
           <div style={{ position: 'relative', width: '100%' }}>
             <img
@@ -144,17 +174,14 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
               style={{ width: '100%', height: 'auto', display: 'block', pointerEvents: 'none', userSelect: 'none' }}
               draggable={false}
             />
-            {/* LEFT button (CREATE EN / JOIN AR) */}
             <button onClick={leftClick} aria-label={lang === 'ar' ? 'انضم لغرفة' : 'Create Room'} style={{
               position: 'absolute', top: '22%', left: '1%', width: '44%', height: '22%',
               background: 'transparent', border: 'none', cursor: 'pointer',
             }} />
-            {/* RIGHT button (JOIN EN / CREATE AR) */}
             <button onClick={rightClick} aria-label={lang === 'ar' ? 'انشئ غرفة' : 'Join Room'} style={{
               position: 'absolute', top: '22%', left: '53%', width: '44%', height: '22%',
               background: 'transparent', border: 'none', cursor: 'pointer',
             }} />
-            {/* LANGUAGE toggle button (bottom center) */}
             <button onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} aria-label="Switch language" style={{
               position: 'absolute', top: '51%', left: '30%', width: '40%', height: '20%',
               background: 'transparent', border: 'none', cursor: 'pointer',
@@ -167,6 +194,39 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           color: 'rgba(255,200,80,0.7)', fontSize: '11px',
           textDecoration: 'underline', whiteSpace: 'nowrap', zIndex: 10,
         }}>← Back to Dordor.games</a>
+
+        {/* Tutorial fullscreen overlay */}
+        {tutorial && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 100,
+            background: 'rgba(0,0,0,0.85)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <img
+              src={tutorial === 'en' ? charadesHowToEn : charadesHowToAr}
+              alt="how to play"
+              style={{
+                maxWidth: '100%', maxHeight: '100%',
+                width: '100%', height: '100%',
+                objectFit: 'contain',
+              }}
+            />
+            <button
+              onClick={() => setTutorial(null)}
+              style={{
+                position: 'absolute', top: '16px', right: '16px',
+                background: 'rgba(0,0,0,0.6)', border: '2px solid #fff',
+                borderRadius: '50%', width: 40, height: 40,
+                color: '#fff', fontSize: '20px', fontWeight: 900,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                lineHeight: 1,
+              }}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+        )}
       </div>
     );
   }

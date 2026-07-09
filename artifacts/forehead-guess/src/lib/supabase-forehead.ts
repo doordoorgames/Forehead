@@ -29,7 +29,7 @@ export interface ForeheadCategoriesResult {
 export async function fetchForeheadCategories(
   lang: 'en' | 'ar',
 ): Promise<ForeheadCategoriesResult> {
-  const table = lang === 'ar' ? 'forehead_arabic' : 'forehead_english';
+  const table = lang === 'ar' ? 'forehead_arabic_1' : 'forehead_english';
   const errorMsg =
     lang === 'ar'
       ? 'تعذر تحميل التصنيفات'

@@ -125,7 +125,7 @@ export async function fetchForeheadWordsByFlatCategory(
   lang?: string,
 ): Promise<{ words: string[]; error: string | null }> {
   const errMsg = lang === 'ar' ? 'تعذر تحميل الكلمات' : 'Could not load words for this category.';
-  const table = lang === 'ar' ? 'forehead_arabic' : 'forehead_english';
+  const table = lang === 'ar' ? 'forehead_arabic_1' : 'forehead_english';
 
   console.log(`[Forehead] Fetching words from ${table} WHERE category="${categoryName}"`);
 

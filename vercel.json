@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --filter @workspace/forehead-guess run typecheck && pnpm --filter @workspace/forehead-guess run build",
+  "outputDirectory": "artifacts/forehead-guess/dist/public"
+}

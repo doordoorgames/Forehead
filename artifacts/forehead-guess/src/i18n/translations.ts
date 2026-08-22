@@ -345,4 +345,6 @@ export const translations = {
   },
 } as const;
 
-export type Translations = {\n  [K in keyof typeof translations.en]: string;\n};
+export type Translations = {
+  [K in keyof typeof translations.en]: string;
+};

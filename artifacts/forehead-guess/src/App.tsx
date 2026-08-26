@@ -1,4 +1,5 @@
 import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wouter";
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,8 +20,22 @@ const hostedModePaths: Record<string, string> = {
   "charades.dordor.games": "/charades",
 };
 
+const hostedModeTitles: Record<string, string> = {
+  "guessyourword.dordor.games": "Guess Your Word",
+  "guessthecharacter.dordor.games": "Guess the Character",
+  "charades.dordor.games": "Charades",
+};
+
 function getHostedModePath() {
   return hostedModePaths[window.location.hostname.toLowerCase()] ?? null;
+}
+
+function getPageTitle(location: string) {
+  const hostname = window.location.hostname.toLowerCase();
+  if (hostedModeTitles[hostname]) return hostedModeTitles[hostname];
+  if (location.startsWith("/character")) return "Guess the Character";
+  if (location.startsWith("/charades")) return "Charades";
+  return "Guess Your Word";
 }
 
 function Router() {
@@ -30,6 +45,10 @@ function Router() {
   const isDykmRoom = !!roomCode && sessionStorage.getItem(`fg_roomMode_${roomCode}`) === 'dykm';
   const isCharadesRoom = !!roomCode && sessionStorage.getItem(`fg_roomMode_${roomCode}`) === 'charades';
   const showCyberpunk = !location.startsWith('/character') && !location.startsWith('/dykm') && !location.startsWith('/doyouknowme') && !location.startsWith('/charades') && !isDykmRoom && !isCharadesRoom;
+
+  useEffect(() => {
+    document.title = getPageTitle(location);
+  }, [location]);
 
   return (
     <>

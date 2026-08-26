@@ -3,13 +3,13 @@ import { useLang } from '@/context/LanguageContext';
 import { Lang } from '@/i18n/translations';
 import khaminLogo from '@assets/IMG_1974_1780586546169.png';
 
-export default function LanguageSelect() {
+export default function LanguageSelect({ nextPath = '/mode' }: { nextPath?: string }) {
   const [, setLocation] = useLocation();
   const { setLang } = useLang();
 
   const choose = (l: Lang) => {
     setLang(l);
-    setLocation('/mode');
+    setLocation(nextPath);
   };
 
   return (

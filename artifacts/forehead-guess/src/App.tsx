@@ -13,8 +13,19 @@ import { LanguageProvider } from "@/context/LanguageContext";
 
 const queryClient = new QueryClient();
 
+const hostedModePaths: Record<string, string> = {
+  "guessyourword.dordor.games": "/forehead",
+  "guessthecharacter.dordor.games": "/character",
+  "charades.dordor.games": "/charades",
+};
+
+function getHostedModePath() {
+  return hostedModePaths[window.location.hostname.toLowerCase()] ?? null;
+}
+
 function Router() {
   const [location] = useLocation();
+  const hostedModePath = getHostedModePath();
   const roomCode = location.startsWith('/room/') ? location.split('/room/')[1]?.toUpperCase() : null;
   const isDykmRoom = !!roomCode && sessionStorage.getItem(`fg_roomMode_${roomCode}`) === 'dykm';
   const isCharadesRoom = !!roomCode && sessionStorage.getItem(`fg_roomMode_${roomCode}`) === 'charades';
@@ -24,14 +35,14 @@ function Router() {
     <>
       {showCyberpunk && <CyberpunkBackground />}
       <Switch>
-        <Route path="/" component={LanguageSelect} />
-        <Route path="/mode" component={ModeSelect} />
+        <Route path="/">{() => <LanguageSelect nextPath={hostedModePath ?? "/mode"} />}</Route>
+        <Route path="/mode">{() => hostedModePath ? <Redirect to={hostedModePath} /> : <ModeSelect />}</Route>
         <Route path="/forehead">{() => <Home mode="forehead" />}</Route>
         <Route path="/character">{() => <Home mode="character" />}</Route>
         <Route path="/charades">{() => <Home mode="charades" />}</Route>
         <Route path="/dykm">{() => <Home mode="dykm" />}</Route>
         <Route path="/doyouknowme">{() => <Home mode="dykm" />}</Route>
-        <Route path="/home">{() => <Redirect to="/mode" />}</Route>
+        <Route path="/home">{() => <Redirect to={hostedModePath ?? "/mode"} />}</Route>
         <Route path="/admin" component={Admin} />
         <Route path="/room/:code" component={Room} />
         <Route component={NotFound} />

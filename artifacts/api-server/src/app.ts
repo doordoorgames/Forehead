@@ -6,6 +6,22 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+const configuredOrigins = (process.env.ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+function isAllowedOrigin(origin?: string) {
+  if (!origin) return true;
+  if (configuredOrigins.includes(origin)) return true;
+  try {
+    const hostname = new URL(origin).hostname.toLowerCase();
+    return hostname === "dordor.games" || hostname.endsWith(".dordor.games") || hostname.endsWith(".vercel.app");
+  } catch {
+    return false;
+  }
+}
+
 app.use(
   pinoHttp({
     logger,
@@ -25,7 +41,7 @@ app.use(
     },
   }),
 );
-app.use(cors());
+app.use(cors({ origin: (origin, callback) => callback(null, isAllowedOrigin(origin)) }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

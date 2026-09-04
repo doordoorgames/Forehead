@@ -10,8 +10,38 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const isProduction = process.env.NODE_ENV === "production";
+
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  // Supabase's Session Pooler is the IPv4-compatible endpoint for Railway.
+  // It requires TLS in production. The pooler presents a managed certificate,
+  // but its chain is not always available in minimal container images.
+  ssl: isProduction ? { rejectUnauthorized: false } : undefined,
+  options: "-c search_path=forehead,public",
+  max: Number(process.env.DB_POOL_MAX ?? 10),
+  connectionTimeoutMillis: Number(process.env.DB_CONNECT_TIMEOUT_MS ?? 10_000),
+  idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS ?? 30_000),
+  keepAlive: true,
+});
 export const db = drizzle(pool, { schema });
+
+pool.on("error", (error) => {
+  console.error("[database] unexpected idle client error", formatDatabaseError(error));
+});
+
+export function formatDatabaseError(error: unknown) {
+  if (!(error instanceof Error)) return { message: String(error) };
+  const pgError = error as Error & { code?: string; detail?: string; hint?: string };
+  return {
+    name: pgError.name,
+    message: pgError.message,
+    code: pgError.code,
+    detail: pgError.detail,
+    hint: pgError.hint,
+    stack: pgError.stack,
+  };
+}
 
 /**
  * Create the database tables required by the existing multiplayer server.
@@ -25,6 +55,8 @@ export async function ensureDatabaseSchema(): Promise<void> {
 
   try {
     await client.query("BEGIN");
+    await client.query("CREATE SCHEMA IF NOT EXISTS forehead");
+    await client.query("SET LOCAL search_path TO forehead, public");
     await client.query("SELECT pg_advisory_xact_lock(1179864656)");
     await client.query(`
       CREATE TABLE IF NOT EXISTS categories (

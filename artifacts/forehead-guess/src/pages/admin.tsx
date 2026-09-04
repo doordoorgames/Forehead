@@ -8,6 +8,7 @@ import {
   useAdminUpdateCategory,
   useAdminDeleteCategory,
 } from '@workspace/api-client-react';
+import { backendUrl } from '@/lib/backend';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -344,7 +345,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
     const fd = new FormData();
     fd.append('file', file);
     try {
-      const res = await fetch(`/api/admin/upload-master?lang=${lang}`, {
+      const res = await fetch(backendUrl(`/api/admin/upload-master?lang=${lang}`), {
         method: 'POST',
         headers: { 'x-admin-password': password },
         body: fd,
@@ -376,7 +377,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
     const fd = new FormData();
     fd.append('file', file);
     try {
-      const res = await fetch(`/api/admin/upload-characters?lang=${lang}`, {
+      const res = await fetch(backendUrl(`/api/admin/upload-characters?lang=${lang}`), {
         method: 'POST',
         headers: { 'x-admin-password': password },
         body: fd,
@@ -401,7 +402,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const fetchCharacters = useCallback(async () => {
     setCharsLoading(true);
     try {
-      const res = await fetch('/api/admin/characters', { headers: { 'x-admin-password': password } });
+      const res = await fetch(backendUrl('/api/admin/characters'), { headers: { 'x-admin-password': password } });
       if (res.ok) setCharacters(await res.json());
     } catch { /* ignore */ }
     finally { setCharsLoading(false); }
@@ -420,7 +421,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
     const fd = new FormData();
     fd.append('file', file);
     try {
-      const res = await fetch(`/api/admin/upload-charades?lang=${lang}`, {
+      const res = await fetch(backendUrl(`/api/admin/upload-charades?lang=${lang}`), {
         method: 'POST',
         headers: { 'x-admin-password': password },
         body: fd,
@@ -445,7 +446,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const fetchCharades = useCallback(async () => {
     setCrdLoading(true);
     try {
-      const res = await fetch('/api/admin/charades', { headers: { 'x-admin-password': password } });
+      const res = await fetch(backendUrl('/api/admin/charades'), { headers: { 'x-admin-password': password } });
       if (res.ok) setCharades(await res.json());
     } catch { /* ignore */ }
     finally { setCrdLoading(false); }
@@ -456,7 +457,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const handleDeleteCharade = async (id: number, answer: string) => {
     if (!confirm(`Delete charade "${answer}"?`)) return;
     try {
-      const res = await fetch(`/api/admin/charades/${id}`, {
+      const res = await fetch(backendUrl(`/api/admin/charades/${id}`), {
         method: 'DELETE',
         headers: { 'x-admin-password': password }
       });
@@ -469,7 +470,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const handleDeleteCharacter = async (id: number, answer: string) => {
     if (!confirm(`Delete character "${answer}"?`)) return;
     try {
-      const res = await fetch(`/api/admin/characters/${id}`, {
+      const res = await fetch(backendUrl(`/api/admin/characters/${id}`), {
         method: 'DELETE',
         headers: { 'x-admin-password': password }
       });
@@ -502,7 +503,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
     if (!confirm(`Delete ALL ${label} Forehead categories and their words? This cannot be undone.`)) return;
     setDeletingAllLang(lang);
     try {
-      const res = await fetch(`/api/admin/categories?lang=${lang}`, {
+      const res = await fetch(backendUrl(`/api/admin/categories?lang=${lang}`), {
         method: 'DELETE',
         headers: { 'x-admin-password': password },
       });
@@ -532,7 +533,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
     fd.append('file', file);
     fd.append('lang', lang);
     try {
-      const res = await fetch('/api/admin/dykm-upload', {
+      const res = await fetch(backendUrl('/api/admin/dykm-upload'), {
         method: 'POST',
         headers: { 'x-admin-password': password },
         body: fd,
@@ -556,7 +557,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const fetchDykmCats = useCallback(async () => {
     setDykmCatsLoading(true);
     try {
-      const res = await fetch('/api/admin/dykm-categories', { headers: { 'x-admin-password': password } });
+      const res = await fetch(backendUrl('/api/admin/dykm-categories'), { headers: { 'x-admin-password': password } });
       if (res.ok) setDykmCats(await res.json());
     } catch { /* ignore */ }
     finally { setDykmCatsLoading(false); }
@@ -567,7 +568,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const handleDeleteDykmCat = async (id: number, name: string) => {
     if (!confirm(`Delete DYKM category "${name}" and all its questions?`)) return;
     try {
-      const res = await fetch(`/api/admin/dykm-categories/${id}`, {
+      const res = await fetch(backendUrl(`/api/admin/dykm-categories/${id}`), {
         method: 'DELETE',
         headers: { 'x-admin-password': password }
       });
@@ -579,7 +580,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
 
   const handleToggleDykmCat = async (id: number, enabled: boolean) => {
     try {
-      const res = await fetch(`/api/admin/dykm-categories/${id}`, {
+      const res = await fetch(backendUrl(`/api/admin/dykm-categories/${id}`), {
         method: 'PUT',
         headers: { 'x-admin-password': password, 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled }),

@@ -1,8 +1,9 @@
-import { pgTable, serial, text, boolean, timestamp, integer } from "drizzle-orm/pg-core";
+import { serial, text, boolean, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { foreheadSchema } from "./namespace";
 
-export const categoriesTable = pgTable("categories", {
+export const categoriesTable = foreheadSchema.table("categories", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
@@ -11,7 +12,7 @@ export const categoriesTable = pgTable("categories", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const categoryItemsTable = pgTable("category_items", {
+export const categoryItemsTable = foreheadSchema.table("category_items", {
   id: serial("id").primaryKey(),
   categoryId: integer("category_id").notNull().references(() => categoriesTable.id, { onDelete: "cascade" }),
   itemText: text("item_text").notNull(),
@@ -19,7 +20,7 @@ export const categoryItemsTable = pgTable("category_items", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const charactersTable = pgTable("characters", {
+export const charactersTable = foreheadSchema.table("characters", {
   id: serial("id").primaryKey(),
   answer: text("answer").notNull(),
   hints: text("hints").array().notNull(),
@@ -27,14 +28,14 @@ export const charactersTable = pgTable("characters", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const charadesTable = pgTable("charades", {
+export const charadesTable = foreheadSchema.table("charades", {
   id: serial("id").primaryKey(),
   answer: text("answer").notNull(),
   lang: text("lang").notNull().default("en"), // "en" | "ar"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const dykmCategoriesTable = pgTable("dykm_categories", {
+export const dykmCategoriesTable = foreheadSchema.table("dykm_categories", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   lang: text("lang").notNull().default("en"),
@@ -42,7 +43,7 @@ export const dykmCategoriesTable = pgTable("dykm_categories", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const dykmQuestionsTable = pgTable("dykm_questions", {
+export const dykmQuestionsTable = foreheadSchema.table("dykm_questions", {
   id: serial("id").primaryKey(),
   categoryId: integer("category_id").notNull().references(() => dykmCategoriesTable.id, { onDelete: "cascade" }),
   question: text("question").notNull(),

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { websocketUrl } from '@/lib/backend';
 
 export interface CharadesState {
   isHost: boolean;
@@ -136,7 +137,7 @@ export function useGameSocket(roomCode: string, playerId: number | null, playerN
     if (!roomCode || !playerId || !playerName) return;
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) return;
 
-    const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
+    const wsUrl = websocketUrl();
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 

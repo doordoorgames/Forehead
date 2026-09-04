@@ -1,10 +1,10 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "buildCommand": "pnpm run build:api-server"
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile.railway"
   },
   "deploy": {
-    "startCommand": "pnpm run start:api-server",
     "healthcheckPath": "/api/healthz",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",

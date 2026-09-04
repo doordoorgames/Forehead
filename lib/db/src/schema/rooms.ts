@@ -1,9 +1,10 @@
-import { pgTable, serial, text, boolean, timestamp, integer } from "drizzle-orm/pg-core";
+import { serial, text, boolean, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { categoriesTable } from "./categories";
+import { foreheadSchema } from "./namespace";
 
-export const roomsTable = pgTable("rooms", {
+export const roomsTable = foreheadSchema.table("rooms", {
   id: serial("id").primaryKey(),
   code: text("code").notNull().unique(),
   status: text("status").notNull().default("waiting"),
@@ -17,7 +18,7 @@ export const roomsTable = pgTable("rooms", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const playersTable = pgTable("players", {
+export const playersTable = foreheadSchema.table("players", {
   id: serial("id").primaryKey(),
   roomId: integer("room_id").notNull().references(() => roomsTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
@@ -28,7 +29,7 @@ export const playersTable = pgTable("players", {
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
 });
 
-export const turnsTable = pgTable("turns", {
+export const turnsTable = foreheadSchema.table("turns", {
   id: serial("id").primaryKey(),
   roomId: integer("room_id").notNull().references(() => roomsTable.id, { onDelete: "cascade" }),
   playerId: integer("player_id").notNull().references(() => playersTable.id),

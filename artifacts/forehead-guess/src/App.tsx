@@ -11,6 +11,10 @@ import LanguageSelect from "@/pages/language-select";
 import ModeSelect from "@/pages/mode-select";
 import CyberpunkBackground from "@/components/CyberpunkBackground";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { setBaseUrl } from "@workspace/api-client-react";
+import { apiBaseUrl } from "@/lib/backend";
+
+setBaseUrl(apiBaseUrl);
 
 const queryClient = new QueryClient();
 

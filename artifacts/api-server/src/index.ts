@@ -2,7 +2,7 @@ import http from "http";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { setupWebSocketServer } from "./ws/gameServer";
-import { ensureDatabaseSchema } from "@workspace/db";
+import { ensureDatabaseSchema, formatDatabaseError, pool } from "@workspace/db";
 
 const rawPort = process.env["PORT"];
 
@@ -19,7 +19,18 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 async function startServer() {
-  await ensureDatabaseSchema();
+  const attempts = Number(process.env.DB_STARTUP_ATTEMPTS ?? 12);
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      logger.info({ attempt, attempts }, "Connecting to database");
+      await ensureDatabaseSchema();
+      break;
+    } catch (error) {
+      console.error(`[startup] database attempt ${attempt}/${attempts} failed`, formatDatabaseError(error));
+      if (attempt >= attempts) throw error;
+      await new Promise((resolve) => setTimeout(resolve, Math.min(attempt * 1_000, 5_000)));
+    }
+  }
   logger.info("Database schema ready");
 
   const server = http.createServer(app);
@@ -30,12 +41,22 @@ async function startServer() {
   });
 
   server.on("error", (err) => {
-    logger.error({ err }, "Server error");
+    console.error("[server] fatal error", err);
     process.exit(1);
   });
+
+  const shutdown = async (signal: string) => {
+    logger.info({ signal }, "Shutting down");
+    server.close(async () => {
+      await pool.end();
+      process.exit(0);
+    });
+  };
+  process.once("SIGTERM", () => void shutdown("SIGTERM"));
+  process.once("SIGINT", () => void shutdown("SIGINT"));
 }
 
 startServer().catch((err) => {
-  logger.error({ err }, "Failed to start server");
+  console.error("[startup] Failed to start server", formatDatabaseError(err));
   process.exit(1);
 });

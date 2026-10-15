@@ -134,10 +134,11 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     const howToStyle: React.CSSProperties = {
       position: 'absolute', top: '4%',
       background: 'none', border: 'none', cursor: 'pointer',
-      color: '#fff', fontWeight: 700,
-      fontSize: 'clamp(13px, 3.5vw, 17px)',
-      textShadow: '0.04em 0.04em 0px #000',
-      WebkitTextStroke: '0.5px #000',
+      color: '#FFFFFF', fontWeight: 800,
+      fontSize: 'clamp(22px, 6vw, 26px)',
+      minHeight: 44, lineHeight: 1.4, padding: '4px 0',
+      textShadow: '0 2px 6px rgba(0,0,0,0.6)',
+      WebkitTextStroke: '0.45px #FFFFFF',
       zIndex: 20,
     };
 
@@ -159,7 +160,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
         {/* "كيف نلعب" — top right (Marhey) */}
         <button
           onClick={() => setTutorial('ar')}
-          style={{ ...howToStyle, right: '4%', fontFamily: "'Marhey', sans-serif" }}
+          style={{ ...howToStyle, right: '4%', textAlign: 'right', fontFamily: "'Marhey', sans-serif" }}
         >
           كيف نلعب
         </button>

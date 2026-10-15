@@ -4,6 +4,7 @@ import { useLang } from '@/context/LanguageContext';
 import charadesBg from '@assets/125A4A6F-F984-4E1F-896A-FB167CA28D94_1782571007086.png';
 import type { RoomState } from '@/hooks/useGameSocket';
 import RoomJoinQR from '@/components/RoomJoinQR';
+import { CHARADES_LOBBY_TEXT, CHARADES_LOBBY_BOX_SHADOW } from '@/lib/charades-lobby-style';
 
 // ─── CHARADES COLOR PALETTE ───────────────────────────────────────────────────
 const ORANGE = '#d4540a';      // burnt orange
@@ -132,7 +133,7 @@ export default function CharadesRoom({ code, playerId, roomState, socket, onGoHo
         backgroundImage: `url(${charadesBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center top',
-        WebkitTextStroke: '1px #ffffff',
+        WebkitTextStroke: status === 'waiting' ? 0 : '1px #ffffff',
         paintOrder: 'stroke fill',
       }}
     >
@@ -150,7 +151,6 @@ export default function CharadesRoom({ code, playerId, roomState, socket, onGoHo
           roomState={roomState}
           onStart={socket.charadesStart}
           t={t}
-          fontStyle={fontStyle}
         />
       )}
 
@@ -177,14 +177,13 @@ export default function CharadesRoom({ code, playerId, roomState, socket, onGoHo
 // ─── LOBBY VIEW ───────────────────────────────────────────────────────────────
 
 function CharadesLobbyView({
-  roomCode, playerId, roomState, onStart, t, fontStyle,
+  roomCode, playerId, roomState, onStart, t,
 }: {
   roomCode: string;
   playerId: number;
   roomState: RoomState;
   onStart: () => void;
   t: any;
-  fontStyle: object;
 }) {
   const [copied, setCopied] = useState(false);
   const players = roomState.players;
@@ -199,11 +198,11 @@ function CharadesLobbyView({
   };
 
   return (
-    <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 gap-5 max-w-lg mx-auto w-full">
+    <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 gap-5 max-w-lg mx-auto w-full" style={CHARADES_LOBBY_TEXT}>
       {/* Title */}
       <p
         className="text-lg font-black uppercase tracking-widest"
-        style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
+        style={CHARADES_LOBBY_TEXT}
       >
         {t.charadesLobbyTitle}
       </p>
@@ -211,23 +210,24 @@ function CharadesLobbyView({
       {/* Room code */}
       <div className="text-center">
         <p
-          className="text-xs font-bold uppercase tracking-widest mb-1"
-          style={{ color: '#000', textShadow: SHARP }}
+          className="text-base font-bold uppercase tracking-widest mb-1"
+          style={CHARADES_LOBBY_TEXT}
         >
           {t.roomCodeLabel}
         </p>
         <div className="flex items-center justify-center gap-3">
           <span
             className="text-5xl font-black tracking-widest leading-none"
-            style={{ color: '#000', textShadow: SHARP }}
+            style={CHARADES_LOBBY_TEXT}
           >
             {roomCode}
           </span>
           <button
             onClick={handleCopy}
             className="p-2 bg-black/10 hover:bg-black/20 transition-colors"
+            style={{ ...CHARADES_LOBBY_TEXT, boxShadow: CHARADES_LOBBY_BOX_SHADOW }}
           >
-            {copied ? <Check className="w-5 h-5 text-black" /> : <Copy className="w-5 h-5 text-black/60" />}
+            {copied ? <Check className="w-5 h-5 text-white" /> : <Copy className="w-5 h-5 text-white" />}
           </button>
         </div>
       </div>
@@ -237,23 +237,23 @@ function CharadesLobbyView({
       {/* Players list — transparent */}
       <div className="w-full">
         <p
-          className="text-xs font-bold uppercase tracking-widest mb-2 text-center"
-          style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
+          className="text-base font-bold uppercase tracking-widest mb-2 text-center"
+          style={CHARADES_LOBBY_TEXT}
         >
           {t.players} ({connected.length})
         </p>
         <ul className="flex flex-col gap-1">
           {players.map(p => (
-            <li key={p.id} className="flex items-center justify-between px-3 py-1.5">
+            <li key={p.id} className="flex items-center justify-between px-3 py-1.5" style={{ boxShadow: CHARADES_LOBBY_BOX_SHADOW }}>
               <span
                 className="font-bold text-base"
-                style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
+                style={CHARADES_LOBBY_TEXT}
               >
                 {p.name}
                 {p.id === playerId && (
                   <span
-                    className="text-xs font-normal ml-2"
-                    style={{ color: 'rgba(0,0,0,0.45)', textShadow: 'none' }}
+                    className="text-base font-black ml-2"
+                    style={CHARADES_LOBBY_TEXT}
                   >
                     {t.you}
                   </span>
@@ -261,8 +261,8 @@ function CharadesLobbyView({
               </span>
               {p.isHost && (
                 <span
-                  className="text-xs font-bold"
-                  style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
+                  className="text-base font-bold"
+                  style={CHARADES_LOBBY_TEXT}
                 >
                   {t.host}
                 </span>
@@ -280,11 +280,10 @@ function CharadesLobbyView({
               background: canStart ? `linear-gradient(135deg, ${ORANGE}, ${PINK})` : 'rgba(0,0,0,0.12)',
               border: `2px solid ${canStart ? ORANGE : 'rgba(0,0,0,0.2)'}`,
               borderRadius: 0,
-              color: '#000',
-              textShadow: SHARP,
+              ...CHARADES_LOBBY_TEXT,
+              boxShadow: CHARADES_LOBBY_BOX_SHADOW,
               opacity: canStart ? 1 : 0.5,
               cursor: canStart ? 'pointer' : 'not-allowed',
-              ...fontStyle,
             }}
             disabled={!canStart}
             onClick={onStart}
@@ -293,8 +292,8 @@ function CharadesLobbyView({
           </button>
           {!canStart && (
             <p
-              className="text-center text-sm"
-              style={{ color: 'rgba(0,0,0,0.55)', textShadow: SHARP, ...fontStyle }}
+              className="text-center text-base"
+              style={CHARADES_LOBBY_TEXT}
             >
               {t.charadesNeedPlayers}
             </p>
@@ -302,10 +301,10 @@ function CharadesLobbyView({
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#000' }} />
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#FFFFFF' }} />
           <p
             className="font-bold"
-            style={{ color: '#000', textShadow: SHARP, ...fontStyle }}
+            style={CHARADES_LOBBY_TEXT}
           >
             {t.charadesWaitingToStart}
           </p>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import QRCode from 'react-qr-code';
 import { useLang } from '@/context/LanguageContext';
+import { CHARADES_LOBBY_TEXT, CHARADES_LOBBY_BOX_SHADOW } from '@/lib/charades-lobby-style';
 
 interface RoomJoinQRProps {
   roomCode: string;
@@ -10,6 +11,8 @@ interface RoomJoinQRProps {
 export default function RoomJoinQR({ roomCode, mode }: RoomJoinQRProps) {
   const { lang } = useLang();
   const isAr = lang === 'ar';
+  const charadesText = mode === 'charades' ? { ...CHARADES_LOBBY_TEXT, fontSize: 16 } : {};
+  const charadesBox = mode === 'charades' ? { boxShadow: CHARADES_LOBBY_BOX_SHADOW } : {};
   const [codeCopied, setCodeCopied] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
 
@@ -50,6 +53,8 @@ export default function RoomJoinQR({ roomCode, mode }: RoomJoinQRProps) {
       background: '#0d0d14',
       border: '3px solid #a855f7',
       boxShadow: '5px 5px 0 #000, 0 0 20px rgba(168,85,247,0.25)',
+      ...charadesText,
+      ...charadesBox,
     }}>
       {/* QR code */}
       <div style={{
@@ -58,6 +63,7 @@ export default function RoomJoinQR({ roomCode, mode }: RoomJoinQRProps) {
         display: 'inline-block',
         lineHeight: 0,
         boxShadow: '2px 2px 0 rgba(0,0,0,0.4)',
+        ...charadesBox,
       }}>
         <QRCode value={joinUrl} size={176} />
       </div>
@@ -72,6 +78,7 @@ export default function RoomJoinQR({ roomCode, mode }: RoomJoinQRProps) {
           textTransform: 'uppercase',
           direction: isAr ? 'rtl' : 'ltr',
           margin: 0,
+          ...charadesText,
         }}>
           {isAr ? 'امسح الكود للدخول' : 'SCAN TO JOIN'}
         </p>
@@ -82,6 +89,7 @@ export default function RoomJoinQR({ roomCode, mode }: RoomJoinQRProps) {
           letterSpacing: '0.05em',
           direction: isAr ? 'rtl' : 'ltr',
           margin: '3px 0 0',
+          ...charadesText,
         }}>
           {isAr ? 'أو أدخل الرمز يدويًا' : 'or enter the code manually'}
         </p>
@@ -103,6 +111,8 @@ export default function RoomJoinQR({ roomCode, mode }: RoomJoinQRProps) {
             cursor: 'pointer',
             transition: 'all 0.15s',
             textTransform: 'uppercase',
+            ...charadesText,
+            ...charadesBox,
           }}
         >
           {codeCopied
@@ -124,6 +134,8 @@ export default function RoomJoinQR({ roomCode, mode }: RoomJoinQRProps) {
             transition: 'background 0.15s',
             textTransform: 'uppercase',
             boxShadow: urlCopied ? 'none' : '2px 2px 0 #000',
+            ...charadesText,
+            ...charadesBox,
           }}
         >
           {urlCopied

@@ -7,7 +7,6 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Admin from "@/pages/admin";
 import Room from "@/pages/room";
-import LanguageSelect from "@/pages/language-select";
 import ModeSelect from "@/pages/mode-select";
 import CyberpunkBackground from "@/components/CyberpunkBackground";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -58,7 +57,7 @@ function Router() {
     <>
       {showCyberpunk && <CyberpunkBackground />}
       <Switch>
-        <Route path="/">{() => <LanguageSelect nextPath={hostedModePath ?? "/mode"} />}</Route>
+        <Route path="/">{() => <Redirect to={hostedModePath ?? "/mode"} />}</Route>
         <Route path="/mode">{() => hostedModePath ? <Redirect to={hostedModePath} /> : <ModeSelect />}</Route>
         <Route path="/forehead">{() => <Home mode="forehead" />}</Route>
         <Route path="/character">{() => <Home mode="character" />}</Route>

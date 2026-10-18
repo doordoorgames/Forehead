@@ -674,12 +674,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 <button
                   className="w-full text-xl h-16 font-black text-white tracking-wide transition-transform active:scale-95"
                   style={{
-                    background: 'transparent',
-                    border: '2px solid #c219a6',
+                    background: '#e22bbf',
+                    border: '2px solid #ffb8f0',
                     borderRadius: 0,
-                    color: '#c219a6',
-                    textShadow: '0 0 8px #c219a6',
-                    boxShadow: '0 0 12px rgba(194,25,166,0.6), inset 0 0 12px rgba(194,25,166,0.08)',
+                    color: '#fff',
+                    textShadow: '0 2px 0 rgba(74,0,62,0.45)',
+                    boxShadow: '0 5px 0 #760065, 0 0 24px rgba(226,43,191,0.55)',
                     ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
                   }}
                   onClick={() => setView('create')}
@@ -689,12 +689,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 <button
                   className="w-full text-xl h-16 font-black tracking-wide transition-transform active:scale-95"
                   style={{
-                    background: 'transparent',
-                    border: '2px solid #39d5ff',
+                    background: '#39d5ff',
+                    border: '2px solid #baf4ff',
                     borderRadius: 0,
-                    color: '#39d5ff',
-                    textShadow: '0 0 8px #39d5ff',
-                    boxShadow: '0 0 12px rgba(57,213,255,0.6), inset 0 0 12px rgba(57,213,255,0.08)',
+                    color: '#06131a',
+                    textShadow: 'none',
+                    boxShadow: '0 5px 0 #08768f, 0 0 24px rgba(57,213,255,0.55)',
                     ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
                   }}
                   onClick={() => setView('join')}

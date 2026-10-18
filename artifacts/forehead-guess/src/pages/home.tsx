@@ -13,7 +13,7 @@ import khaminLogo from '@assets/IMG_1974_1780586546169.png';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCreateRoom, useJoinRoom } from '@workspace/forehead-api-client-react';
+import { useCreateRoom, useJoinRoom } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -78,7 +78,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
   const onCreateSubmit = (values: z.infer<typeof createRoomSchema>) => {
     console.log('[CreateRoom] submitting', { hostName: values.hostName, mode, lang });
     createRoomMutation.mutate(
-      { data: { hostName: values.hostName, mode: mode === 'dykm' ? 'forehead' : mode, lang } },
+      { data: { hostName: values.hostName, mode, lang } },
       {
         onSuccess: (data) => {
           console.log('[CreateRoom] success', data);

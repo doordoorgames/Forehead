@@ -137,7 +137,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
       : (tutorial === 'ar' ? foreheadHowToAr : foreheadHowToEn);
   const backToGamesLink = (
     <a
-      href="https://www.dordor.games/"
+      href="https://dordor.games/"
       aria-label="Back to Home"
       style={{
         position: 'fixed', top: 'max(14px, env(safe-area-inset-top))', left: 16, zIndex: 60,

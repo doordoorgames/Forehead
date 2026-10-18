@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import PetalSwoop from '@/components/PetalSwoop';
 import grassBg from '@assets/6E21F754-65A0-4119-A739-67DD40CAA6B4_1780250343871.png';
-import charadesBtnEn from '@assets/IMG_2117_1782502451906.png';
-import charadesBtnAr from '@assets/IMG_2118_1782502451906.png';
 import charadesBgNew from '@assets/125A4A6F-F984-4E1F-896A-FB167CA28D94_1782571007086.png';
 import charadesHowToEn from '@assets/IMG_2149_1782759041386.png';
 import charadesHowToAr from '@assets/IMG_2148_1782759041386.jpeg';
@@ -15,7 +13,7 @@ import khaminLogo from '@assets/IMG_1974_1780586546169.png';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCreateRoom, useJoinRoom } from '@workspace/api-client-react';
+import { useCreateRoom, useJoinRoom } from '@workspace/forehead-api-client-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -68,10 +66,19 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (!tutorial) return undefined;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setTutorial(null);
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [tutorial]);
+
   const onCreateSubmit = (values: z.infer<typeof createRoomSchema>) => {
     console.log('[CreateRoom] submitting', { hostName: values.hostName, mode, lang });
     createRoomMutation.mutate(
-      { data: { hostName: values.hostName, mode, lang } },
+      { data: { hostName: values.hostName, mode: mode === 'dykm' ? 'forehead' : mode, lang } },
       {
         onSuccess: (data) => {
           console.log('[CreateRoom] success', data);
@@ -122,116 +129,122 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
   };
 
   const isAr = lang === 'ar';
+  const howToLabel = isAr ? 'طريقة اللعب' : 'How to Play';
+  const howToImage = mode === 'charades'
+    ? (tutorial === 'ar' ? charadesHowToAr : charadesHowToEn)
+    : mode === 'character'
+      ? (tutorial === 'ar' ? characterHowToAr : characterHowToEn)
+      : (tutorial === 'ar' ? foreheadHowToAr : foreheadHowToEn);
+  const backToGamesLink = (
+    <a
+      href="https://www.dordor.games/"
+      aria-label="Back to Home"
+      style={{
+        position: 'fixed', top: 'max(14px, env(safe-area-inset-top))', left: 16, zIndex: 60,
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        minHeight: 42, padding: '8px 12px',
+        color: '#fff', background: 'rgba(8, 8, 18, 0.78)',
+        border: '1px solid rgba(255,255,255,0.45)', borderRadius: 10,
+        textDecoration: 'none', fontSize: 14, fontWeight: 800,
+        boxShadow: '0 4px 16px rgba(0,0,0,0.28)', backdropFilter: 'blur(8px)',
+      }}
+    >
+      <span aria-hidden="true">←</span> Back to Home
+    </a>
+  );
+  const languageSwitcher = (
+    <button
+      type="button"
+      onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+      aria-label="Switch language"
+      style={{
+        position: 'fixed', top: 'max(14px, env(safe-area-inset-top))', right: 16, zIndex: 60,
+        minWidth: 72, minHeight: 42, padding: '8px 12px',
+        color: '#fff', background: 'rgba(8, 8, 18, 0.78)',
+        border: '1px solid rgba(255,255,255,0.45)', borderRadius: 10,
+        fontSize: 14, fontWeight: 800, cursor: 'pointer',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.28)', backdropFilter: 'blur(8px)',
+      }}
+    >
+      {lang === 'ar' ? 'English' : 'العربية'}
+    </button>
+  );
+  const tutorialOverlay = tutorial ? (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={howToLabel}
+      onClick={(event) => {
+        if (event.currentTarget === event.target) setTutorial(null);
+      }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(0,0,0,0.9)', padding: 16,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      <img
+        src={howToImage}
+        alt={howToLabel}
+        style={{ maxWidth: '100%', maxHeight: 'calc(100dvh - 32px)', objectFit: 'contain' }}
+      />
+      <button
+        type="button"
+        onClick={() => setTutorial(null)}
+        style={{
+          position: 'absolute', top: 'max(16px, env(safe-area-inset-top))', right: 16,
+          background: 'rgba(0,0,0,0.72)', border: '2px solid #fff',
+          borderRadius: '50%', width: 44, height: 44,
+          color: '#fff', fontSize: 20, fontWeight: 900, cursor: 'pointer',
+        }}
+        aria-label="Close how to play"
+      >
+        ✕
+      </button>
+    </div>
+  ) : null;
 
   // ──── CHARADES SPECIAL LAYOUTS ────────────────────────────────────────────
   if (mode === 'charades' && view === 'main') {
-    // IMG_2117 (English): LEFT=CREATE ROOM, RIGHT=JOIN ROOM, BOTTOM=language
-    // IMG_2118 (Arabic):  LEFT=انضم (JOIN),  RIGHT=انشئ (CREATE), BOTTOM=language
-    const btnImg = lang === 'ar' ? charadesBtnAr : charadesBtnEn;
-    const leftClick  = lang === 'ar' ? () => setView('join')   : () => setView('create');
-    const rightClick = lang === 'ar' ? () => setView('create') : () => setView('join');
-
-    const howToStyle: React.CSSProperties = {
-      position: 'absolute', top: '4%',
-      background: 'none', border: 'none', cursor: 'pointer',
-      color: '#FFFFFF', fontWeight: 800,
-      fontSize: 'clamp(22px, 6vw, 26px)',
-      minHeight: 44, lineHeight: 1.4, padding: '4px 0',
-      textShadow: '0 2px 6px rgba(0,0,0,0.6)',
-      WebkitTextStroke: '0.45px #FFFFFF',
-      zIndex: 20,
-    };
-
     return (
       <div style={{
         position: 'fixed', inset: 0, overflow: 'hidden',
         backgroundImage: `url(${charadesBgNew})`,
         backgroundSize: 'cover', backgroundPosition: 'center',
       }}>
-
-        {/* "how to play" — top left (Patrick Hand) */}
-        <button
-          onClick={() => setTutorial('en')}
-          style={{ ...howToStyle, left: '4%', fontFamily: "'Patrick Hand', cursive" }}
-        >
-          how to play
-        </button>
-
-        {/* "كيف نلعب" — top right (Marhey) */}
-        <button
-          onClick={() => setTutorial('ar')}
-          style={{ ...howToStyle, right: '4%', textAlign: 'right', fontFamily: "'Marhey', sans-serif" }}
-        >
-          كيف نلعب
-        </button>
-
-        {/* Button image + invisible hit areas */}
+        {backToGamesLink}
+        {languageSwitcher}
         <div style={{
           position: 'absolute',
           top: '50%', left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 'min(92vw, 138vh)',
+          width: 'min(88vw, 420px)',
+          display: 'flex', flexDirection: 'column', gap: 12,
+          padding: 18, background: 'rgba(18, 8, 38, 0.78)',
+          border: '2px solid rgba(255,255,255,0.72)', borderRadius: 18,
+          boxShadow: '0 18px 50px rgba(0,0,0,0.42)', backdropFilter: 'blur(8px)',
         }}>
-          <div style={{ position: 'relative', width: '100%' }}>
-            <img
-              src={btnImg}
-              alt="charades buttons"
-              style={{ width: '100%', height: 'auto', display: 'block', pointerEvents: 'none', userSelect: 'none' }}
-              draggable={false}
-            />
-            <button onClick={leftClick} aria-label={lang === 'ar' ? 'انضم لغرفة' : 'Create Room'} style={{
-              position: 'absolute', top: '22%', left: '1%', width: '44%', height: '22%',
-              background: 'transparent', border: 'none', cursor: 'pointer',
-            }} />
-            <button onClick={rightClick} aria-label={lang === 'ar' ? 'انشئ غرفة' : 'Join Room'} style={{
-              position: 'absolute', top: '22%', left: '53%', width: '44%', height: '22%',
-              background: 'transparent', border: 'none', cursor: 'pointer',
-            }} />
-            <button onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} aria-label="Switch language" style={{
-              position: 'absolute', top: '51%', left: '30%', width: '40%', height: '20%',
-              background: 'transparent', border: 'none', cursor: 'pointer',
-            }} />
-          </div>
+          {[{ label: t.createRoom, action: () => setView('create'), color: '#ffb703' },
+            { label: t.joinRoom, action: () => setView('join'), color: '#a855f7' }].map(({ label, action, color }) => (
+            <button key={label} type="button" onClick={action} style={{
+              width: '100%', minHeight: 56, padding: '12px 18px',
+              background: color, color: color === '#ffb703' ? '#241300' : '#fff',
+              border: '2px solid rgba(255,255,255,0.8)', borderRadius: 12,
+              fontSize: 'clamp(18px, 5vw, 22px)', fontWeight: 900, cursor: 'pointer',
+              fontFamily: isAr ? "'Marhey', sans-serif" : "'Patrick Hand', cursive",
+              boxShadow: '0 5px 0 rgba(0,0,0,0.35)',
+            }}>{label}</button>
+          ))}
+          <button type="button" onClick={() => setTutorial(lang)} style={{
+            width: '100%', minHeight: 52, padding: '10px 18px',
+            background: '#fff4d6', color: '#28143f',
+            border: '2px solid #fff', borderRadius: 12,
+            fontSize: 17, fontWeight: 800, cursor: 'pointer',
+            fontFamily: isAr ? "'Marhey', sans-serif" : "'Patrick Hand', cursive",
+            boxShadow: '0 5px 0 rgba(0,0,0,0.35)',
+          }}>▶ {howToLabel}</button>
         </div>
-
-        <a href="https://dordor.games/" style={{
-          position: 'absolute', bottom: '3%', left: '50%', transform: 'translateX(-50%)',
-          color: 'rgba(255,200,80,0.7)', fontSize: '11px',
-          textDecoration: 'underline', whiteSpace: 'nowrap', zIndex: 10,
-        }}>← Back to Dordor.games</a>
-
-        {/* Tutorial fullscreen overlay */}
-        {tutorial && (
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 100,
-            background: 'rgba(0,0,0,0.85)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <img
-              src={tutorial === 'en' ? charadesHowToEn : charadesHowToAr}
-              alt="how to play"
-              style={{
-                maxWidth: '100%', maxHeight: '100%',
-                width: '100%', height: '100%',
-                objectFit: 'contain',
-              }}
-            />
-            <button
-              onClick={() => setTutorial(null)}
-              style={{
-                position: 'absolute', top: '16px', right: '16px',
-                background: 'rgba(0,0,0,0.6)', border: '2px solid #fff',
-                borderRadius: '50%', width: 40, height: 40,
-                color: '#fff', fontSize: '20px', fontWeight: 900,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                lineHeight: 1,
-              }}
-              aria-label="Close"
-            >
-              ✕
-            </button>
-          </div>
-        )}
+        {tutorialOverlay}
       </div>
     );
   }
@@ -254,6 +267,8 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           backgroundPosition: 'center',
         }}
       >
+        {backToGamesLink}
+        {languageSwitcher}
         <Form {...createForm}>
           <form onSubmit={createForm.handleSubmit(onCreateSubmit)}>
             {/* Label + input overlaid on big rectangle */}
@@ -349,6 +364,8 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           backgroundPosition: 'center',
         }}
       >
+        {backToGamesLink}
+        {languageSwitcher}
         <Form {...joinForm}>
           <form onSubmit={joinForm.handleSubmit(onJoinSubmit)}>
             {/* Two inputs overlaid on big rectangle */}
@@ -453,6 +470,9 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {backToGamesLink}
+      {languageSwitcher}
+      {tutorialOverlay}
       {/* Character mode: replace the cyberpunk city with the vending-machine scene */}
       {mode === 'character' && (
         <>
@@ -466,64 +486,6 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
             }}
           />
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.52)' }} />
-        </>
-      )}
-      {/* Character mode: "how to play" floating links */}
-      {mode === 'character' && (
-        <>
-          <button
-            onClick={() => setTutorial('en')}
-            style={{
-              position: 'absolute', top: '16px', left: '16px', zIndex: 20,
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#fff', fontWeight: 700,
-              fontFamily: "'Patrick Hand', cursive",
-              fontSize: 'clamp(13px, 3.5vw, 17px)',
-              textShadow: '0.04em 0.04em 0px #000',
-              WebkitTextStroke: '0.5px #000',
-            }}
-          >
-            how to play
-          </button>
-          <button
-            onClick={() => setTutorial('ar')}
-            style={{
-              position: 'absolute', top: '16px', right: '16px', zIndex: 20,
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#fff', fontWeight: 700,
-              fontFamily: "'Marhey', sans-serif",
-              fontSize: 'clamp(13px, 3.5vw, 17px)',
-              textShadow: '0.04em 0.04em 0px #000',
-              WebkitTextStroke: '0.5px #000',
-            }}
-          >
-            كيف نلعب
-          </button>
-          {/* Tutorial fullscreen overlay */}
-          {tutorial && (
-            <div style={{
-              position: 'fixed', inset: 0, zIndex: 200,
-              background: 'rgba(0,0,0,0.9)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <img
-                src={tutorial === 'en' ? characterHowToEn : characterHowToAr}
-                alt="how to play"
-                style={{ maxWidth: '100%', maxHeight: '100%', width: '100%', height: '100%', objectFit: 'contain' }}
-              />
-              <button
-                onClick={() => setTutorial(null)}
-                style={{
-                  position: 'absolute', top: '16px', right: '16px',
-                  background: 'rgba(0,0,0,0.6)', border: '2px solid #fff',
-                  borderRadius: '50%', width: 40, height: 40,
-                  color: '#fff', fontSize: '20px', fontWeight: 900,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-                aria-label="Close"
-              >✕</button>
-            </div>
-          )}
         </>
       )}
       {/* DYKM mode: grass garden background */}
@@ -544,64 +506,6 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
         <>
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-3xl" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary/20 blur-3xl" />
-        </>
-      )}
-
-      {/* Forehead/Khamin mode: "how to play" floating links */}
-      {mode === 'forehead' && (
-        <>
-          <button
-            onClick={() => setTutorial('en')}
-            style={{
-              position: 'absolute', top: '16px', left: '16px', zIndex: 20,
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#fff', fontWeight: 700,
-              fontFamily: "'Patrick Hand', cursive",
-              fontSize: 'clamp(13px, 3.5vw, 17px)',
-              textShadow: '0.04em 0.04em 0px #000',
-              WebkitTextStroke: '0.5px #000',
-            }}
-          >
-            how to play
-          </button>
-          <button
-            onClick={() => setTutorial('ar')}
-            style={{
-              position: 'absolute', top: '16px', right: '16px', zIndex: 20,
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#fff', fontWeight: 700,
-              fontFamily: "'Marhey', sans-serif",
-              fontSize: 'clamp(13px, 3.5vw, 17px)',
-              textShadow: '0.04em 0.04em 0px #000',
-              WebkitTextStroke: '0.5px #000',
-            }}
-          >
-            كيف نلعب
-          </button>
-          {tutorial && (
-            <div style={{
-              position: 'fixed', inset: 0, zIndex: 200,
-              background: 'rgba(0,0,0,0.9)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <img
-                src={tutorial === 'en' ? foreheadHowToEn : foreheadHowToAr}
-                alt="how to play"
-                style={{ maxWidth: '100%', maxHeight: '100%', width: '100%', height: '100%', objectFit: 'contain' }}
-              />
-              <button
-                onClick={() => setTutorial(null)}
-                style={{
-                  position: 'absolute', top: '16px', right: '16px',
-                  background: 'rgba(0,0,0,0.6)', border: '2px solid #fff',
-                  borderRadius: '50%', width: 40, height: 40,
-                  color: '#fff', fontSize: '20px', fontWeight: 900,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-                aria-label="Close"
-              >✕</button>
-            </div>
-          )}
         </>
       )}
 
@@ -764,21 +668,6 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 >
                   {t.joinRoom}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-                  className="w-full h-12 font-bold tracking-wide transition-all active:scale-95 border-2"
-                  style={{
-                    fontFamily: isAr ? "'Al Nile', 'Changa', sans-serif" : "Georgia, 'Times New Roman', serif",
-                    fontSize: '1.1rem',
-                    color: '#8b0000',
-                    borderColor: 'rgba(139,0,0,0.4)',
-                    background: 'rgba(139,0,0,0.06)',
-                    borderRadius: 0,
-                  }}
-                >
-                  {lang === 'ar' ? 'English' : 'عربية'}
-                </button>
               </>
             ) : mode === 'character' ? (
               <>
@@ -811,6 +700,18 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                   onClick={() => setView('join')}
                 >
                   {t.joinRoom}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTutorial(lang)}
+                  className="w-full h-12 font-bold tracking-wide transition-transform active:scale-95"
+                  style={{
+                    background: '#f8e8ff', border: '2px solid #c219a6',
+                    color: '#4f0750', fontFamily: isAr ? "'Changa', sans-serif" : undefined,
+                    boxShadow: '0 4px 0 #7b126d',
+                  }}
+                >
+                  ▶ {howToLabel}
                 </button>
               </>
             ) : mode === 'forehead' ? (
@@ -849,18 +750,15 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 </button>
                 <button
                   type="button"
-                  onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-                  className="w-full h-12 font-bold tracking-wide transition-all active:scale-95 border-2"
+                  onClick={() => setTutorial(lang)}
+                  className="w-full h-12 font-bold tracking-wide transition-transform active:scale-95"
                   style={{
-                    fontFamily: isAr ? "'Changa', sans-serif" : "Arial, 'Helvetica Neue', sans-serif",
-                    fontSize: '1.1rem',
-                    color: '#ff4fa3',
-                    borderColor: 'rgba(255,79,163,0.5)',
-                    background: 'rgba(255,79,163,0.08)',
-                    borderRadius: 0,
+                    background: '#fff', border: '2px solid #ff4fa3',
+                    color: '#8b0048', fontFamily: isAr ? "'Changa', sans-serif" : "Arial, 'Helvetica Neue', sans-serif",
+                    boxShadow: '0 4px 0 #a8005a',
                   }}
                 >
-                  {lang === 'ar' ? 'English' : 'عربية'}
+                  ▶ {howToLabel}
                 </button>
               </>
             ) : (
@@ -882,29 +780,9 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 >
                   {t.joinRoom}
                 </Button>
-                <button
-                  type="button"
-                  onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-                  className="w-full h-12 font-bold tracking-wide transition-all active:scale-95 border-2 rounded-full"
-                  style={{
-                    fontFamily: "'Changa', sans-serif",
-                    fontSize: '1.1rem',
-                    color: '#a855f7',
-                    borderColor: 'rgba(168,85,247,0.5)',
-                    background: 'rgba(168,85,247,0.08)',
-                  }}
-                >
-                  {lang === 'ar' ? 'English' : 'عربية'}
-                </button>
               </>
             )}
 
-            <a
-              href="https://dordor.games/"
-              className="mt-2 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors text-center"
-            >
-              ← Back to Dordor.games
-            </a>
           </div>
         )}
 
@@ -1238,3 +1116,4 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     </div>
   );
 }
+

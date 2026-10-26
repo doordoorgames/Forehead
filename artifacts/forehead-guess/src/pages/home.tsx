@@ -13,14 +13,13 @@ import khaminLogo from '@assets/IMG_1974_1780586546169.png';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCreateRoom, useJoinRoom } from '@workspace/forehead-api-client-react';
+import { useCreateRoom, useJoinRoom } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useLang } from '@/context/LanguageContext';
-import { apiBaseUrl } from '@/lib/backend';
 
 const createRoomSchema = z.object({
   hostName: z.string().min(1).max(20),
@@ -68,28 +67,6 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetch('https://dordorgames-production.up.railway.app/api/auth/me', {
-      credentials: 'include',
-      signal: controller.signal,
-      headers: { Accept: 'application/json' },
-    })
-      .then(async (response) => response.ok ? response.json() as Promise<{ fullName?: string }> : null)
-      .then((account) => {
-        const name = account?.fullName?.trim().slice(0, 20);
-        if (!name) return;
-        if (!createForm.getValues('hostName')) createForm.setValue('hostName', name);
-        if (!joinForm.getValues('playerName')) joinForm.setValue('playerName', name);
-      })
-      .catch((error: unknown) => {
-        if (!(error instanceof DOMException && error.name === 'AbortError')) {
-          console.debug('[Account] Profile name could not be loaded.');
-        }
-      });
-    return () => controller.abort();
-  }, [createForm, joinForm]);
-
-  useEffect(() => {
     if (!tutorial) return undefined;
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setTutorial(null);
@@ -99,54 +76,39 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
   }, [tutorial]);
 
   const requestCreateAccess = async () => {
-    type AccountAccess = { role?: string; remainingMinutes?: number; activeSessionEndsAt?: string | null };
-    let account = (window as typeof window & { DordorAccount?: AccountAccess }).DordorAccount;
+    type HostAccess = { role?: string; remainingMinutes?: number; activeSessionEndsAt?: string | null };
+    const apiOrigin = "https://dordorgames-production.up.railway.app";
     try {
-      const authOrigin = apiBaseUrl.replace(/\/forehead$/, '');
-      let response = await fetch(`${authOrigin}/api/auth/me`, {
-        credentials: 'include',
-        headers: { Accept: 'application/json' },
-      });
+      let response = await fetch(`${apiOrigin}/api/auth/me`, { credentials: 'include', headers: { Accept: 'application/json' } });
       if (response.status === 401) {
-        const refreshed = await fetch(`${authOrigin}/api/auth/refresh`, { method: 'POST', credentials: 'include' });
-        if (refreshed.ok) response = await fetch(`${authOrigin}/api/auth/me`, { credentials: 'include', headers: { Accept: 'application/json' } });
+        const refreshed = await fetch(`${apiOrigin}/api/auth/refresh`, { method: 'POST', credentials: 'include' });
+        if (refreshed.ok) response = await fetch(`${apiOrigin}/api/auth/me`, { credentials: 'include', headers: { Accept: 'application/json' } });
       }
       if (response.status === 401 || response.status === 403) {
         const message = lang === 'ar'
           ? 'لإنشاء لعبة، سجّل الدخول أو أنشئ حساب مضيف. أول 30 دقيقة مجانية وتبدأ فور تأكيد رمز التحقق. بعد ذلك يمكنك شراء وقت استضافة إضافي. يمكن للضيوف الانضمام مجاناً برمز الغرفة.\n\nهل تريد تسجيل الدخول أو إنشاء حساب الآن؟'
           : 'To create a game, log in or create a host account. Your first 30 minutes are free and start immediately after OTP verification. After that, you can buy more hosting time. Guests join free with the room code.\n\nLog in or create an account now?';
-        if (window.confirm(message)) {
+        if (window.confirm(message)) window.location.assign(`https://www.dordor.games/account?returnTo=${encodeURIComponent(window.location.href)}`);
+        return false;
+      }
+      if (!response.ok) throw new Error('Account verification failed');
+      const account = await response.json() as HostAccess;
+      const active = !!account.activeSessionEndsAt && new Date(account.activeSessionEndsAt).getTime() > Date.now();
+      if (account.role === 'host' && (active || (account.remainingMinutes ?? 0) > 0)) return true;
+      if (account.role !== 'host') {
+        if (window.confirm(lang === 'ar' ? 'إنشاء الألعاب يتطلب حساب مضيف. أول 30 دقيقة مجانية. هل تريد تسجيل الدخول؟' : 'Creating games requires a host account. Your first 30 minutes are free. Log in now?')) {
           window.location.assign(`https://www.dordor.games/account?returnTo=${encodeURIComponent(window.location.href)}`);
         }
         return false;
       }
-      if (!response.ok) throw new Error('Account verification failed');
-      account = await response.json() as AccountAccess;
-      (window as typeof window & { DordorAccount?: AccountAccess }).DordorAccount = account;
-    } catch {
-      toast({ title: t.errorTitle, description: 'Unable to verify hosting time. Please try again.', variant: 'destructive' });
-      return false;
-    }
-
-    const active = !!account?.activeSessionEndsAt && new Date(account.activeSessionEndsAt).getTime() > Date.now();
-    if (account?.role === 'host' && (active || (account.remainingMinutes ?? 0) > 0)) return true;
-    if (account?.role !== 'host') {
-      const message = lang === 'ar'
-        ? 'إنشاء الألعاب متاح بحساب مضيف. سجّل الدخول أو أنشئ حساباً جديداً، وستحصل على أول 30 دقيقة مجاناً فور تأكيد رمز التحقق.\n\nهل تريد المتابعة؟'
-        : 'Creating games requires a host account. Log in or create one and your first 30 minutes are free immediately after OTP verification.\n\nContinue to login?';
-      if (window.confirm(message)) {
-        window.location.assign(`https://www.dordor.games/account?returnTo=${encodeURIComponent(window.location.href)}`);
+      if (window.confirm(lang === 'ar' ? 'انتهى وقت الاستضافة. هل تريد شراء وقت إضافي؟' : 'Your hosting time has ended. Buy more time?')) {
+        window.location.assign('https://www.dordor.games/pricing');
       }
       return false;
+    } catch {
+      toast({ title: t.errorTitle, description: lang === 'ar' ? 'تعذر التحقق من وقت الاستضافة. حاول مرة أخرى.' : 'Unable to verify hosting time. Please try again.', variant: 'destructive' });
+      return false;
     }
-    const message = lang === 'ar'
-      ? 'انتهى وقت الاستضافة. اشترِ وقتًا إضافيًا لإنشاء لعبة جديدة؟'
-      : 'Your hosting time has ended. Buy more time to create a new game?';
-    if (window.confirm(message)) {
-      const gameId = mode === 'character' ? 'guessthecharacter' : mode;
-      window.location.assign(`https://www.dordor.games/pricing?game=${encodeURIComponent(gameId)}`);
-    }
-    return false;
   };
 
   const openCreateView = async () => {
@@ -157,7 +119,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     if (!(await requestCreateAccess())) return;
     console.log('[CreateRoom] submitting', { hostName: values.hostName, mode, lang });
     createRoomMutation.mutate(
-      { data: { hostName: values.hostName, mode: mode === 'dykm' ? 'forehead' : mode, lang } },
+      { data: { hostName: values.hostName, mode, lang } },
       {
         onSuccess: (data) => {
           console.log('[CreateRoom] success', data);
@@ -171,21 +133,10 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           } catch (storageErr) {
             console.warn('[CreateRoom] sessionStorage failed (non-fatal):', storageErr);
           }
-          void fetch('https://dordorgames-production.up.railway.app/api/auth/me', {
-            credentials: 'include',
-            headers: { Accept: 'application/json' },
-          }).then((response) => response.ok ? response.json() : null)
-            .then((account) => account && window.dispatchEvent(new CustomEvent('dordor-account-updated', { detail: account })))
-            .catch((error: unknown) => console.debug('[Account] Session status refresh failed.', error));
           setLocation(`/room/${data.code}`);
         },
         onError: (err) => {
           console.error('[CreateRoom] error', err);
-          if ((err as { status?: number }).status === 403) {
-            const message = lang === 'ar' ? 'انتهى وقت الاستضافة. هل تريد شراء وقت إضافي؟' : 'Your hosting time has ended. Buy more time?';
-            if (window.confirm(message)) window.location.assign('https://www.dordor.games/pricing');
-            return;
-          }
           const msg = err instanceof Error ? err.message : String(err);
           toast({ title: t.errorTitle, description: msg || t.errorCreate, variant: 'destructive' });
         }
@@ -243,27 +194,21 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     </a>
   );
   const languageSwitcher = (
-    <div
+    <button
+      type="button"
+      onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+      aria-label="Switch language"
       style={{
         position: 'fixed', top: 'max(14px, env(safe-area-inset-top))', right: 16, zIndex: 60,
-        display: 'flex', alignItems: 'center', gap: 8,
+        minWidth: 72, minHeight: 42, padding: '8px 12px',
+        color: '#fff', background: 'rgba(8, 8, 18, 0.78)',
+        border: '1px solid rgba(255,255,255,0.45)', borderRadius: 10,
+        fontSize: 14, fontWeight: 800, cursor: 'pointer',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.28)', backdropFilter: 'blur(8px)',
       }}
     >
-      <button
-        type="button"
-        onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-        aria-label="Switch language"
-        style={{
-          minWidth: 72, minHeight: 42, padding: '8px 12px',
-          color: '#fff', background: 'rgba(8, 8, 18, 0.78)',
-          border: '1px solid rgba(255,255,255,0.45)', borderRadius: 10,
-          fontSize: 14, fontWeight: 800, cursor: 'pointer',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.28)', backdropFilter: 'blur(8px)',
-        }}
-      >
-        {lang === 'ar' ? 'English' : 'العربية'}
-      </button>
-    </div>
+      {lang === 'ar' ? 'English' : 'العربية'}
+    </button>
   );
   const tutorialOverlay = tutorial ? (
     <div
@@ -770,12 +715,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 <button
                   className="w-full text-xl h-16 font-black text-white tracking-wide transition-transform active:scale-95"
                   style={{
-                    background: 'transparent',
-                    border: '2px solid #c219a6',
+                    background: '#e22bbf',
+                    border: '2px solid #ffb8f0',
                     borderRadius: 0,
-                    color: '#c219a6',
-                    textShadow: '0 0 8px #c219a6',
-                    boxShadow: '0 0 12px rgba(194,25,166,0.6), inset 0 0 12px rgba(194,25,166,0.08)',
+                    color: '#fff',
+                    textShadow: '0 2px 0 rgba(74,0,62,0.45)',
+                    boxShadow: '0 5px 0 #760065, 0 0 24px rgba(226,43,191,0.55)',
                     ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
                   }}
                   onClick={openCreateView}
@@ -785,12 +730,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 <button
                   className="w-full text-xl h-16 font-black tracking-wide transition-transform active:scale-95"
                   style={{
-                    background: 'transparent',
-                    border: '2px solid #39d5ff',
+                    background: '#39d5ff',
+                    border: '2px solid #baf4ff',
                     borderRadius: 0,
-                    color: '#39d5ff',
-                    textShadow: '0 0 8px #39d5ff',
-                    boxShadow: '0 0 12px rgba(57,213,255,0.6), inset 0 0 12px rgba(57,213,255,0.08)',
+                    color: '#06131a',
+                    textShadow: 'none',
+                    boxShadow: '0 5px 0 #08768f, 0 0 24px rgba(57,213,255,0.55)',
                     ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
                   }}
                   onClick={() => setView('join')}

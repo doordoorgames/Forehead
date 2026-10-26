@@ -13,7 +13,7 @@ import khaminLogo from '@assets/IMG_1974_1780586546169.png';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCreateRoom, useJoinRoom } from '@workspace/api-client-react';
+import { useCreateRoom, useJoinRoom } from '@workspace/forehead-api-client-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useLang } from '@/context/LanguageContext';
+import { apiBaseUrl } from '@/lib/backend';
 
 const createRoomSchema = z.object({
   hostName: z.string().min(1).max(20),
@@ -87,6 +88,28 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    const controller = new AbortController();
+    fetch('https://dordorgames-production.up.railway.app/api/auth/me', {
+      credentials: 'include',
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+    })
+      .then(async (response) => response.ok ? response.json() as Promise<{ fullName?: string }> : null)
+      .then((account) => {
+        const name = account?.fullName?.trim().slice(0, 20);
+        if (!name) return;
+        if (!createForm.getValues('hostName')) createForm.setValue('hostName', name);
+        if (!joinForm.getValues('playerName')) joinForm.setValue('playerName', name);
+      })
+      .catch((error: unknown) => {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          console.debug('[Account] Profile name could not be loaded.');
+        }
+      });
+    return () => controller.abort();
+  }, [createForm, joinForm]);
+
+  useEffect(() => {
     if (!tutorial) return undefined;
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setTutorial(null);
@@ -96,13 +119,17 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
   }, [tutorial]);
 
   const requestCreateAccess = async () => {
-    type HostAccess = { role?: string; remainingMinutes?: number; activeSessionEndsAt?: string | null };
-    const apiOrigin = "https://dordorgames-production.up.railway.app";
+    type AccountAccess = { role?: string; remainingMinutes?: number; activeSessionEndsAt?: string | null };
+    let account = (window as typeof window & { DordorAccount?: AccountAccess }).DordorAccount;
     try {
-      let response = await fetch(`${apiOrigin}/api/auth/me`, { credentials: 'include', headers: { Accept: 'application/json' } });
+      const authOrigin = apiBaseUrl.replace(/\/forehead$/, '');
+      let response = await fetch(`${authOrigin}/api/auth/me`, {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
       if (response.status === 401) {
-        const refreshed = await fetch(`${apiOrigin}/api/auth/refresh`, { method: 'POST', credentials: 'include' });
-        if (refreshed.ok) response = await fetch(`${apiOrigin}/api/auth/me`, { credentials: 'include', headers: { Accept: 'application/json' } });
+        const refreshed = await fetch(`${authOrigin}/api/auth/refresh`, { method: 'POST', credentials: 'include' });
+        if (refreshed.ok) response = await fetch(`${authOrigin}/api/auth/me`, { credentials: 'include', headers: { Accept: 'application/json' } });
       }
       if (response.status === 401 || response.status === 403) {
         const message = lang === 'ar'
@@ -111,39 +138,50 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
         if (await askForAccess({
           title: lang === 'ar' ? 'أول 30 دقيقة مجاناً!' : 'Your First 30 Minutes Are FREE!',
           message,
-          confirmText: lang === 'ar' ? 'أنشئ حساباً مجانياً / سجّل الدخول' : 'Create Free Account / Log In',
+          confirmText: lang === 'ar' ? 'أنشئ حساباً / سجّل الدخول' : 'Create Account / Log In',
           cancelText: lang === 'ar' ? 'ربما لاحقاً' : 'Maybe Later',
-        })) window.location.assign(`https://www.dordor.games/account?returnTo=${encodeURIComponent(window.location.href)}`);
+        })) {
+          window.location.assign(`https://www.dordor.games/account?returnTo=${encodeURIComponent(window.location.href)}`);
+        }
         return false;
       }
       if (!response.ok) throw new Error('Account verification failed');
-      const account = await response.json() as HostAccess;
-      const active = !!account.activeSessionEndsAt && new Date(account.activeSessionEndsAt).getTime() > Date.now();
-      if (account.role === 'host' && (active || (account.remainingMinutes ?? 0) > 0)) return true;
-      if (account.role !== 'host') {
-        const message = lang === 'ar'
-          ? 'ابدأ لعبة. احصل على 30 دقيقة مجاناً. ادعُ أصدقاءك.\n\nينضم أصدقاؤك مجاناً باستخدام رمز الغرفة.'
-          : 'Start a game. Get 30 minutes free. Invite your friends.\n\nYour friends join for free using your room code.';
-        if (await askForAccess({
-          title: lang === 'ar' ? 'أول 30 دقيقة مجاناً!' : 'Your First 30 Minutes Are FREE!',
-          message,
-          confirmText: lang === 'ar' ? 'أنشئ حساباً مجانياً / سجّل الدخول' : 'Create Free Account / Log In',
-          cancelText: lang === 'ar' ? 'ربما لاحقاً' : 'Maybe Later',
-        })) window.location.assign(`https://www.dordor.games/account?returnTo=${encodeURIComponent(window.location.href)}`);
-        return false;
-      }
-      const message = lang === 'ar' ? 'احصل على وقت لعب إضافي لبدء لعبة جديدة.' : 'Get more game time to start a new game.';
-      if (await askForAccess({
-        title: lang === 'ar' ? 'انتهى وقت اللعب' : 'Game time ended',
-        message,
-        confirmText: lang === 'ar' ? 'احصل على وقت لعب' : 'Get More Game Time',
-        cancelText: lang === 'ar' ? 'ربما لاحقاً' : 'Maybe Later',
-      })) window.location.assign('https://www.dordor.games/pricing');
-      return false;
+      account = await response.json() as AccountAccess;
+      (window as typeof window & { DordorAccount?: AccountAccess }).DordorAccount = account;
     } catch {
-      toast({ title: t.errorTitle, description: lang === 'ar' ? 'تعذر التحقق من وقت الاستضافة. حاول مرة أخرى.' : 'Unable to verify game time. Please try again.', variant: 'destructive' });
+      toast({ title: t.errorTitle, description: 'Unable to verify game time. Please try again.', variant: 'destructive' });
       return false;
     }
+
+    const active = !!account?.activeSessionEndsAt && new Date(account.activeSessionEndsAt).getTime() > Date.now();
+    if (account?.role === 'host' && (active || (account.remainingMinutes ?? 0) > 0)) return true;
+    if (account?.role !== 'host') {
+      const message = lang === 'ar'
+        ? 'ابدأ لعبة. احصل على 30 دقيقة مجاناً. ادعُ أصدقاءك.\n\nينضم أصدقاؤك مجاناً باستخدام رمز الغرفة.'
+        : 'Start a game. Get 30 minutes free. Invite your friends.\n\nYour friends join for free using your room code.';
+      if (await askForAccess({
+        title: lang === 'ar' ? 'أول 30 دقيقة مجاناً!' : 'Your First 30 Minutes Are FREE!',
+        message,
+        confirmText: lang === 'ar' ? 'أنشئ حساباً / سجّل الدخول' : 'Create Account / Log In',
+        cancelText: lang === 'ar' ? 'ربما لاحقاً' : 'Maybe Later',
+      })) {
+        window.location.assign(`https://www.dordor.games/account?returnTo=${encodeURIComponent(window.location.href)}`);
+      }
+      return false;
+    }
+    const message = lang === 'ar'
+      ? 'احصل على وقت لعب إضافي لبدء لعبة جديدة.'
+      : 'Get more game time to start a new game.';
+    if (await askForAccess({
+      title: lang === 'ar' ? 'انتهى وقت اللعب' : 'Game time ended',
+      message,
+      confirmText: lang === 'ar' ? 'احصل على وقت لعب' : 'Get More Game Time',
+      cancelText: lang === 'ar' ? 'ربما لاحقاً' : 'Maybe Later',
+    })) {
+      const gameId = mode === 'character' ? 'guessthecharacter' : mode;
+      window.location.assign(`https://www.dordor.games/pricing?game=${encodeURIComponent(gameId)}`);
+    }
+    return false;
   };
 
   const openCreateView = async () => {
@@ -154,7 +192,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     if (!(await requestCreateAccess())) return;
     console.log('[CreateRoom] submitting', { hostName: values.hostName, mode, lang });
     createRoomMutation.mutate(
-      { data: { hostName: values.hostName, mode, lang } },
+      { data: { hostName: values.hostName, mode: mode === 'dykm' ? 'forehead' : mode, lang } },
       {
         onSuccess: (data) => {
           console.log('[CreateRoom] success', data);
@@ -168,10 +206,26 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
           } catch (storageErr) {
             console.warn('[CreateRoom] sessionStorage failed (non-fatal):', storageErr);
           }
+          void fetch('https://dordorgames-production.up.railway.app/api/auth/me', {
+            credentials: 'include',
+            headers: { Accept: 'application/json' },
+          }).then((response) => response.ok ? response.json() : null)
+            .then((account) => account && window.dispatchEvent(new CustomEvent('dordor-account-updated', { detail: account })))
+            .catch((error: unknown) => console.debug('[Account] Session status refresh failed.', error));
           setLocation(`/room/${data.code}`);
         },
-        onError: (err) => {
+        onError: async (err) => {
           console.error('[CreateRoom] error', err);
+          if ((err as { status?: number }).status === 403) {
+            const message = lang === 'ar' ? 'احصل على وقت لعب إضافي لبدء لعبة جديدة.' : 'Get more game time to start a new game.';
+            if (await askForAccess({
+              title: lang === 'ar' ? 'انتهى وقت اللعب' : 'Game time ended',
+              message,
+              confirmText: lang === 'ar' ? 'احصل على وقت لعب' : 'Get More Game Time',
+              cancelText: lang === 'ar' ? 'ربما لاحقاً' : 'Maybe Later',
+            })) window.location.assign('https://www.dordor.games/pricing');
+            return;
+          }
           const msg = err instanceof Error ? err.message : String(err);
           toast({ title: t.errorTitle, description: msg || t.errorCreate, variant: 'destructive' });
         }
@@ -229,21 +283,27 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     </a>
   );
   const languageSwitcher = (
-    <button
-      type="button"
-      onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-      aria-label="Switch language"
+    <div
       style={{
         position: 'fixed', top: 'max(14px, env(safe-area-inset-top))', right: 16, zIndex: 60,
-        minWidth: 72, minHeight: 42, padding: '8px 12px',
-        color: '#fff', background: 'rgba(8, 8, 18, 0.78)',
-        border: '1px solid rgba(255,255,255,0.45)', borderRadius: 10,
-        fontSize: 14, fontWeight: 800, cursor: 'pointer',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.28)', backdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'center', gap: 8,
       }}
     >
-      {lang === 'ar' ? 'English' : 'العربية'}
-    </button>
+      <button
+        type="button"
+        onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+        aria-label="Switch language"
+        style={{
+          minWidth: 72, minHeight: 42, padding: '8px 12px',
+          color: '#fff', background: 'rgba(8, 8, 18, 0.78)',
+          border: '1px solid rgba(255,255,255,0.45)', borderRadius: 10,
+          fontSize: 14, fontWeight: 800, cursor: 'pointer',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.28)', backdropFilter: 'blur(8px)',
+        }}
+      >
+        {lang === 'ar' ? 'English' : 'العربية'}
+      </button>
+    </div>
   );
   const tutorialOverlay = tutorial ? (
     <div
@@ -279,7 +339,6 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
       </button>
     </div>
   ) : null;
-
   const accessDialogOverlay = (
     <AlertDialog open={!!accessDialog} onOpenChange={(open) => { if (!open) closeAccessDialog(false); }}>
       <AlertDialogContent className="w-[calc(100%-2rem)] max-w-lg rounded-2xl border-2 border-fuchsia-400 bg-[#10071d] p-6 text-white shadow-[0_24px_80px_rgba(0,0,0,0.65)] sm:p-8" dir={isAr ? 'rtl' : 'ltr'}>
@@ -566,7 +625,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {backToGamesLink}
       {languageSwitcher}
-        {accessDialogOverlay}
+      {accessDialogOverlay}
       {tutorialOverlay}
       {/* Character mode: replace the cyberpunk city with the vending-machine scene */}
       {mode === 'character' && (
@@ -769,12 +828,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 <button
                   className="w-full text-xl h-16 font-black text-white tracking-wide transition-transform active:scale-95"
                   style={{
-                    background: '#e22bbf',
-                    border: '2px solid #ffb8f0',
+                    background: 'transparent',
+                    border: '2px solid #c219a6',
                     borderRadius: 0,
-                    color: '#fff',
-                    textShadow: '0 2px 0 rgba(74,0,62,0.45)',
-                    boxShadow: '0 5px 0 #760065, 0 0 24px rgba(226,43,191,0.55)',
+                    color: '#c219a6',
+                    textShadow: '0 0 8px #c219a6',
+                    boxShadow: '0 0 12px rgba(194,25,166,0.6), inset 0 0 12px rgba(194,25,166,0.08)',
                     ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
                   }}
                   onClick={openCreateView}
@@ -784,12 +843,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
                 <button
                   className="w-full text-xl h-16 font-black tracking-wide transition-transform active:scale-95"
                   style={{
-                    background: '#39d5ff',
-                    border: '2px solid #baf4ff',
+                    background: 'transparent',
+                    border: '2px solid #39d5ff',
                     borderRadius: 0,
-                    color: '#06131a',
-                    textShadow: 'none',
-                    boxShadow: '0 5px 0 #08768f, 0 0 24px rgba(57,213,255,0.55)',
+                    color: '#39d5ff',
+                    textShadow: '0 0 8px #39d5ff',
+                    boxShadow: '0 0 12px rgba(57,213,255,0.6), inset 0 0 12px rgba(57,213,255,0.08)',
                     ...(isAr ? { fontFamily: "'Changa', sans-serif", fontWeight: 700 } : {}),
                   }}
                   onClick={() => setView('join')}

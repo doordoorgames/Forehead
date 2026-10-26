@@ -283,13 +283,21 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
   const accessDialogOverlay = (
     <AlertDialog open={!!accessDialog} onOpenChange={(open) => { if (!open) closeAccessDialog(false); }}>
       <AlertDialogContent className="w-[calc(100%-2rem)] max-w-lg rounded-2xl border-2 border-fuchsia-400 bg-[#10071d] p-6 text-white shadow-[0_24px_80px_rgba(0,0,0,0.65)] sm:p-8" dir={isAr ? 'rtl' : 'ltr'}>
+        <button
+          type="button"
+          onClick={() => closeAccessDialog(false)}
+          aria-label={isAr ? 'إغلاق' : 'Close'}
+          className="absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-full border-2 border-white bg-[#28133b] text-2xl font-black leading-none text-white hover:bg-[#3a1c55] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300"
+        >
+          ×
+        </button>
         <AlertDialogHeader className={isAr ? 'text-right' : 'text-left'}>
-          <AlertDialogTitle className="text-2xl font-black text-yellow-300">{accessDialog?.title}</AlertDialogTitle>
+          <AlertDialogTitle className="pr-12 text-2xl font-black text-yellow-300">{accessDialog?.title}</AlertDialogTitle>
           <AlertDialogDescription className="whitespace-pre-line text-base leading-7 text-white/85">{accessDialog?.message}</AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="mt-3 gap-3 sm:space-x-0">
-          <AlertDialogCancel onClick={() => closeAccessDialog(false)} className="min-h-12 flex-1 border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white">{accessDialog?.cancelText}</AlertDialogCancel>
-          <AlertDialogAction onClick={() => closeAccessDialog(true)} className="min-h-12 flex-1 bg-fuchsia-600 font-black text-white hover:bg-fuchsia-500">{accessDialog?.confirmText}</AlertDialogAction>
+        <AlertDialogFooter className="mt-3 flex-col gap-3 sm:flex-col sm:space-x-0">
+          <AlertDialogAction onClick={() => closeAccessDialog(true)} className="min-h-12 w-full bg-fuchsia-600 font-black text-white hover:bg-fuchsia-500">{accessDialog?.confirmText}</AlertDialogAction>
+          <AlertDialogCancel onClick={() => closeAccessDialog(false)} className="mt-0 min-h-12 w-full border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white">{accessDialog?.cancelText}</AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

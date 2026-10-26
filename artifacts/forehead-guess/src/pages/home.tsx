@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useLang } from '@/context/LanguageContext';
 
@@ -37,12 +38,31 @@ const modeBackPath: Record<string, string> = {
   dykm: '/dykm',
 };
 
+type AccessDialogState = {
+  title: string;
+  message: string;
+  confirmText: string;
+  cancelText: string;
+  resolve: (confirmed: boolean) => void;
+};
+
 export default function Home({ mode }: { mode: 'forehead' | 'character' | 'charades' | 'dykm' }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { t, lang, setLang } = useLang();
   const [view, setView] = useState<'main' | 'create' | 'join'>('main');
   const [tutorial, setTutorial] = useState<null | 'en' | 'ar'>(null);
+  const [accessDialog, setAccessDialog] = useState<AccessDialogState | null>(null);
+
+  const askForAccess = (dialog: Omit<AccessDialogState, 'resolve'>) =>
+    new Promise<boolean>((resolve) => setAccessDialog({ ...dialog, resolve }));
+
+  const closeAccessDialog = (confirmed: boolean) => {
+    setAccessDialog((current) => {
+      current?.resolve(confirmed);
+      return null;
+    });
+  };
 
   const createRoomMutation = useCreateRoom();
   const joinRoomMutation = useJoinRoom();
@@ -88,7 +108,12 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
         const message = lang === 'ar'
           ? 'لإنشاء لعبة، سجّل الدخول أو أنشئ حساب مضيف. أول 30 دقيقة مجانية وتبدأ فور تأكيد رمز التحقق. بعد ذلك يمكنك شراء وقت استضافة إضافي. يمكن للضيوف الانضمام مجاناً برمز الغرفة.\n\nهل تريد تسجيل الدخول أو إنشاء حساب الآن؟'
           : 'To create a game, log in or create a host account. Your first 30 minutes are free and start immediately after OTP verification. After that, you can buy more hosting time. Guests join free with the room code.\n\nLog in or create an account now?';
-        if (window.confirm(message)) window.location.assign(`https://www.dordor.games/account?returnTo=${encodeURIComponent(window.location.href)}`);
+        if (await askForAccess({
+          title: lang === 'ar' ? 'يلزم حساب مضيف' : 'Host account required',
+          message,
+          confirmText: lang === 'ar' ? 'تسجيل الدخول أو إنشاء حساب' : 'Log in or sign up',
+          cancelText: lang === 'ar' ? 'ليس الآن' : 'Not now',
+        })) window.location.assign(`https://www.dordor.games/account?returnTo=${encodeURIComponent(window.location.href)}`);
         return false;
       }
       if (!response.ok) throw new Error('Account verification failed');
@@ -96,14 +121,24 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
       const active = !!account.activeSessionEndsAt && new Date(account.activeSessionEndsAt).getTime() > Date.now();
       if (account.role === 'host' && (active || (account.remainingMinutes ?? 0) > 0)) return true;
       if (account.role !== 'host') {
-        if (window.confirm(lang === 'ar' ? 'إنشاء الألعاب يتطلب حساب مضيف. أول 30 دقيقة مجانية. هل تريد تسجيل الدخول؟' : 'Creating games requires a host account. Your first 30 minutes are free. Log in now?')) {
-          window.location.assign(`https://www.dordor.games/account?returnTo=${encodeURIComponent(window.location.href)}`);
-        }
+        const message = lang === 'ar'
+          ? 'إنشاء الألعاب يتطلب حساب مضيف. أول 30 دقيقة مجانية. هل تريد تسجيل الدخول؟'
+          : 'Creating games requires a host account. Your first 30 minutes are free. Log in now?';
+        if (await askForAccess({
+          title: lang === 'ar' ? 'يلزم حساب مضيف' : 'Host account required',
+          message,
+          confirmText: lang === 'ar' ? 'تسجيل الدخول أو إنشاء حساب' : 'Log in or sign up',
+          cancelText: lang === 'ar' ? 'ليس الآن' : 'Not now',
+        })) window.location.assign(`https://www.dordor.games/account?returnTo=${encodeURIComponent(window.location.href)}`);
         return false;
       }
-      if (window.confirm(lang === 'ar' ? 'انتهى وقت الاستضافة. هل تريد شراء وقت إضافي؟' : 'Your hosting time has ended. Buy more time?')) {
-        window.location.assign('https://www.dordor.games/pricing');
-      }
+      const message = lang === 'ar' ? 'انتهى وقت الاستضافة. هل تريد شراء وقت إضافي؟' : 'Your hosting time has ended. Buy more time?';
+      if (await askForAccess({
+        title: lang === 'ar' ? 'انتهى وقت الاستضافة' : 'Hosting time ended',
+        message,
+        confirmText: lang === 'ar' ? 'شراء الوقت' : 'Buy time',
+        cancelText: lang === 'ar' ? 'ليس الآن' : 'Not now',
+      })) window.location.assign('https://www.dordor.games/pricing');
       return false;
     } catch {
       toast({ title: t.errorTitle, description: lang === 'ar' ? 'تعذر التحقق من وقت الاستضافة. حاول مرة أخرى.' : 'Unable to verify hosting time. Please try again.', variant: 'destructive' });
@@ -245,6 +280,21 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     </div>
   ) : null;
 
+  const accessDialogOverlay = (
+    <AlertDialog open={!!accessDialog} onOpenChange={(open) => { if (!open) closeAccessDialog(false); }}>
+      <AlertDialogContent className="w-[calc(100%-2rem)] max-w-lg rounded-2xl border-2 border-fuchsia-400 bg-[#10071d] p-6 text-white shadow-[0_24px_80px_rgba(0,0,0,0.65)] sm:p-8" dir={isAr ? 'rtl' : 'ltr'}>
+        <AlertDialogHeader className={isAr ? 'text-right' : 'text-left'}>
+          <AlertDialogTitle className="text-2xl font-black text-yellow-300">{accessDialog?.title}</AlertDialogTitle>
+          <AlertDialogDescription className="whitespace-pre-line text-base leading-7 text-white/85">{accessDialog?.message}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="mt-3 gap-3 sm:space-x-0">
+          <AlertDialogCancel onClick={() => closeAccessDialog(false)} className="min-h-12 flex-1 border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white">{accessDialog?.cancelText}</AlertDialogCancel>
+          <AlertDialogAction onClick={() => closeAccessDialog(true)} className="min-h-12 flex-1 bg-fuchsia-600 font-black text-white hover:bg-fuchsia-500">{accessDialog?.confirmText}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   // ──── CHARADES SPECIAL LAYOUTS ────────────────────────────────────────────
   if (mode === 'charades' && view === 'main') {
     return (
@@ -255,6 +305,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
       }}>
         {backToGamesLink}
         {languageSwitcher}
+        {accessDialogOverlay}
         <div style={{
           position: 'absolute',
           top: '50%', left: '50%',
@@ -310,6 +361,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
       >
         {backToGamesLink}
         {languageSwitcher}
+        {accessDialogOverlay}
         <Form {...createForm}>
           <form onSubmit={createForm.handleSubmit(onCreateSubmit)}>
             {/* Label + input overlaid on big rectangle */}
@@ -407,6 +459,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
       >
         {backToGamesLink}
         {languageSwitcher}
+        {accessDialogOverlay}
         <Form {...joinForm}>
           <form onSubmit={joinForm.handleSubmit(onJoinSubmit)}>
             {/* Two inputs overlaid on big rectangle */}
@@ -513,6 +566,7 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
     <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {backToGamesLink}
       {languageSwitcher}
+        {accessDialogOverlay}
       {tutorialOverlay}
       {/* Character mode: replace the cyberpunk city with the vending-machine scene */}
       {mode === 'character' && (

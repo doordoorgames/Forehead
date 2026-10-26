@@ -6,7 +6,7 @@ export const translations = {
     appTitle2: 'Guess',
     tagline: 'The ultimate party game!',
 
-    createRoom: 'Create Room',
+    createRoom: 'Start a Game',
     joinRoom: 'Join Room',
     adminPanel: 'Admin Panel',
 
@@ -178,7 +178,7 @@ export const translations = {
     appTitle2: 'الجبهة',
     tagline: '!لعبة الحفلات الأفضل',
 
-    createRoom: 'إنشاء غرفة',
+    createRoom: 'ابدأ لعبة',
     joinRoom: 'انضم لغرفة',
     adminPanel: 'لوحة الإدارة',
 

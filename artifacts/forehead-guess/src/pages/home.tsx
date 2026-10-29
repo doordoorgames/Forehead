@@ -106,10 +106,10 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
       }
       if (response.status === 401 || response.status === 403) {
         const message = lang === 'ar'
-          ? 'ابدأ لعبة. احصل على 30 دقيقة مجاناً. ادعُ أصدقاءك.\n\nينضم أصدقاؤك مجاناً باستخدام رمز الغرفة.'
-          : 'Start a game. Get 30 minutes free. Invite your friends.\n\nYour friends join for free using your room code.';
+          ? 'أول 30 دقيقة علينا.\n\nينضم أصدقاؤك مجاناً باستخدام رمز الغرفة.'
+          : 'Get your first 30 minutes on us.\n\nYour friends join for free using your room code.';
         if (await askForAccess({
-          title: lang === 'ar' ? 'أول 30 دقيقة مجاناً!' : 'Your First 30 Minutes Are FREE!',
+          title: lang === 'ar' ? 'أنشئ حساباً لفتح جميع الألعاب' : 'Create an Account to Unlock All Games',
           message,
           confirmText: lang === 'ar' ? 'أنشئ حساباً / سجّل الدخول' : 'Create Account / Log In',
           cancelText: lang === 'ar' ? 'ربما لاحقاً' : 'Maybe Later',
@@ -122,10 +122,10 @@ export default function Home({ mode }: { mode: 'forehead' | 'character' | 'chara
       if (account.role === 'host' && (active || (account.remainingMinutes ?? 0) > 0)) return true;
       if (account.role !== 'host') {
         const message = lang === 'ar'
-          ? 'ابدأ لعبة. احصل على 30 دقيقة مجاناً. ادعُ أصدقاءك.\n\nينضم أصدقاؤك مجاناً باستخدام رمز الغرفة.'
-          : 'Start a game. Get 30 minutes free. Invite your friends.\n\nYour friends join for free using your room code.';
+          ? 'أول 30 دقيقة علينا.\n\nينضم أصدقاؤك مجاناً باستخدام رمز الغرفة.'
+          : 'Get your first 30 minutes on us.\n\nYour friends join for free using your room code.';
         if (await askForAccess({
-          title: lang === 'ar' ? 'أول 30 دقيقة مجاناً!' : 'Your First 30 Minutes Are FREE!',
+          title: lang === 'ar' ? 'أنشئ حساباً لفتح جميع الألعاب' : 'Create an Account to Unlock All Games',
           message,
           confirmText: lang === 'ar' ? 'أنشئ حساباً / سجّل الدخول' : 'Create Account / Log In',
           cancelText: lang === 'ar' ? 'ربما لاحقاً' : 'Maybe Later',
